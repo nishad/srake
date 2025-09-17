@@ -244,6 +244,9 @@ proc.SetProgressFunc(func(p processor.Progress) {
 // Process from URL
 ctx := context.Background()
 err = proc.ProcessURL(ctx, "https://ftp.ncbi.nlm.nih.gov/...")
+
+// Or process from local file
+err = proc.ProcessFile(ctx, "/path/to/archive.tar.gz")
 ```
 
 ## 🛠️ Development

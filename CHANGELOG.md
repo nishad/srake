@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Renamed `download` command to `ingest` for semantic correctness
+  - The `ingest` command now handles both remote NCBI files and local archives
+  - Use `srake ingest --file /path/to/local.tar.gz` for local files
+  - Use `srake ingest --auto/--daily/--monthly` for NCBI files
+- Added `ProcessFile` method to StreamProcessor for local file processing
+
+### Removed
+- Removed deprecated `download` command (replaced by `ingest`)
+
 ## [v0.0.1-alpha] - 2025-01-17
 
 ### Added
