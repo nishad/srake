@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -120,8 +121,43 @@ func (sp *StreamProcessor) ProcessURL(ctx context.Context, url string) error {
 		callback: sp.updateProgress,
 	}
 
-	// Chain: HTTP Body → Gzip Reader → Tar Reader
-	gzipReader, err := gzip.NewReader(countingReader)
+	return sp.processTarGzStream(ctx, countingReader)
+}
+
+// ProcessFile streams and processes a local tar.gz file
+func (sp *StreamProcessor) ProcessFile(ctx context.Context, filePath string) error {
+	sp.startTime = time.Now()
+	sp.bytesProcessed.Store(0)
+	sp.recordsInserted.Store(0)
+
+	// Open the file
+	file, err := os.Open(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	// Get file size
+	stat, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("failed to stat file: %w", err)
+	}
+	sp.totalBytes = stat.Size()
+
+	// Create a counting reader to track progress
+	countingReader := &countingReader{
+		reader:   file,
+		counter:  &sp.bytesProcessed,
+		callback: sp.updateProgress,
+	}
+
+	return sp.processTarGzStream(ctx, countingReader)
+}
+
+// processTarGzStream processes a tar.gz stream from any reader
+func (sp *StreamProcessor) processTarGzStream(ctx context.Context, reader io.Reader) error {
+	// Chain: Reader → Gzip Reader → Tar Reader
+	gzipReader, err := gzip.NewReader(reader)
 	if err != nil {
 		return fmt.Errorf("failed to create gzip reader: %w", err)
 	}

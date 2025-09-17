@@ -121,6 +121,13 @@ func runDownload(cmd *cobra.Command, args []string) error {
 		}
 
 	case downloadFile != "":
+		// Check if it's a local file first
+		if _, err := os.Stat(downloadFile); err == nil {
+			// Local file exists, process it directly
+			return processLocalFile(ctx, downloadFile, downloadDBPath, downloadForce, downloadNoProgress)
+		}
+
+		// Not a local file, try to find it on NCBI
 		fmt.Printf("🔍 Looking for file: %s\n", downloadFile)
 		targetFile, err = manager.GetFileByName(ctx, downloadFile)
 		if err != nil {
@@ -281,6 +288,106 @@ func listFiles(ctx context.Context, manager *downloader.MetadataManager) error {
 	fmt.Println("   • Use --auto to automatically select the best file")
 	fmt.Printf("\nTo download a specific file:\n")
 	fmt.Printf("   srake download --file %s\n", files[0].Name)
+
+	return nil
+}
+
+// processLocalFile processes a local tar.gz file
+func processLocalFile(ctx context.Context, filePath string, dbPath string, force bool, noProgress bool) error {
+	// Get file info
+	stat, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("failed to stat file: %w", err)
+	}
+
+	// Display file information
+	fmt.Printf("\n📦 Processing local file:\n")
+	fmt.Printf("   Path: %s\n", colorBold(filePath))
+	fmt.Printf("   Size: %s\n", colorize(downloader.FormatSize(stat.Size())))
+	fmt.Printf("   Modified: %s\n", stat.ModTime().Format("2006-01-02 15:04:05"))
+
+	// Initialize database
+	fmt.Printf("\n🗄️  Initializing database at %s...\n", dbPath)
+	db, err := database.Initialize(dbPath)
+	if err != nil {
+		return fmt.Errorf("failed to initialize database: %w", err)
+	}
+	defer db.Close()
+
+	// Check if database already has data (unless forced)
+	if !force {
+		stats, _ := db.GetStats()
+		if stats.TotalExperiments > 0 || stats.TotalStudies > 0 {
+			fmt.Printf("\n⚠️  Database already contains data:\n")
+			fmt.Printf("   Studies:     %d\n", stats.TotalStudies)
+			fmt.Printf("   Experiments: %d\n", stats.TotalExperiments)
+			fmt.Printf("   Samples:     %d\n", stats.TotalSamples)
+			fmt.Printf("   Runs:        %d\n", stats.TotalRuns)
+			fmt.Printf("\nUse --force to overwrite existing data\n")
+
+			// Ask for confirmation
+			fmt.Print("\nContinue anyway? [y/N]: ")
+			var response string
+			fmt.Scanln(&response)
+			if strings.ToLower(response) != "y" {
+				fmt.Println("Processing cancelled")
+				return nil
+			}
+		}
+	}
+
+	// Create stream processor
+	streamProcessor := processor.NewStreamProcessor(db)
+
+	// Set up progress reporting if not disabled
+	if !noProgress {
+		progressBar := newProgressBar(stat.Size())
+		streamProcessor.SetProgressFunc(func(p processor.Progress) {
+			progressBar.Update(p)
+		})
+		defer progressBar.Finish()
+	}
+
+	// Start processing
+	fmt.Printf("\n🚀 Starting processing...\n")
+	fmt.Println("   This may take a while for large files.")
+	fmt.Println("   Press Ctrl+C to cancel.\n")
+
+	startTime := time.Now()
+
+	// Process the local file
+	err = streamProcessor.ProcessFile(ctx, filePath)
+	if err != nil {
+		if err == context.Canceled {
+			fmt.Println("\n\n❌ Processing cancelled")
+		}
+		return err
+	}
+
+	// Display completion stats
+	duration := time.Since(startTime)
+	stats := streamProcessor.GetStats()
+
+	fmt.Printf("\n\n✅ Processing completed successfully!\n")
+	fmt.Printf("\n📊 Statistics:\n")
+	fmt.Printf("   Duration:    %s\n", downloader.FormatDuration(duration))
+	fmt.Printf("   Processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
+	fmt.Printf("   Records:     %d\n", stats["records_inserted"].(int64))
+	fmt.Printf("   Speed:       %.1f MB/s\n", float64(stats["bytes_processed"].(int64))/duration.Seconds()/(1024*1024))
+	fmt.Printf("   Database:    %s\n", dbPath)
+
+	// Get database stats
+	dbStats, _ := db.GetStats()
+	fmt.Printf("\n📈 Database Contents:\n")
+	fmt.Printf("   Studies:     %d\n", dbStats.TotalStudies)
+	fmt.Printf("   Experiments: %d\n", dbStats.TotalExperiments)
+	fmt.Printf("   Samples:     %d\n", dbStats.TotalSamples)
+	fmt.Printf("   Runs:        %d\n", dbStats.TotalRuns)
+
+	fmt.Printf("\n💡 Next steps:\n")
+	fmt.Printf("   • Search records: srake search 'your query'\n")
+	fmt.Printf("   • Start API server: srake server\n")
+	fmt.Printf("   • View database info: srake db info\n")
 
 	return nil
 }

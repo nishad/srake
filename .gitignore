@@ -14,6 +14,9 @@ TODO.md
 PROGRESS.md
 MASTER_*.md
 
+# Exclude all markdown files in root directory
+/*.md
+
 # Allow specific public documentation
 !README.md
 !CONTRIBUTING.md
