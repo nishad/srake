@@ -1,0 +1,119 @@
+# Context Protection - Private development context
+.claude/
+CLAUDE.md
+SRAKE_CONTEXT.md
+*_CONTEXT.md
+*_TRACKER.md
+*_ANALYSIS.md
+*_REPORT.md
+IMPLEMENTATION_*.md
+DATABASE_*.md
+PERFORMANCE_*.md
+CLAUDE_*.md
+TODO.md
+PROGRESS.md
+MASTER_*.md
+
+# Allow specific public documentation
+!README.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+!LICENSE
+
+# Test databases
+*.db
+*.db-journal
+*.db-wal
+*.db.backup*
+*.db-shm
+data/
+
+# Test files
+test_extraction.go
+test_large_extraction.go
+*_test_*.go
+perf_test*.go
+
+# Build artifacts
+/srake
+srake-test
+*.exe
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+
+# Release artifacts (keep local)
+srake-*.tar.gz
+srake-*.zip
+SHA256SUMS.txt
+RELEASE_NOTES.md
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Go
+vendor/
+*.test
+*.out
+*.prof
+*.cover
+coverage.html
+coverage.txt
+
+# Profiling
+*.cpuprofile
+*.memprofile
+cpu.prof
+mem.prof
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Archives (test data)
+*.tar.gz
+*.zip
+*.tar
+*.gz
+!srake-*.tar.gz
+!srake-*.zip
+
+# Editor backup files
+*.bak
+*.orig
+
+# Private notes
+notes/
+private/
+TODO.txt
+NOTES.txt
+
+# Sample Data
+sample_data/
+
+# Development/private docs that should stay local
+RELEASE_CHECKLIST.md
+RELEASE_READY.md
+CLI_COMPLIANCE_REPORT.md

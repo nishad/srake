@@ -1,0 +1,2 @@
+-- This file is deprecated. Use schema_full.sql for the complete schema.
+-- The full schema ensures output database compatibility with original SRAmetadb tools.
