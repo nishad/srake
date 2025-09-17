@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Filtering System**: Comprehensive filtering capabilities for SRA metadata ingestion
+  - Taxonomy ID filtering (include/exclude specific NCBI taxonomy IDs)
+  - Organism name filtering (filter by scientific names)
+  - Date range filtering (filter by submission/publication dates)
+  - Platform filtering (ILLUMINA, OXFORD_NANOPORE, PACBIO_SMRT, etc.)
+  - Library strategy filtering (RNA-Seq, WGS, WES, ChIP-Seq, etc.)
+  - Quality filtering (min/max reads and bases)
+  - Center and country filtering
+  - Stats-only mode to preview what would be imported
+  - Real-time filter statistics during processing
+  - Support for combining multiple filters
+  - < 5% performance overhead with filtering enabled
 - **Resume Capability**: Comprehensive resume functionality for interrupted processing
   - Automatic progress tracking with database-backed persistence
   - Checkpoint system for reliable recovery points

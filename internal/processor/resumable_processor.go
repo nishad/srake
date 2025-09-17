@@ -10,9 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
-	"sync/atomic"
 	"time"
 
 	"github.com/nishad/srake/internal/database"
@@ -238,10 +236,12 @@ func (rp *ResumableProcessor) processURLInternal(ctx context.Context, url string
 
 	// Create counting reader to track download progress
 	countingReader := &countingReader{
-		reader:   resp.Body,
-		counter:  &rp.bytesProcessed,
-		total:    rp.totalBytes,
-		callback: rp.onBytesDownloaded,
+		reader:  resp.Body,
+		counter: &rp.bytesProcessed,
+		callback: func(msg string) {
+			// Convert bytes processed to message
+			rp.onBytesDownloaded(rp.bytesProcessed.Load())
+		},
 	}
 
 	// Process the tar.gz stream with resume support
@@ -406,14 +406,14 @@ func (rp *ResumableProcessor) processXMLFileWithTracking(reader io.Reader, heade
 // Helper methods for processing different record types
 func (rp *ResumableProcessor) processExperiment(exp *parser.Experiment) error {
 	dbExp := &database.Experiment{
-		Accession:   exp.Accession,
-		Title:       exp.Title,
-		StudyRef:    exp.StudyRef.Accession,
-		Platform:    rp.extractPlatform(exp),
-		InstrumentModel: rp.extractInstrumentModel(exp),
+		ExperimentAccession: exp.Accession,
+		Title:               exp.Title,
+		StudyAccession:      exp.StudyRef.Accession,
+		Platform:            rp.extractPlatform(exp),
+		InstrumentModel:     rp.extractInstrumentModel(exp),
 	}
 
-	if exp.Design != nil && exp.Design.LibraryDescriptor != nil {
+	if exp.Design.LibraryDescriptor.LibraryStrategy != "" {
 		dbExp.LibraryName = exp.Design.LibraryDescriptor.LibraryName
 		dbExp.LibraryStrategy = exp.Design.LibraryDescriptor.LibraryStrategy
 		dbExp.LibrarySource = exp.Design.LibraryDescriptor.LibrarySource
@@ -425,18 +425,16 @@ func (rp *ResumableProcessor) processExperiment(exp *parser.Experiment) error {
 
 func (rp *ResumableProcessor) processSample(sample *parser.Sample) error {
 	dbSample := &database.Sample{
-		Accession:    sample.Accession,
-		Title:        sample.Title,
+		SampleAccession: sample.Accession,
+		Title:           sample.Title,
 	}
 
 	// Extract organism info
-	if sample.SampleName != nil {
-		if sample.SampleName.ScientificName != "" {
-			dbSample.Organism = sample.SampleName.ScientificName
-		}
-		if sample.SampleName.TaxonID != "" {
-			dbSample.TaxonID = sample.SampleName.TaxonID
-		}
+	if sample.SampleName.ScientificName != "" {
+		dbSample.Organism = sample.SampleName.ScientificName
+	}
+	if sample.SampleName.TaxonID > 0 {
+		dbSample.TaxonID = sample.SampleName.TaxonID
 	}
 
 	return rp.db.InsertSample(dbSample)
@@ -444,20 +442,33 @@ func (rp *ResumableProcessor) processSample(sample *parser.Sample) error {
 
 func (rp *ResumableProcessor) processRun(run *parser.Run) error {
 	dbRun := &database.Run{
-		Accession:    run.Accession,
-		ExperimentRef: run.ExperimentRef.Accession,
-		TotalSpots:   run.TotalSpots,
-		TotalBases:   run.TotalBases,
+		RunAccession:        run.Accession,
+		ExperimentAccession: run.ExperimentRef.Accession,
 	}
+
+	if run.Statistics != nil {
+		dbRun.TotalSpots = run.Statistics.TotalSpots
+		dbRun.TotalBases = run.Statistics.TotalBases
+	}
+
 	return rp.db.InsertRun(dbRun)
 }
 
 func (rp *ResumableProcessor) processStudy(study *parser.Study) error {
+	var studyType string
+	if study.Descriptor.StudyType != nil {
+		if study.Descriptor.StudyType.ExistingStudyType != "" {
+			studyType = study.Descriptor.StudyType.ExistingStudyType
+		} else {
+			studyType = study.Descriptor.StudyType.NewStudyType
+		}
+	}
+
 	dbStudy := &database.Study{
-		Accession: study.Accession,
-		Title:     study.Descriptor.StudyTitle,
-		Abstract:  study.Descriptor.StudyAbstract,
-		StudyType: study.Descriptor.StudyType,
+		StudyAccession: study.Accession,
+		StudyTitle:     study.Descriptor.StudyTitle,
+		StudyAbstract:  study.Descriptor.StudyAbstract,
+		StudyType:      studyType,
 	}
 	return rp.db.InsertStudy(dbStudy)
 }
@@ -468,7 +479,7 @@ func (rp *ResumableProcessor) extractPlatform(exp *parser.Experiment) string {
 	if exp.Platform.Illumina != nil {
 		return "ILLUMINA"
 	}
-	if exp.Platform.Nanopore != nil {
+	if exp.Platform.OxfordNanopore != nil {
 		return "OXFORD_NANOPORE"
 	}
 	if exp.Platform.PacBio != nil {
@@ -480,8 +491,8 @@ func (rp *ResumableProcessor) extractPlatform(exp *parser.Experiment) string {
 	if exp.Platform.LS454 != nil {
 		return "LS454"
 	}
-	if exp.Platform.BGISEQ != nil {
-		return "BGISEQ"
+	if exp.Platform.Solid != nil {
+		return "ABI_SOLID"
 	}
 	return ""
 }
@@ -490,8 +501,8 @@ func (rp *ResumableProcessor) extractInstrumentModel(exp *parser.Experiment) str
 	if exp.Platform.Illumina != nil {
 		return exp.Platform.Illumina.InstrumentModel
 	}
-	if exp.Platform.Nanopore != nil {
-		return exp.Platform.Nanopore.InstrumentModel
+	if exp.Platform.OxfordNanopore != nil {
+		return exp.Platform.OxfordNanopore.InstrumentModel
 	}
 	if exp.Platform.PacBio != nil {
 		return exp.Platform.PacBio.InstrumentModel
@@ -583,21 +594,3 @@ func (rp *ResumableProcessor) reportProgress(currentFile string) {
 	rp.progressFunc(progress)
 }
 
-// countingReader tracks bytes read
-type countingReader struct {
-	reader   io.Reader
-	counter  *atomic.Int64
-	total    int64
-	callback func(int64)
-}
-
-func (cr *countingReader) Read(p []byte) (int, error) {
-	n, err := cr.reader.Read(p)
-	if n > 0 {
-		newTotal := cr.counter.Add(int64(n))
-		if cr.callback != nil {
-			cr.callback(newTotal)
-		}
-	}
-	return n, err
-}

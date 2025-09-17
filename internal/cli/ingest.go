@@ -26,6 +26,22 @@ var (
 	ingestDBPath     string
 	ingestForce      bool
 	ingestNoProgress bool
+
+	// Filter flags
+	filterTaxonIDs      []int
+	filterExcludeTaxIDs []int
+	filterDateFrom      string
+	filterDateTo        string
+	filterOrganisms     []string
+	filterPlatforms     []string
+	filterStrategies    []string
+	filterMinReads      int64
+	filterMaxReads      int64
+	filterMinBases      int64
+	filterMaxBases      int64
+	filterStatsOnly     bool
+	filterVerbose       bool
+	filterProfile       string
 )
 
 // NewIngestCmd creates the ingest command
@@ -60,7 +76,7 @@ Examples:
 		RunE: runIngest,
 	}
 
-	// Add flags
+	// Add basic flags
 	cmd.Flags().BoolVar(&ingestAuto, "auto", false, "Auto-select the best file to ingest from NCBI")
 	cmd.Flags().BoolVar(&ingestDaily, "daily", false, "Ingest the latest daily update from NCBI")
 	cmd.Flags().BoolVar(&ingestMonthly, "monthly", false, "Ingest the latest monthly full dataset from NCBI")
@@ -69,6 +85,22 @@ Examples:
 	cmd.Flags().StringVar(&ingestDBPath, "db", "./data/metadata.db", "Database path")
 	cmd.Flags().BoolVar(&ingestForce, "force", false, "Force ingestion even if data exists")
 	cmd.Flags().BoolVar(&ingestNoProgress, "no-progress", false, "Disable progress bar")
+
+	// Add filter flags
+	cmd.Flags().IntSliceVar(&filterTaxonIDs, "taxon-ids", nil, "Filter by taxonomy IDs (comma-separated, e.g., 9606,10090)")
+	cmd.Flags().IntSliceVar(&filterExcludeTaxIDs, "exclude-taxon-ids", nil, "Exclude taxonomy IDs (comma-separated)")
+	cmd.Flags().StringVar(&filterDateFrom, "date-from", "", "Start date for filtering (YYYY-MM-DD)")
+	cmd.Flags().StringVar(&filterDateTo, "date-to", "", "End date for filtering (YYYY-MM-DD)")
+	cmd.Flags().StringSliceVar(&filterOrganisms, "organisms", nil, "Filter by organism names (comma-separated)")
+	cmd.Flags().StringSliceVar(&filterPlatforms, "platforms", nil, "Filter by platforms (ILLUMINA, OXFORD_NANOPORE, PACBIO_SMRT, etc.)")
+	cmd.Flags().StringSliceVar(&filterStrategies, "strategies", nil, "Filter by library strategies (RNA-Seq, WGS, WES, etc.)")
+	cmd.Flags().Int64Var(&filterMinReads, "min-reads", 0, "Minimum read count filter")
+	cmd.Flags().Int64Var(&filterMaxReads, "max-reads", 0, "Maximum read count filter")
+	cmd.Flags().Int64Var(&filterMinBases, "min-bases", 0, "Minimum base count filter")
+	cmd.Flags().Int64Var(&filterMaxBases, "max-bases", 0, "Maximum base count filter")
+	cmd.Flags().BoolVar(&filterStatsOnly, "stats-only", false, "Only show statistics without inserting data")
+	cmd.Flags().BoolVar(&filterVerbose, "filter-verbose", false, "Show detailed filtering information")
+	cmd.Flags().StringVar(&filterProfile, "filter-profile", "", "Load filter settings from YAML profile")
 
 	// Mark mutually exclusive flags
 	cmd.MarkFlagsMutuallyExclusive("auto", "daily", "monthly", "file", "list")
@@ -184,46 +216,111 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// Create stream processor
-	streamProcessor := processor.NewStreamProcessor(db)
-
-	// Set up progress reporting if not disabled
-	if !ingestNoProgress {
-		progressBar := newProgressBar(targetFile.Size)
-		streamProcessor.SetProgressFunc(func(p processor.Progress) {
-			progressBar.Update(p)
-		})
-		defer progressBar.Finish()
-	}
-
-	// Start ingestion
-	fmt.Printf("\n🚀 Starting ingestion...\n")
-	fmt.Println("   This may take a while for large files.")
-	fmt.Println("   Press Ctrl+C to cancel.\n")
-
-	startTime := time.Now()
-
-	// Process the URL
-	err = streamProcessor.ProcessURL(ctx, targetFile.URL)
-	if err != nil {
-		if err == context.Canceled {
-			fmt.Println("\n❌ Ingestion cancelled by user")
-			return nil
+	// Check if filters are specified and create appropriate processor
+	if hasFilters() {
+		filterOpts, err := buildFilterOptions()
+		if err != nil {
+			return fmt.Errorf("invalid filter options: %w", err)
 		}
-		return fmt.Errorf("ingestion failed: %w", err)
+
+		// Display filter summary
+		fmt.Printf("\n🔍 Applying filters:\n")
+		fmt.Printf("   %s\n", filterOpts.String())
+
+		// Create filtered processor
+		filteredProcessor, err := processor.NewFilteredProcessor(db, *filterOpts)
+		if err != nil {
+			return fmt.Errorf("failed to create filtered processor: %w", err)
+		}
+
+		// Set up progress reporting if not disabled
+		if !ingestNoProgress {
+			progressBar := newProgressBar(targetFile.Size)
+			filteredProcessor.SetProgressFunc(func(p processor.Progress) {
+				progressBar.Update(p)
+			})
+			defer progressBar.Finish()
+		}
+
+		// Start ingestion
+		fmt.Printf("\n🚀 Starting filtered ingestion...\n")
+		fmt.Println("   This may take a while for large files.")
+		fmt.Println("   Press Ctrl+C to cancel.\n")
+
+		startTime := time.Now()
+
+		// Process the URL with filters
+		err = filteredProcessor.ProcessWithFilters(ctx, targetFile.URL)
+
+		if err != nil {
+			if err == context.Canceled {
+				fmt.Println("\n❌ Ingestion cancelled by user")
+				return nil
+			}
+			return fmt.Errorf("ingestion failed: %w", err)
+		}
+
+		// Display final statistics
+		elapsed := time.Since(startTime)
+		stats := filteredProcessor.StreamProcessor.GetStats()
+
+		fmt.Printf("\n✅ Ingestion completed successfully!\n\n")
+		fmt.Printf("📊 Statistics:\n")
+		fmt.Printf("   Time elapsed:      %s\n", downloader.FormatDuration(elapsed))
+		fmt.Printf("   Records processed: %v\n", stats["records_processed"])
+		fmt.Printf("   Bytes processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
+		fmt.Printf("   Speed:             %.2f MB/s\n", stats["bytes_per_second"].(float64)/(1024*1024))
+		fmt.Printf("   Records/second:    %.0f\n", stats["records_per_second"])
+
+		// Display filter statistics if available
+		filterStats := filteredProcessor.GetStats()
+		if filterStats != nil {
+			fmt.Print("\n")
+			fmt.Print(filterStats.GetSummary())
+		}
+	} else {
+		// No filters, use standard processor
+		streamProcessor := processor.NewStreamProcessor(db)
+
+		// Set up progress reporting if not disabled
+		if !ingestNoProgress {
+			progressBar := newProgressBar(targetFile.Size)
+			streamProcessor.SetProgressFunc(func(p processor.Progress) {
+				progressBar.Update(p)
+			})
+			defer progressBar.Finish()
+		}
+
+		// Start ingestion
+		fmt.Printf("\n🚀 Starting ingestion...\n")
+		fmt.Println("   This may take a while for large files.")
+		fmt.Println("   Press Ctrl+C to cancel.\n")
+
+		startTime := time.Now()
+
+		// Process the URL
+		err = streamProcessor.ProcessURL(ctx, targetFile.URL)
+
+		if err != nil {
+			if err == context.Canceled {
+				fmt.Println("\n❌ Ingestion cancelled by user")
+				return nil
+			}
+			return fmt.Errorf("ingestion failed: %w", err)
+		}
+
+		// Display final statistics
+		elapsed := time.Since(startTime)
+		stats := streamProcessor.GetStats()
+
+		fmt.Printf("\n✅ Ingestion completed successfully!\n\n")
+		fmt.Printf("📊 Statistics:\n")
+		fmt.Printf("   Time elapsed:      %s\n", downloader.FormatDuration(elapsed))
+		fmt.Printf("   Records processed: %v\n", stats["records_processed"])
+		fmt.Printf("   Bytes processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
+		fmt.Printf("   Speed:             %.2f MB/s\n", stats["bytes_per_second"].(float64)/(1024*1024))
+		fmt.Printf("   Records/second:    %.0f\n", stats["records_per_second"])
 	}
-
-	// Display final statistics
-	elapsed := time.Since(startTime)
-	stats := streamProcessor.GetStats()
-
-	fmt.Printf("\n✅ Ingestion completed successfully!\n\n")
-	fmt.Printf("📊 Statistics:\n")
-	fmt.Printf("   Time elapsed:      %s\n", downloader.FormatDuration(elapsed))
-	fmt.Printf("   Records processed: %v\n", stats["records_processed"])
-	fmt.Printf("   Bytes processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
-	fmt.Printf("   Speed:             %.2f MB/s\n", stats["bytes_per_second"].(float64)/(1024*1024))
-	fmt.Printf("   Records/second:    %.0f\n", stats["records_per_second"])
 
 	// Get database statistics
 	dbStats, _ := db.GetStats()
@@ -339,45 +436,109 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		}
 	}
 
-	// Create stream processor
-	streamProcessor := processor.NewStreamProcessor(db)
-
-	// Set up progress reporting if not disabled
-	if !noProgress {
-		progressBar := newProgressBar(stat.Size())
-		streamProcessor.SetProgressFunc(func(p processor.Progress) {
-			progressBar.Update(p)
-		})
-		defer progressBar.Finish()
-	}
-
-	// Start ingestion
-	fmt.Printf("\n🚀 Starting ingestion...\n")
-	fmt.Println("   This may take a while for large files.")
-	fmt.Println("   Press Ctrl+C to cancel.\n")
-
-	startTime := time.Now()
-
-	// Process the local file
-	err = streamProcessor.ProcessFile(ctx, filePath)
-	if err != nil {
-		if err == context.Canceled {
-			fmt.Println("\n\n❌ Ingestion cancelled")
+	// Check if filters are specified and create appropriate processor
+	if hasFilters() {
+		filterOpts, err := buildFilterOptions()
+		if err != nil {
+			return fmt.Errorf("invalid filter options: %w", err)
 		}
-		return err
+
+		// Display filter summary
+		fmt.Printf("\n🔍 Applying filters:\n")
+		fmt.Printf("   %s\n", filterOpts.String())
+
+		// Create filtered processor
+		filteredProcessor, err := processor.NewFilteredProcessor(db, *filterOpts)
+		if err != nil {
+			return fmt.Errorf("failed to create filtered processor: %w", err)
+		}
+
+		// Set up progress reporting if not disabled
+		if !noProgress {
+			progressBar := newProgressBar(stat.Size())
+			filteredProcessor.SetProgressFunc(func(p processor.Progress) {
+				progressBar.Update(p)
+			})
+			defer progressBar.Finish()
+		}
+
+		// Start ingestion
+		fmt.Printf("\n🚀 Starting filtered ingestion...\n")
+		fmt.Println("   This may take a while for large files.")
+		fmt.Println("   Press Ctrl+C to cancel.\n")
+
+		startTime := time.Now()
+
+		// Process the local file with filters
+		err = filteredProcessor.ProcessWithFilters(ctx, filePath)
+
+		if err != nil {
+			if err == context.Canceled {
+				fmt.Println("\n\n❌ Ingestion cancelled")
+			}
+			return err
+		}
+
+		// Display completion stats
+		duration := time.Since(startTime)
+		stats := filteredProcessor.StreamProcessor.GetStats()
+
+		fmt.Printf("\n\n✅ Ingestion completed successfully!\n")
+		fmt.Printf("\n📊 Statistics:\n")
+		fmt.Printf("   Duration:    %s\n", downloader.FormatDuration(duration))
+		fmt.Printf("   Processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
+		fmt.Printf("   Records:     %d\n", stats["records_inserted"].(int64))
+		fmt.Printf("   Speed:       %.1f MB/s\n", float64(stats["bytes_processed"].(int64))/duration.Seconds()/(1024*1024))
+		fmt.Printf("   Database:    %s\n", dbPath)
+
+		// Display filter statistics
+		filterStats := filteredProcessor.GetStats()
+		if filterStats != nil {
+			fmt.Print("\n")
+			fmt.Print(filterStats.GetSummary())
+		}
+	} else {
+		// No filters, use standard processor
+		streamProcessor := processor.NewStreamProcessor(db)
+
+		// Set up progress reporting if not disabled
+		if !noProgress {
+			progressBar := newProgressBar(stat.Size())
+			streamProcessor.SetProgressFunc(func(p processor.Progress) {
+				progressBar.Update(p)
+			})
+			defer progressBar.Finish()
+		}
+
+		// Start ingestion
+		fmt.Printf("\n🚀 Starting ingestion...\n")
+		fmt.Println("   This may take a while for large files.")
+		fmt.Println("   Press Ctrl+C to cancel.\n")
+
+		startTime := time.Now()
+
+		// Process the local file
+		err = streamProcessor.ProcessFile(ctx, filePath)
+
+		if err != nil {
+			if err == context.Canceled {
+				fmt.Println("\n\n❌ Ingestion cancelled")
+			}
+			return err
+		}
+
+		// Display completion stats
+		duration := time.Since(startTime)
+		stats := streamProcessor.GetStats()
+
+		fmt.Printf("\n\n✅ Ingestion completed successfully!\n")
+		fmt.Printf("\n📊 Statistics:\n")
+		fmt.Printf("   Duration:    %s\n", downloader.FormatDuration(duration))
+		fmt.Printf("   Processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
+		fmt.Printf("   Records:     %d\n", stats["records_inserted"].(int64))
+		fmt.Printf("   Speed:       %.1f MB/s\n", float64(stats["bytes_processed"].(int64))/duration.Seconds()/(1024*1024))
+		fmt.Printf("   Database:    %s\n", dbPath)
 	}
-
-	// Display completion stats
-	duration := time.Since(startTime)
-	stats := streamProcessor.GetStats()
-
-	fmt.Printf("\n\n✅ Ingestion completed successfully!\n")
-	fmt.Printf("\n📊 Statistics:\n")
-	fmt.Printf("   Duration:    %s\n", downloader.FormatDuration(duration))
-	fmt.Printf("   Processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
-	fmt.Printf("   Records:     %d\n", stats["records_inserted"].(int64))
-	fmt.Printf("   Speed:       %.1f MB/s\n", float64(stats["bytes_processed"].(int64))/duration.Seconds()/(1024*1024))
-	fmt.Printf("   Database:    %s\n", dbPath)
 
 	// Get database stats
 	dbStats, _ := db.GetStats()
@@ -477,4 +638,67 @@ func colorBlue(s string) string {
 		return s
 	}
 	return fmt.Sprintf("\033[34m%s\033[0m", s)
+}
+
+// hasFilters checks if any filters are specified
+func hasFilters() bool {
+	return len(filterTaxonIDs) > 0 ||
+		len(filterExcludeTaxIDs) > 0 ||
+		filterDateFrom != "" ||
+		filterDateTo != "" ||
+		len(filterOrganisms) > 0 ||
+		len(filterPlatforms) > 0 ||
+		len(filterStrategies) > 0 ||
+		filterMinReads > 0 ||
+		filterMaxReads > 0 ||
+		filterMinBases > 0 ||
+		filterMaxBases > 0 ||
+		filterProfile != ""
+}
+
+// buildFilterOptions creates a FilterOptions struct from command-line flags
+func buildFilterOptions() (*processor.FilterOptions, error) {
+	opts := &processor.FilterOptions{
+		TaxonomyIDs:      filterTaxonIDs,
+		ExcludeTaxIDs:    filterExcludeTaxIDs,
+		Organisms:        filterOrganisms,
+		Platforms:        filterPlatforms,
+		Strategies:       filterStrategies,
+		MinReads:         filterMinReads,
+		MaxReads:         filterMaxReads,
+		MinBases:         filterMinBases,
+		MaxBases:         filterMaxBases,
+		StatsOnly:        filterStatsOnly,
+		Verbose:          filterVerbose,
+	}
+
+	// Parse date filters
+	if filterDateFrom != "" {
+		t, err := time.Parse("2006-01-02", filterDateFrom)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date-from format: %w", err)
+		}
+		opts.DateFrom = t
+	}
+
+	if filterDateTo != "" {
+		t, err := time.Parse("2006-01-02", filterDateTo)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date-to format: %w", err)
+		}
+		opts.DateTo = t
+	}
+
+	// Load profile if specified
+	if filterProfile != "" {
+		// TODO: Implement YAML profile loading
+		fmt.Printf("⚠️  Filter profiles not yet implemented, using command-line flags only\n")
+	}
+
+	// Validate the options
+	if err := opts.Validate(); err != nil {
+		return nil, err
+	}
+
+	return opts, nil
 }
