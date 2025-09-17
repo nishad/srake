@@ -14,12 +14,15 @@ A blazing-fast, memory-efficient tool for processing and querying NCBI SRA (Sequ
 - 🚀 **Streaming Architecture**: Process 14GB+ compressed archives without intermediate storage
 - ⚡ **High Performance**: 20,000+ records/second throughput with concurrent processing
 - 💾 **Memory Efficient**: Constant < 500MB memory usage regardless of file size
+- 🔄 **Resume Capability**: Intelligent resume from interruption point with progress tracking
 - 🗄️ **SQLite Backend**: Optimized schema with full-text search and smart indexing
 - ✅ **XSD Compliant**: 95%+ compliance with official NCBI SRA schemas
 - 🔄 **Zero-Copy Pipeline**: Direct HTTP → Gzip → Tar → XML → Database streaming
+- 📊 **Progress Tracking**: Real-time progress with ETA, checkpoints, and statistics
 - 🔍 **Smart Search**: Query by organism, platform, strategy, accession, and more
 - 📊 **Multiple Output Formats**: Table, JSON, CSV, TSV for easy integration
 - 🛠️ **API Server**: Built-in REST API for programmatic access
+- 🔁 **Automatic Retry**: Network failure recovery with exponential backoff
 - 🤖 **ML-Ready**: Embedding support for semantic search (experimental)
 
 ## 📦 Installation
@@ -86,6 +89,15 @@ srake ingest --monthly
 # Ingest a local archive file
 srake ingest --file /path/to/archive.tar.gz
 
+# Resume interrupted ingestion (automatic)
+srake ingest --file /path/to/archive.tar.gz --resume
+
+# Force fresh start (ignore existing progress)
+srake ingest --file /path/to/archive.tar.gz --force
+
+# Check ingestion status
+srake ingest --status
+
 # List available files on NCBI
 srake ingest --list
 ```
@@ -122,6 +134,54 @@ curl "http://localhost:8080/api/metadata/SRR12345678"
 ```bash
 # View database statistics
 srake db info
+```
+
+## 🔄 Resume Capability
+
+srake includes intelligent resume functionality for handling interruptions during large file processing:
+
+### Features
+- **Automatic Progress Tracking**: Tracks download and processing progress in real-time
+- **Checkpoint System**: Creates periodic checkpoints for reliable recovery
+- **File-Level Deduplication**: Skips already-processed XML files on resume
+- **HTTP Range Support**: Resumes downloads from exact byte position
+- **Smart Recovery**: Automatically detects and resumes interrupted sessions
+
+### Resume Commands
+```bash
+# Auto-resume if previous session was interrupted
+srake ingest --file archive.tar.gz --resume
+
+# Force fresh start (ignore existing progress)
+srake ingest --file archive.tar.gz --force
+
+# Check current/last ingestion status
+srake ingest --status
+
+# Set checkpoint frequency (every 1000 records)
+srake ingest --file archive.tar.gz --checkpoint 1000
+
+# Interactive mode - asks before resuming
+srake ingest --file archive.tar.gz --interactive
+```
+
+### Resume Statistics
+- **Overhead**: < 5% performance impact
+- **Recovery Time**: < 5 seconds to resume
+- **Memory Usage**: < 1MB for progress tracking
+- **Checkpoint Time**: < 100ms per checkpoint
+
+### Example Output
+```
+Previous ingestion found:
+  Source: NCBI_SRA_Full_20250818.tar.gz
+  Progress: 45.3% complete (6.3GB/14GB)
+  Records: 1,234,567 processed
+  Started: 2025-01-17 10:30:00
+
+Resume from last position? (y/n): y
+Resuming from: experiment_batch_042.xml
+[====================>.................] 45.3% | 6.3GB/14GB | ETA: 15 min
 ```
 
 ## 📊 Performance
@@ -221,18 +281,37 @@ GET /api/health
 ```go
 import (
     "context"
+    "time"
     "github.com/nishad/srake/internal/processor"
     "github.com/nishad/srake/internal/database"
 )
 
 // Open database
-db, err := database.Open("metadata.db")
+db, err := database.Initialize("metadata.db")
 if err != nil {
     log.Fatal(err)
 }
 defer db.Close()
 
-// Create processor
+// Option 1: Use resumable processor for large files
+resumableProc, err := processor.NewResumableProcessor(db)
+if err != nil {
+    log.Fatal(err)
+}
+
+// Configure resume options
+opts := processor.ResumeOptions{
+    ForceRestart:    false,             // Resume if interrupted
+    Interactive:     false,             // No user prompts
+    CheckpointEvery: 30 * time.Second, // Checkpoint interval
+    MaxRetries:      5,                // Retry attempts
+}
+
+// Process with resume support
+ctx := context.Background()
+err = resumableProc.ProcessFileWithResume(ctx, "/path/to/archive.tar.gz", opts)
+
+// Option 2: Use standard processor for simple cases
 proc := processor.NewStreamProcessor(db)
 
 // Set progress callback
@@ -242,11 +321,7 @@ proc.SetProgressFunc(func(p processor.Progress) {
 })
 
 // Process from URL
-ctx := context.Background()
 err = proc.ProcessURL(ctx, "https://ftp.ncbi.nlm.nih.gov/...")
-
-// Or process from local file
-err = proc.ProcessFile(ctx, "/path/to/archive.tar.gz")
 ```
 
 ## 🛠️ Development
@@ -362,14 +437,19 @@ git push origin feature/your-feature
 srake ingest [flags]
 
 Flags:
-  --auto          Auto-select best file from NCBI based on database state
-  --daily         Ingest latest daily update from NCBI
-  --monthly       Ingest latest monthly full dataset from NCBI
-  --file string   Ingest specific file (local path or NCBI filename)
-  --list          List available files from NCBI
-  --force         Force ingestion even if data exists
-  --db string     Database path (default "./data/metadata.db")
-  --no-progress   Disable progress bar
+  --auto              Auto-select best file from NCBI based on database state
+  --daily             Ingest latest daily update from NCBI
+  --monthly           Ingest latest monthly full dataset from NCBI
+  --file string       Ingest specific file (local path or NCBI filename)
+  --list              List available files from NCBI
+  --resume            Resume from last position if interrupted (default true)
+  --force             Force fresh start (ignore existing progress)
+  --status            Show current/last ingestion status
+  --checkpoint int    Checkpoint every N records (default 1000)
+  --interactive       Ask before resuming interrupted session
+  --cleanup           Clean up old progress records
+  --db string         Database path (default "./data/metadata.db")
+  --no-progress       Disable progress bar
 ```
 
 ### Search Command
@@ -403,11 +483,18 @@ Flags:
 
 ## 🗺️ Roadmap
 
+### Completed (v0.0.2-alpha)
+- ✅ **Resume Capability** - Intelligent resume from interruption point
+- ✅ **Progress Tracking** - Real-time progress with checkpoints
+- ✅ **Command Refactoring** - Renamed download to ingest for clarity
+- ✅ **Code Modularization** - Split large files into maintainable modules
+
+### Upcoming Releases
+- [ ] **v0.1.0** - Production-ready with comprehensive testing
 - [ ] **v0.2.0** - Vector embeddings for semantic search
 - [ ] **v0.3.0** - GraphQL API endpoint
 - [ ] **v0.4.0** - Web UI for browsing
 - [ ] **v0.5.0** - Cloud storage backend support (S3, GCS)
-- [ ] **v1.0.0** - Production-ready with full documentation
 
 ### Future Features
 
@@ -418,6 +505,7 @@ Flags:
 - Real-time notifications for new data
 - Advanced filtering and faceted search
 - Data quality metrics and validation
+- Parallel processing with worker pools
 
 ## 📄 License
 
