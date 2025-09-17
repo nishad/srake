@@ -731,11 +731,8 @@ func init() {
 	searchCmd.Flags().StringVar(&searchOutput, "output", "", "Save results to file")
 	searchCmd.Flags().BoolVar(&searchNoHeader, "no-header", false, "Omit header in output")
 
-	// The ingest command (new primary command)
+	// The ingest command for data ingestion
 	ingestCmd := cli.NewIngestCmd()
-
-	// The download command (deprecated, kept for compatibility)
-	downloadCmd := cli.NewDownloadCmd()
 
 	// Metadata command flags
 	metadataCmd.Flags().StringVarP(&metadataFormat, "format", "f", "table", "Output format (table|json|yaml)")
@@ -749,8 +746,7 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 	rootCmd.AddCommand(searchCmd)
 	rootCmd.AddCommand(dbCmd)
-	rootCmd.AddCommand(ingestCmd)      // Primary command
-	rootCmd.AddCommand(downloadCmd)   // Deprecated, kept for compatibility
+	rootCmd.AddCommand(ingestCmd)
 	rootCmd.AddCommand(metadataCmd)
 	rootCmd.AddCommand(modelsCmd)
 	rootCmd.AddCommand(embedCmd)

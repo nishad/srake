@@ -395,5 +395,86 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 	return nil
 }
 
-// progressBar and related functions are defined in download.go
-// We'll reuse them from there for now to avoid duplication
+// progressBar handles progress display
+type progressBar struct {
+	totalBytes int64
+	lastUpdate time.Time
+	startTime  time.Time
+}
+
+func newProgressBar(total int64) *progressBar {
+	return &progressBar{
+		totalBytes: total,
+		startTime:  time.Now(),
+		lastUpdate: time.Now(),
+	}
+}
+
+func (pb *progressBar) Update(p processor.Progress) {
+	// Update at most once per second
+	if time.Since(pb.lastUpdate) < time.Second {
+		return
+	}
+	pb.lastUpdate = time.Now()
+
+	// Calculate progress bar
+	barWidth := 40
+	filled := int(p.PercentComplete * float64(barWidth) / 100)
+	if filled > barWidth {
+		filled = barWidth
+	}
+
+	bar := strings.Repeat("█", filled) + strings.Repeat("░", barWidth-filled)
+
+	// Format speed
+	speedMB := p.BytesPerSecond / (1024 * 1024)
+
+	// Format remaining time
+	remainingStr := "calculating..."
+	if p.EstimatedTimeRemaining > 0 {
+		remainingStr = downloader.FormatDuration(p.EstimatedTimeRemaining)
+	}
+
+	// Clear line and print progress
+	fmt.Printf("\r[%s] %.1f%% | %s / %s | %.1f MB/s | ETA: %s | Records: %d",
+		bar,
+		p.PercentComplete,
+		downloader.FormatSize(p.BytesProcessed),
+		downloader.FormatSize(pb.totalBytes),
+		speedMB,
+		remainingStr,
+		p.RecordsProcessed)
+}
+
+func (pb *progressBar) Finish() {
+	fmt.Println() // New line after progress bar
+}
+
+// Color functions for terminal output
+func colorBold(s string) string {
+	if os.Getenv("NO_COLOR") != "" {
+		return s
+	}
+	return fmt.Sprintf("\033[1m%s\033[0m", s)
+}
+
+func colorize(s string) string {
+	if os.Getenv("NO_COLOR") != "" {
+		return s
+	}
+	return fmt.Sprintf("\033[36m%s\033[0m", s) // Cyan
+}
+
+func colorGreen(s string) string {
+	if os.Getenv("NO_COLOR") != "" {
+		return s
+	}
+	return fmt.Sprintf("\033[32m%s\033[0m", s)
+}
+
+func colorBlue(s string) string {
+	if os.Getenv("NO_COLOR") != "" {
+		return s
+	}
+	return fmt.Sprintf("\033[34m%s\033[0m", s)
+}
