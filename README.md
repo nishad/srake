@@ -66,25 +66,28 @@ go build -o srake ./cmd/srake
 docker pull ghcr.io/nishad/srake:latest
 
 # Run with local data directory
-docker run -v $(pwd)/data:/data ghcr.io/nishad/srake:latest download --auto
+docker run -v $(pwd)/data:/data ghcr.io/nishad/srake:latest ingest --auto
 ```
 
 ## 🚀 Quick Start
 
-### 1. Download SRA Metadata
+### 1. Ingest SRA Metadata
 
 ```bash
-# Auto-select best option (recommended for first run)
-srake download --auto
+# Auto-select best option from NCBI (recommended for first run)
+srake ingest --auto
 
-# Download latest daily update (incremental)
-srake download --daily
+# Ingest latest daily update (incremental)
+srake ingest --daily
 
-# Download monthly full dataset
-srake download --monthly
+# Ingest monthly full dataset
+srake ingest --monthly
 
-# List available files
-srake download --list
+# Ingest a local archive file
+srake ingest --file /path/to/archive.tar.gz
+
+# List available files on NCBI
+srake ingest --list
 ```
 
 ### 2. Search SRA Metadata
@@ -350,18 +353,18 @@ git push origin feature/your-feature
 --version     Show version
 ```
 
-### Download Command
+### Ingest Command
 
 ```bash
-srake download [flags]
+srake ingest [flags]
 
 Flags:
-  --auto          Auto-select best file based on database state
-  --daily         Download latest daily update
-  --monthly       Download latest monthly full dataset
-  --file string   Process specific local file
+  --auto          Auto-select best file from NCBI based on database state
+  --daily         Ingest latest daily update from NCBI
+  --monthly       Ingest latest monthly full dataset from NCBI
+  --file string   Ingest specific file (local path or NCBI filename)
   --list          List available files from NCBI
-  --force         Force download even if data exists
+  --force         Force ingestion even if data exists
   --db string     Database path (default "./data/metadata.db")
   --no-progress   Disable progress bar
 ```

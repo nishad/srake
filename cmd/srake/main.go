@@ -731,7 +731,10 @@ func init() {
 	searchCmd.Flags().StringVar(&searchOutput, "output", "", "Save results to file")
 	searchCmd.Flags().BoolVar(&searchNoHeader, "no-header", false, "Omit header in output")
 
-	// The download command is now imported from cmd/cli package
+	// The ingest command (new primary command)
+	ingestCmd := cli.NewIngestCmd()
+
+	// The download command (deprecated, kept for compatibility)
 	downloadCmd := cli.NewDownloadCmd()
 
 	// Metadata command flags
@@ -746,7 +749,8 @@ func init() {
 	rootCmd.AddCommand(serverCmd)
 	rootCmd.AddCommand(searchCmd)
 	rootCmd.AddCommand(dbCmd)
-	rootCmd.AddCommand(downloadCmd)
+	rootCmd.AddCommand(ingestCmd)      // Primary command
+	rootCmd.AddCommand(downloadCmd)   // Deprecated, kept for compatibility
 	rootCmd.AddCommand(metadataCmd)
 	rootCmd.AddCommand(modelsCmd)
 	rootCmd.AddCommand(embedCmd)
