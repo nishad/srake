@@ -14,6 +14,11 @@ type DB struct {
 	path string
 }
 
+// GetSQLDB returns the underlying SQL database connection
+func (db *DB) GetSQLDB() *sql.DB {
+	return db.DB
+}
+
 // Initialize creates and configures the database connection
 func Initialize(path string) (*DB, error) {
 	db, err := sql.Open("sqlite3", path+"?_journal=WAL&_timeout=5000&_sync=NORMAL")
