@@ -274,3 +274,45 @@ func (m *mockDatabase) InsertAnalysis(analysis *database.Analysis) error {
 	m.insertedCount++
 	return nil
 }
+
+// Pool/multiplex support
+func (m *mockDatabase) InsertSamplePool(pool *database.SamplePool) error {
+	return nil
+}
+
+func (m *mockDatabase) GetSamplePools(parentSample string) ([]database.SamplePool, error) {
+	return nil, nil
+}
+
+func (m *mockDatabase) CountSamplePools() (int, error) {
+	return 0, nil
+}
+
+func (m *mockDatabase) GetAveragePoolSize() (float64, error) {
+	return 0, nil
+}
+
+func (m *mockDatabase) GetMaxPoolSize() (int, error) {
+	return 0, nil
+}
+
+// Identifier and link support
+func (m *mockDatabase) InsertIdentifier(identifier *database.Identifier) error {
+	return nil
+}
+
+func (m *mockDatabase) GetIdentifiers(recordType, recordAccession string) ([]database.Identifier, error) {
+	return nil, nil
+}
+
+func (m *mockDatabase) FindRecordsByIdentifier(idValue string) ([]database.Identifier, error) {
+	return nil, nil
+}
+
+func (m *mockDatabase) InsertLink(link *database.Link) error {
+	return nil
+}
+
+func (m *mockDatabase) GetLinks(recordType, recordAccession string) ([]database.Link, error) {
+	return nil, nil
+}
