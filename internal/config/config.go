@@ -11,50 +11,55 @@ import (
 // Config represents the SRAKE configuration
 type Config struct {
 	DataDirectory string          `yaml:"data_directory"`
-	Search        SearchConfig    `yaml:"search"`
-	Bleve         BleveConfig     `yaml:"bleve"`
-	SQLite        SQLiteConfig    `yaml:"sqlite"`
-	Vectors       VectorConfig    `yaml:"vectors"`
+	Database      DatabaseConfig  `yaml:"database"`  // SQLite settings
+	Search        SearchConfig    `yaml:"search"`    // Optional search
+	Vectors       VectorConfig    `yaml:"vectors"`   // Optional vectors
 	Embeddings    EmbeddingConfig `yaml:"embeddings"`
 }
 
-// SearchConfig contains search-related settings
-type SearchConfig struct {
-	DefaultLimit int  `yaml:"default_limit"`
-	UseCache     bool `yaml:"use_cache"`
-	CacheTTL     int  `yaml:"cache_ttl"` // seconds
-}
-
-// BleveConfig contains Bleve settings
-type BleveConfig struct {
-	Backend   string `yaml:"backend"` // scorch (default)
-	BatchSize int    `yaml:"batch_size"`
-}
-
-// SQLiteConfig contains SQLite settings
-type SQLiteConfig struct {
+// DatabaseConfig contains SQLite database settings
+type DatabaseConfig struct {
+	Path        string `yaml:"path"`
 	CacheSize   int    `yaml:"cache_size"`   // in KB
 	MMapSize    int64  `yaml:"mmap_size"`    // in bytes
 	JournalMode string `yaml:"journal_mode"` // WAL
 }
 
+// SearchConfig contains search-related settings
+type SearchConfig struct {
+	Enabled         bool   `yaml:"enabled"`          // Enable Bleve search
+	Backend         string `yaml:"backend"`          // "bleve" or "sqlite"
+	IndexPath       string `yaml:"index_path"`       // Path to Bleve index
+	RebuildOnStart  bool   `yaml:"rebuild_on_start"` // Rebuild index on startup
+	AutoSync        bool   `yaml:"auto_sync"`        // Auto-sync with SQLite
+	SyncInterval    int    `yaml:"sync_interval"`    // Sync interval in seconds
+	DefaultLimit    int    `yaml:"default_limit"`    // Default result limit
+	BatchSize       int    `yaml:"batch_size"`       // Indexing batch size
+	UseCache        bool   `yaml:"use_cache"`        // Enable search cache
+	CacheTTL        int    `yaml:"cache_ttl"`        // Cache TTL in seconds
+}
+
 // VectorConfig contains vector search settings
 type VectorConfig struct {
-	Enabled          bool   `yaml:"enabled"`
-	SimilarityMetric string `yaml:"similarity_metric"` // cosine, euclidean
+	Enabled          bool   `yaml:"enabled"`           // Enable vector search
+	RequiresSearch   bool   `yaml:"requires_search"`   // Requires search to be enabled
+	SimilarityMetric string `yaml:"similarity_metric"` // cosine, dot_product, l2_norm
 	UseQuantized     bool   `yaml:"use_quantized"`     // Use INT8 for speed
+	Dimensions       int    `yaml:"dimensions"`        // Vector dimensions (768 for SapBERT)
+	Optimization     string `yaml:"optimization"`      // memory_efficient, latency, recall
 }
 
 // EmbeddingConfig contains embedding settings
 type EmbeddingConfig struct {
 	Enabled         bool     `yaml:"enabled"`
 	ModelsDirectory string   `yaml:"models_directory"`
-	DefaultModel    string   `yaml:"default_model"`
-	DefaultVariant  string   `yaml:"default_variant"`
-	BatchSize       int      `yaml:"batch_size"`
-	NumThreads      int      `yaml:"num_threads"`
-	MaxTextLength   int      `yaml:"max_text_length"`
-	CombineFields   []string `yaml:"combine_fields"`
+	DefaultModel    string   `yaml:"default_model"`     // HuggingFace model path
+	DefaultVariant  string   `yaml:"default_variant"`   // quantized, fp16, or default
+	BatchSize       int      `yaml:"batch_size"`        // Batch size for embedding
+	NumThreads      int      `yaml:"num_threads"`       // ONNX runtime threads
+	MaxTextLength   int      `yaml:"max_text_length"`   // Max tokens
+	CombineFields   []string `yaml:"combine_fields"`    // Fields to combine for embedding
+	CacheEmbeddings bool     `yaml:"cache_embeddings"`  // Cache computed embeddings
 }
 
 // DefaultConfig returns the default configuration
@@ -65,33 +70,41 @@ func DefaultConfig() *Config {
 
 	return &Config{
 		DataDirectory: dataDir,
-		Search: SearchConfig{
-			DefaultLimit: 100,
-			UseCache:     true,
-			CacheTTL:     3600,
-		},
-		Bleve: BleveConfig{
-			Backend:   "scorch",
-			BatchSize: 1000,
-		},
-		SQLite: SQLiteConfig{
+		Database: DatabaseConfig{
+			Path:        filepath.Join(dataDir, "srake.db"),
 			CacheSize:   10000,     // 40MB
 			MMapSize:    268435456, // 256MB
 			JournalMode: "WAL",
 		},
+		Search: SearchConfig{
+			Enabled:        true,
+			Backend:        "bleve",
+			IndexPath:      filepath.Join(dataDir, "search.blv"),
+			RebuildOnStart: false,
+			AutoSync:       true,
+			SyncInterval:   300, // 5 minutes
+			DefaultLimit:   100,
+			BatchSize:      1000,
+			UseCache:       true,
+			CacheTTL:       3600,
+		},
 		Vectors: VectorConfig{
 			Enabled:          true,
+			RequiresSearch:   true,
 			SimilarityMetric: "cosine",
 			UseQuantized:     true,
+			Dimensions:       768,
+			Optimization:     "memory_efficient",
 		},
 		Embeddings: EmbeddingConfig{
-			Enabled:         false, // Off by default
+			Enabled:         true,
 			ModelsDirectory: modelsDir,
 			DefaultModel:    "Xenova/SapBERT-from-PubMedBERT-fulltext",
 			DefaultVariant:  "quantized",
 			BatchSize:       32,
 			NumThreads:      4,
 			MaxTextLength:   512,
+			CacheEmbeddings: true,
 			CombineFields: []string{
 				"organism",
 				"library_strategy",
@@ -126,7 +139,15 @@ func Load(path string) (*Config, error) {
 
 	// Validate and expand paths
 	config.DataDirectory = expandPath(config.DataDirectory)
+	config.Database.Path = expandPath(config.Database.Path)
+	config.Search.IndexPath = expandPath(config.Search.IndexPath)
 	config.Embeddings.ModelsDirectory = expandPath(config.Embeddings.ModelsDirectory)
+
+	// Validate vector config
+	if config.Vectors.Enabled && config.Vectors.RequiresSearch && !config.Search.Enabled {
+		// Disable vectors if search is disabled
+		config.Vectors.Enabled = false
+	}
 
 	return config, nil
 }
@@ -174,8 +195,9 @@ func GetConfigPath() string {
 func (c *Config) EnsureDirectories() error {
 	dirs := []string{
 		c.DataDirectory,
+		filepath.Dir(c.Database.Path),
+		filepath.Dir(c.Search.IndexPath),
 		c.Embeddings.ModelsDirectory,
-		filepath.Join(c.DataDirectory, "bleve"),
 	}
 
 	for _, dir := range dirs {
@@ -199,4 +221,25 @@ func expandPath(path string) string {
 	}
 
 	return path
+}
+
+// IsSearchEnabled returns true if search is enabled
+func (c *Config) IsSearchEnabled() bool {
+	return c.Search.Enabled
+}
+
+// IsVectorEnabled returns true if vectors are enabled
+func (c *Config) IsVectorEnabled() bool {
+	return c.Vectors.Enabled && (!c.Vectors.RequiresSearch || c.Search.Enabled)
+}
+
+// GetOperationalMode returns the operational mode based on config
+func (c *Config) GetOperationalMode() string {
+	if c.IsVectorEnabled() {
+		return "full" // SQLite + Bleve + Vectors
+	}
+	if c.IsSearchEnabled() {
+		return "search" // SQLite + Bleve
+	}
+	return "minimal" // SQLite only
 }

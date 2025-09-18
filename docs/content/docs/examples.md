@@ -7,7 +7,7 @@ next: /docs/api
 
 # Examples and Use Cases
 
-Real-world examples demonstrating common workflows with srake.
+Real-world examples demonstrating common workflows with srake, including pipeline composition and automation patterns.
 
 ## Research Workflows
 
@@ -64,6 +64,51 @@ srake samples SRP003 --format json > study3_samples.json
 for study in SRP001 SRP002 SRP003; do
   srake samples $study --detailed --format json > ${study}_samples.json
 done
+```
+
+## Unix Pipeline Integration
+
+### Composable Commands
+
+srake commands can be chained together using Unix pipes:
+
+```bash
+# Find experiments → Get runs → Download
+srake search "CRISPR" --format tsv --no-header | \
+  cut -f1 | \
+  xargs -I {} srake runs {} --format tsv --no-header | \
+  cut -f1 | \
+  srake download --type fastq
+
+# Convert accessions in bulk
+cat geo_accessions.txt | \
+  srake convert --to SRP --format tsv --no-header | \
+  cut -f2 > sra_projects.txt
+
+# Chain multiple conversions
+echo "GSE123456" | \
+  srake convert --to SRP | \
+  grep SRP | \
+  srake runs --format json
+```
+
+### Stream Processing
+
+Process large datasets without intermediate files:
+
+```bash
+# Real-time filtering and conversion
+srake search "RNA-Seq" --format tsv --no-header | \
+  awk '$3 > 1000000' | \
+  cut -f1 | \
+  while read acc; do
+    srake convert $acc --to GSE --quiet
+  done
+
+# Parallel processing with xargs
+srake search "mouse" --limit 100 --format tsv --no-header | \
+  cut -f1 | \
+  xargs -P 4 -I {} srake metadata {} --format json --quiet
 ```
 
 ## Data Discovery

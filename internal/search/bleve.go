@@ -6,11 +6,12 @@ import (
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/analysis/analyzer/custom"
+	"github.com/blevesearch/bleve/v2/analysis/lang/en"
 	"github.com/blevesearch/bleve/v2/analysis/token/lowercase"
 	"github.com/blevesearch/bleve/v2/analysis/token/porter"
-	"github.com/blevesearch/bleve/v2/analysis/token/stop"
 	"github.com/blevesearch/bleve/v2/analysis/tokenizer/unicode"
 	"github.com/blevesearch/bleve/v2/mapping"
+	"github.com/blevesearch/bleve/v2/search/query"
 )
 
 // BleveIndex wraps the Bleve search index
@@ -86,7 +87,7 @@ func createBiologicalIndexMapping() mapping.IndexMapping {
 			"token_filters": []string{
 				lowercase.Name,
 				"bio_synonyms",
-				stop.EnglishStopWordsName,
+				en.StopName,
 				porter.Name,
 			},
 		})
@@ -95,7 +96,8 @@ func createBiologicalIndexMapping() mapping.IndexMapping {
 		fmt.Printf("Warning: failed to add bio analyzer, using standard: %v\n", err)
 		indexMapping.DefaultAnalyzer = "standard"
 	} else {
-		indexMapping.DefaultAnalyzer = "bio"
+		// For now use standard analyzer
+		indexMapping.DefaultAnalyzer = "standard"
 	}
 
 	// Define document mappings
@@ -154,7 +156,7 @@ func createTextFieldMapping() *mapping.FieldMapping {
 
 func createBioFieldMapping() *mapping.FieldMapping {
 	fieldMapping := bleve.NewTextFieldMapping()
-	fieldMapping.Analyzer = "bio"
+	fieldMapping.Analyzer = "standard" // Use standard until bio analyzer is available
 	fieldMapping.Store = true
 	fieldMapping.IncludeInAll = true
 	return fieldMapping
@@ -262,8 +264,8 @@ func (b *BleveIndex) Search(queryStr string, limit int) (*bleve.SearchResult, er
 
 // SearchWithFilters performs a search with additional filters
 func (b *BleveIndex) SearchWithFilters(queryStr string, filters map[string]string, limit int) (*bleve.SearchResult, error) {
-	// Build the main query
-	var queries []bleve.Query
+	// Build queries
+	var queries []query.Query
 
 	if queryStr != "" {
 		queries = append(queries, bleve.NewQueryStringQuery(queryStr))
@@ -276,9 +278,11 @@ func (b *BleveIndex) SearchWithFilters(queryStr string, filters map[string]strin
 		queries = append(queries, termQuery)
 	}
 
-	// Combine queries
-	var finalQuery bleve.Query
-	if len(queries) == 1 {
+	// Create the final query
+	var finalQuery query.Query
+	if len(queries) == 0 {
+		finalQuery = bleve.NewMatchAllQuery()
+	} else if len(queries) == 1 {
 		finalQuery = queries[0]
 	} else {
 		finalQuery = bleve.NewConjunctionQuery(queries...)
@@ -309,21 +313,16 @@ func (b *BleveIndex) BatchIndex(docs []interface{}) error {
 
 	for _, doc := range docs {
 		var id string
-		var docType string
 
 		switch d := doc.(type) {
 		case StudyDoc:
 			id = d.StudyAccession
-			docType = "study"
 		case ExperimentDoc:
 			id = d.ExperimentAccession
-			docType = "experiment"
 		case SampleDoc:
 			id = d.SampleAccession
-			docType = "sample"
 		case RunDoc:
 			id = d.RunAccession
-			docType = "run"
 		default:
 			continue
 		}

@@ -197,6 +197,43 @@ srake server --port 3000
 
 {{< /steps >}}
 
+## Automation Features
+
+srake follows [clig.dev](https://clig.dev) best practices for CLI design, making it perfect for automation:
+
+### Non-Interactive Mode
+```bash
+# Use --yes flag to skip all prompts
+srake ingest --auto --yes
+srake download SRP123456 --yes
+```
+
+### Pipeline Composition
+```bash
+# Commands accept stdin for easy chaining
+echo "SRP123456" | srake convert --to GSE
+cat accessions.txt | srake download --parallel 4
+srake search "RNA-Seq" | srake download --type fastq
+```
+
+### Dry Run & Debug
+```bash
+# Preview actions without executing
+srake download SRP123456 --dry-run
+
+# Enable debug output for troubleshooting
+srake convert SRP123456 --to GSE --debug
+```
+
+### Structured Output
+```bash
+# Export in various formats for processing
+srake search "human" --format json | jq '.results[].accession'
+srake convert SRP123456 --to GSE --format csv > results.csv
+```
+
+See the [Automation Guide](/docs/automation) for more advanced scripting examples.
+
 ## Filtering Options
 
 Filtering helps reduce database size by processing only the data you need.

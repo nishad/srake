@@ -16,6 +16,8 @@ These flags are available for all commands:
 - `--no-color` - Disable colored output
 - `-v, --verbose` - Enable verbose output
 - `-q, --quiet` - Suppress non-error output
+- `-y, --yes` - Assume yes to all prompts (non-interactive mode)
+- `--debug` - Enable debug output for troubleshooting
 - `--help` - Show help for any command
 
 ## Commands
@@ -55,11 +57,17 @@ srake ingest [flags]
 # Auto-ingest best file
 srake ingest --auto
 
+# Non-interactive ingest (no prompts)
+srake ingest --auto --yes
+
 # Ingest with filters
 srake ingest --auto --taxon-ids 9606 --platforms ILLUMINA --strategies RNA-Seq
 
 # List available files
 srake ingest --list
+
+# Debug mode to see detailed processing
+srake ingest --auto --debug
 ```
 
 ---
@@ -100,7 +108,7 @@ srake search human --format json --output results.json
 Convert between different accession types (SRA, GEO, BioProject, BioSample).
 
 ```bash
-srake convert <accession> [accessions...] [flags]
+srake convert [<accession> ...] [flags]
 ```
 
 #### Flags
@@ -109,6 +117,7 @@ srake convert <accession> [accessions...] [flags]
 - `-f, --format <type>` - Output format (table|json|yaml|csv|tsv)
 - `-o, --output <file>` - Save results to file
 - `--batch <file>` - Read accessions from file
+- `--dry-run` - Preview conversions without executing
 
 #### Examples
 ```bash
@@ -118,8 +127,18 @@ srake convert SRP123456 --to GSE
 # Convert multiple accessions
 srake convert SRP001 SRP002 SRP003 --to GSE
 
-# Batch conversion
+# Batch conversion from file
 srake convert --batch accessions.txt --to SRX --output results.json
+
+# Convert from stdin (pipe-friendly)
+echo "SRP123456" | srake convert --to GSE
+cat accession_list.txt | srake convert --to GSM --format json
+
+# Preview conversion without executing
+srake convert SRP123456 --to GSE --dry-run
+
+# Debug mode to see conversion details
+srake convert SRP123456 --to GSE --debug
 ```
 
 #### Supported Conversions
@@ -248,7 +267,7 @@ srake studies SRR123456 --detailed
 Download SRA data files from multiple sources.
 
 ```bash
-srake download <accession> [accessions...] [flags]
+srake download [<accession> ...] [flags]
 ```
 
 #### Flags
@@ -274,14 +293,24 @@ srake download SRR123456 --source aws --threads 4
 # Download all runs for a study
 srake download SRP123456 --type fastq --output ./data/
 
-# Batch download with parallelism
+# Batch download from file
 srake download --list runs.txt --parallel 4
+
+# Download from stdin (pipe-friendly)
+echo "SRR123456" | srake download --type fastq
+srake runs SRP123456 | srake download --parallel 4
 
 # High-speed Aspera transfer
 srake download SRR123456 --aspera
 
-# Dry run to preview
+# Dry run to preview downloads
 srake download SRP123456 --dry-run
+
+# Non-interactive download (no prompts)
+srake download SRP123456 --yes
+
+# Debug mode for troubleshooting
+srake download SRR123456 --debug
 ```
 
 #### Automatic Expansion
