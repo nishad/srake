@@ -86,6 +86,12 @@ func init() {
 	rootCmd.AddCommand(metadataCmd)
 	rootCmd.AddCommand(modelsCmd)
 	rootCmd.AddCommand(embedCmd)
+	rootCmd.AddCommand(convertCmd)
+	rootCmd.AddCommand(runsCmd)
+	rootCmd.AddCommand(samplesCmd)
+	rootCmd.AddCommand(experimentsCmd)
+	rootCmd.AddCommand(studiesCmd)
+	rootCmd.AddCommand(downloadCmd)
 
 	// Add subcommands to db
 	dbCmd.AddCommand(dbInfoCmd)
