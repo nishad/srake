@@ -229,6 +229,103 @@ srake download --list high_quality_runs.txt \
   --threads 2
 ```
 
+## Export Examples
+
+### Exporting for R/Bioconductor
+
+Export database for use with SRAdb package:
+
+```bash
+# Export with FTS3 for SRAdb compatibility
+srake db export -o SRAmetadb.sqlite --fts-version 3
+
+# Use in R
+# library(SRAdb)
+# sra_con <- dbConnect(SQLite(), "SRAmetadb.sqlite")
+# getSRA(search_term="breast cancer", sra_con=sra_con)
+```
+
+### Creating Versioned Exports
+
+Maintain versioned exports for reproducibility:
+
+```bash
+#!/bin/bash
+# export_versioned.sh
+
+DATE=$(date +%Y%m%d)
+VERSION="v1.0"
+
+# Export with metadata
+srake db export \
+  -o "SRAmetadb_${VERSION}_${DATE}.sqlite" \
+  --fts-version 5
+
+# Create compatibility version
+srake db export \
+  -o "SRAmetadb_${VERSION}_${DATE}_compat.sqlite" \
+  --fts-version 3
+
+# Compress for storage
+gzip -k "SRAmetadb_${VERSION}_${DATE}.sqlite"
+gzip -k "SRAmetadb_${VERSION}_${DATE}_compat.sqlite"
+
+# Create checksums
+sha256sum SRAmetadb_*.sqlite* > checksums.txt
+```
+
+### Integration with Legacy Pipelines
+
+Export and convert for existing workflows:
+
+```bash
+# Export database
+srake db export -o SRAmetadb.sqlite --fts-version 3
+
+# Extract specific data for legacy tool
+sqlite3 SRAmetadb.sqlite <<EOF
+.headers on
+.mode csv
+.output legacy_data.csv
+SELECT
+  run_accession,
+  experiment_accession,
+  sample_accession,
+  study_accession,
+  library_strategy,
+  platform,
+  organism
+FROM sra
+WHERE library_strategy = 'RNA-Seq'
+  AND platform = 'ILLUMINA';
+EOF
+
+# Use with legacy pipeline
+./legacy_pipeline.sh --input legacy_data.csv
+```
+
+### Automated Export Pipeline
+
+Set up regular exports after data updates:
+
+```bash
+#!/bin/bash
+# auto_export.sh
+
+# Update database
+srake ingest --auto --yes
+
+# Rebuild search index
+srake search index --rebuild
+
+# Export both FTS versions
+srake db export -o /exports/SRAmetadb_fts5.sqlite --fts-version 5
+srake db export -o /exports/SRAmetadb_fts3.sqlite --fts-version 3
+
+# Notify completion
+echo "Export completed: $(date)" | mail -s "SRAmetadb Export" admin@example.com
+```
+
 ## Integration Examples
 
 ### Building a Local Index

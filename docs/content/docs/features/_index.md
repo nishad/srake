@@ -13,6 +13,9 @@ Process only the data you need with smart filters for taxonomy, organism, platfo
 ### [Resume Capability](resume)
 Handle interruptions gracefully with automatic checkpoint system and progress tracking.
 
+### [SRAmetadb Export](export)
+Export to classic SRAmetadb.sqlite format for compatibility with existing bioinformatics tools and R packages.
+
 ### [Performance](performance)
 Optimizations that enable processing 20,000+ records per second with minimal memory usage.
 
