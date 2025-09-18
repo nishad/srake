@@ -113,6 +113,18 @@ Alternative ingestion methods:
   {{< /tab >}}
 {{< /tabs >}}
 
+### Build Search Index
+
+Before searching, build the search index:
+
+```bash
+# Build initial index
+srake search index --build
+
+# Verify index
+srake search index --stats
+```
+
 ### Search Your Data
 
 **Simple Search**:
@@ -120,18 +132,49 @@ Alternative ingestion methods:
 srake search "homo sapiens"
 ```
 
+**Advanced Query Syntax**:
+```bash
+# Boolean operators
+srake search "organism:human AND library_strategy:RNA-Seq" --advanced
+
+# Field-specific search
+srake search "platform:ILLUMINA OR platform:PACBIO" --advanced
+
+# Wildcards and ranges
+srake search "RNA* AND spots:[1000000 TO *]" --advanced
+```
+
 **Filtered Search**:
 ```bash
 srake search "cancer" \
   --organism "homo sapiens" \
-  --platform ILLUMINA
+  --platform ILLUMINA \
+  --library-strategy RNA-Seq \
+  --spots-min 10000000
+```
+
+**Aggregation & Analytics**:
+```bash
+# Count by organism
+srake search "RNA-Seq" --aggregate-by organism
+
+# Get total count
+srake search "cancer" --count-only
+
+# Show facets
+srake search "human" --facets
 ```
 
 **Export Results**:
 ```bash
-srake search "RNA-Seq" \
-  --format json \
-  --output results.json
+# JSON format
+srake search "RNA-Seq" --format json --output results.json
+
+# CSV with specific fields
+srake search "cancer" --format csv --fields "accession,organism,platform"
+
+# Accession list for batch download
+srake search "single cell" --format accession | xargs srake download
 ```
 
 ### Convert Accessions

@@ -31,32 +31,32 @@ layout: hextra-home
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
-    title="Accession Conversion"
-    subtitle="Convert between SRA, GEO, BioProject, and BioSample identifiers seamlessly"
+    title="Advanced Full-Text Search"
+    subtitle="Bleve-powered search with boolean operators, wildcards, and field-specific queries"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
-    image="images/hextra-doc.webp"
+    image="images/hextra-search.webp"
     imageClass="hx-top-[40%] hx-left-[24px] hx-w-[180%] sm:hx-w-[110%] dark:hx-opacity-80"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(194,97,254,0.15),hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Multi-Source Downloads"
-    subtitle="Download from FTP, AWS, GCP with parallel transfers and Aspera support"
+    title="Comprehensive Filtering"
+    subtitle="Filter by organism, platform, library details, date ranges, and sequencing metrics"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
     image="images/hextra-markdown.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[180%] sm:hx-w-[110%] dark:hx-opacity-80"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(142,53,74,0.15),hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Relationship Queries"
-    subtitle="Navigate between studies, experiments, samples, and runs effortlessly"
+    title="Aggregation & Analytics"
+    subtitle="Group results by field, get counts, and analyze metadata distributions"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
-    image="images/hextra-search.webp"
+    image="images/hextra-doc.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(221,210,59,0.15),hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Smart Filtering"
-    subtitle="Filter by taxonomy, platform, strategy, date ranges, and quality metrics"
+    title="Multi-Format Export"
+    subtitle="Export results as JSON, CSV, TSV, or plain accessions for downstream analysis"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
     image="images/hextra-theme.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
@@ -110,14 +110,17 @@ layout: hextra-home
   {{< /tab >}}
   {{< tab >}}
   ```bash
-  # Search the database
+  # Basic search
   srake search "homo sapiens"
 
-  # Start API server
-  srake server --port 8080
+  # Advanced query syntax
+  srake search "organism:human AND library_strategy:RNA-Seq" --advanced
 
-  # Query via API
-  curl "localhost:8080/api/search?q=human"
+  # With filters and aggregation
+  srake search --platform ILLUMINA --aggregate-by organism
+
+  # Export results
+  srake search "cancer" --format json --output results.json
   ```
   {{< /tab >}}
 {{< /tabs >}}

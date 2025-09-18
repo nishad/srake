@@ -1,1 +1,18 @@
-<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>srake - SRA Metadata Processor – Tags</title><link>https://github.com/nishad/srake/tags/</link><description>Recent content in Tags on srake - SRA Metadata Processor</description><generator>Hugo -- gohugo.io</generator><language>en-us</language><atom:link href="https://github.com/nishad/srake/tags/index.xml" rel="self" type="application/rss+xml"/></channel></rss>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>srake - SRA Metadata Processor – Tags</title>
+    <link>https://github.com/nishad/srake/tags/</link>
+    <description>Recent content in Tags on srake - SRA Metadata Processor</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    
+	  <atom:link href="https://github.com/nishad/srake/tags/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+      
+        
+      
+    
+    
+  </channel>
+</rss>

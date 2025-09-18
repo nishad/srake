@@ -16,19 +16,59 @@ Real-world examples demonstrating common workflows with srake, including pipelin
 Find all human RNA-Seq experiments published in 2024:
 
 ```bash
-# Ingest with filters
-srake ingest --auto \
-  --taxon-ids 9606 \
-  --strategies RNA-Seq \
-  --date-from 2024-01-01
+# Build search index first
+srake search index --build
 
-# Search for specific conditions
-srake search "breast cancer" \
-  --organism "homo sapiens" \
-  --strategy RNA-Seq \
+# Search with advanced query syntax
+srake search "organism:human AND library_strategy:RNA-Seq" --advanced \
+  --date-from 2024-01-01 \
   --limit 100 \
   --format csv \
-  --output breast_cancer_studies.csv
+  --output human_rna_seq_2024.csv
+
+# Search for specific disease studies
+srake search "breast cancer AND organism:\"homo sapiens\" AND library_strategy:RNA-Seq" \
+  --advanced \
+  --spots-min 10000000 \
+  --format json \
+  --output breast_cancer_studies.json
+```
+
+### Using Advanced Search Features
+
+Leverage boolean operators and field-specific queries:
+
+```bash
+# Complex boolean queries
+srake search "(cancer OR tumor) AND organism:human NOT cell_type:hela" --advanced
+
+# Wildcard searches
+srake search "RNA* AND platform:ILLUMINA" --advanced
+
+# Range queries for high-coverage data
+srake search "spots:[10000000 TO *] AND bases:[1000000000 TO *]" --advanced
+
+# Fuzzy search for typo tolerance
+srake search "transciptome" --fuzzy  # Finds "transcriptome"
+```
+
+### Aggregation and Analytics
+
+Analyze metadata distributions:
+
+```bash
+# Count studies by organism
+srake search "RNA-Seq" --aggregate-by organism
+
+# Get faceted results
+srake search "cancer" --facets --format json | \
+  jq '.facets.platform' | head -20
+
+# Count total matching records
+srake search "single cell" --count-only
+
+# Group by library strategy
+srake search --organism "homo sapiens" --aggregate-by library_strategy
 ```
 
 ### Downloading Data for a Published Study
