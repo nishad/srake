@@ -112,6 +112,9 @@ func runIngest(cmd *cobra.Command, args []string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	// Get global flags
+	yes, _ := cmd.Flags().GetBool("yes")
+
 	// Handle interrupt signals
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
@@ -159,7 +162,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		// Check if it's a local file first
 		if _, err := os.Stat(ingestFile); err == nil {
 			// Local file exists, ingest it directly
-			return ingestLocalFile(ctx, ingestFile, ingestDBPath, ingestForce, ingestNoProgress)
+			return ingestLocalFile(ctx, ingestFile, ingestDBPath, ingestForce, ingestNoProgress, yes)
 		}
 
 		// Not a local file, try to find it on NCBI
@@ -205,13 +208,17 @@ func runIngest(cmd *cobra.Command, args []string) error {
 			fmt.Printf("   Runs:        %d\n", stats.TotalRuns)
 			fmt.Printf("\nUse --force to overwrite existing data\n")
 
-			// Ask for confirmation
-			fmt.Print("\nContinue anyway? [y/N]: ")
-			var response string
-			fmt.Scanln(&response)
-			if strings.ToLower(response) != "y" {
-				fmt.Println("Ingestion cancelled")
-				return nil
+			// Ask for confirmation (unless --yes flag is set)
+			if !yes {
+				fmt.Print("\nContinue anyway? [y/N]: ")
+				var response string
+				fmt.Scanln(&response)
+				if strings.ToLower(response) != "y" {
+					fmt.Println("Ingestion cancelled")
+					return nil
+				}
+			} else {
+				fmt.Println("\n--yes flag set, continuing without confirmation")
 			}
 		}
 	}
@@ -393,7 +400,7 @@ func listAvailableFiles(ctx context.Context, manager *downloader.MetadataManager
 }
 
 // ingestLocalFile processes a local tar.gz file
-func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force bool, noProgress bool) error {
+func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force bool, noProgress bool, yes bool) error {
 	// Get file info
 	stat, err := os.Stat(filePath)
 	if err != nil {
@@ -425,13 +432,17 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 			fmt.Printf("   Runs:        %d\n", stats.TotalRuns)
 			fmt.Printf("\nUse --force to overwrite existing data\n")
 
-			// Ask for confirmation
-			fmt.Print("\nContinue anyway? [y/N]: ")
-			var response string
-			fmt.Scanln(&response)
-			if strings.ToLower(response) != "y" {
-				fmt.Println("Ingestion cancelled")
-				return nil
+			// Ask for confirmation (unless --yes flag is set)
+			if !yes {
+				fmt.Print("\nContinue anyway? [y/N]: ")
+				var response string
+				fmt.Scanln(&response)
+				if strings.ToLower(response) != "y" {
+					fmt.Println("Ingestion cancelled")
+					return nil
+				}
+			} else {
+				fmt.Println("\n--yes flag set, continuing without confirmation")
 			}
 		}
 	}

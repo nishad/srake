@@ -13,7 +13,7 @@ import (
 )
 
 var convertCmd = &cobra.Command{
-	Use:   "convert <accession> [accessions...]",
+	Use:   "convert [<accession> ...]",
 	Short: "Convert between different accession types",
 	Long: `Convert between different biological research identifiers.
 
@@ -33,8 +33,14 @@ Supports conversion between:
   srake convert SRP123 SRP124 SRP125 --to GSE
 
   # Output as JSON
-  srake convert GSE123456 --to SRP --format json`,
-	Args: cobra.MinimumNArgs(1),
+  srake convert GSE123456 --to SRP --format json
+
+  # Convert from stdin
+  echo "SRP123456" | srake convert --to GSE
+
+  # Convert from file
+  srake convert --batch accessions.txt --to GSE`,
+	Args: cobra.MinimumNArgs(0),
 	RunE: runConvert,
 }
 
@@ -43,6 +49,7 @@ var (
 	convertFormat string
 	convertOutput string
 	convertBatch  string
+	convertDryRun bool
 )
 
 func init() {
@@ -50,12 +57,29 @@ func init() {
 	convertCmd.Flags().StringVarP(&convertFormat, "format", "f", "table", "Output format (table|json|yaml|csv|tsv)")
 	convertCmd.Flags().StringVarP(&convertOutput, "output", "o", "", "Save results to file")
 	convertCmd.Flags().StringVar(&convertBatch, "batch", "", "Read accessions from file (one per line)")
+	convertCmd.Flags().BoolVar(&convertDryRun, "dry-run", false, "Preview conversions without executing")
 	convertCmd.MarkFlagRequired("to")
 }
 
 func runConvert(cmd *cobra.Command, args []string) error {
 	// Collect all accessions
 	accessions := args
+	printDebug("Starting convert command with %d args", len(args))
+
+	// Read from stdin if no arguments provided and stdin is available
+	if len(args) == 0 && convertBatch == "" {
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			// Data is being piped to stdin
+			printDebug("Reading accessions from stdin")
+			stdinAccessions, err := readAccessionsFromReader(os.Stdin)
+			if err != nil {
+				return fmt.Errorf("failed to read from stdin: %w", err)
+			}
+			accessions = stdinAccessions
+			printDebug("Read %d accessions from stdin", len(stdinAccessions))
+		}
+	}
 
 	// Read from batch file if specified
 	if convertBatch != "" {
@@ -70,6 +94,15 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("no accessions provided")
 	}
 
+	// Handle dry-run mode
+	if convertDryRun {
+		printInfo("DRY RUN: Showing what would be converted")
+		for _, acc := range accessions {
+			fmt.Printf("Would convert: %s → %s\n", acc, convertTo)
+		}
+		return nil
+	}
+
 	// Initialize converter
 	conv := converter.NewConverter(serverDBPath)
 	defer conv.Close()
@@ -81,6 +114,7 @@ func runConvert(cmd *cobra.Command, args []string) error {
 		if verbose {
 			printInfo("Converting %s to %s...", acc, convertTo)
 		}
+		printDebug("Processing accession: %s -> %s", acc, convertTo)
 
 		result, err := conv.Convert(acc, convertTo)
 		if err != nil {
@@ -218,21 +252,3 @@ func outputConversionResults(results []converter.ConversionResult) error {
 	return nil
 }
 
-func readAccessionFile(path string) ([]string, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	lines := strings.Split(string(data), "\n")
-	accessions := make([]string, 0)
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line != "" && !strings.HasPrefix(line, "#") {
-			accessions = append(accessions, line)
-		}
-	}
-
-	return accessions, nil
-}

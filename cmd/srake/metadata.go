@@ -16,7 +16,8 @@ var metadataCmd = &cobra.Command{
 Supports SRX (experiment), SRR (run), SRP (project), and SRS (sample) accessions.`,
 	Example: `  srake metadata SRX123456
   srake metadata SRX123456 SRX123457 --format json
-  srake metadata SRR999999 --fields title,platform,strategy`,
+  srake metadata SRR999999 --fields title,platform,strategy
+  srake metadata SRP123456 --format json --output metadata.json`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runMetadata,
 }
@@ -25,6 +26,7 @@ var (
 	metadataFormat string
 	metadataFields string
 	metadataExpand bool
+	metadataOutput string
 )
 
 func runMetadata(cmd *cobra.Command, args []string) error {

@@ -11,7 +11,7 @@ import (
 )
 
 var downloadCmd = &cobra.Command{
-	Use:   "download <accession> [accessions...]",
+	Use:   "download [<accession> ...]",
 	Short: "Download SRA data files from multiple sources",
 	Long: `Download SRA/FASTQ files from various sources including FTP, AWS, GCP, and NCBI.
 
@@ -71,6 +71,19 @@ func runDownload(cmd *cobra.Command, args []string) error {
 	// Collect all accessions
 	accessions := args
 
+	// Read from stdin if no arguments provided and stdin is available
+	if len(args) == 0 && downloadList == "" {
+		stat, _ := os.Stdin.Stat()
+		if (stat.Mode() & os.ModeCharDevice) == 0 {
+			// Data is being piped to stdin
+			stdinAccessions, err := readAccessionsFromReader(os.Stdin)
+			if err != nil {
+				return fmt.Errorf("failed to read from stdin: %w", err)
+			}
+			accessions = stdinAccessions
+		}
+	}
+
 	// Read from list file if specified
 	if downloadList != "" {
 		listAccessions, err := readAccessionFile(downloadList)
@@ -120,11 +133,13 @@ func runDownload(cmd *cobra.Command, args []string) error {
 	// Download each accession
 	successCount := 0
 	failedAccessions := []string{}
+	printDebug("Starting download loop for %d accessions", len(expandedAccessions))
 
 	for i, acc := range expandedAccessions {
 		if !quiet {
 			fmt.Printf("\n[%d/%d] Downloading %s\n", i+1, len(expandedAccessions), acc)
 		}
+		printDebug("Attempting download: %s (source: %s, type: %s)", acc, downloadSource, downloadType)
 
 		result, err := dl.Download(ctx, acc)
 		if err != nil {
@@ -203,6 +218,7 @@ func expandAccessions(ctx context.Context, accessions []string) ([]string, error
 
 	return expanded, nil
 }
+
 
 // Helper functions to get runs from database
 func getRunsForStudy(studyAccession string) ([]string, error) {

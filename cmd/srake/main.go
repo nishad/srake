@@ -20,6 +20,8 @@ var (
 	noColor bool
 	quiet   bool
 	verbose bool
+	yes     bool
+	debug   bool
 )
 
 // Root command
@@ -50,6 +52,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress non-error output")
+	rootCmd.PersistentFlags().BoolVarP(&yes, "yes", "y", false, "Assume yes to all prompts (non-interactive mode)")
+	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Enable debug output")
 
 	// Server command flags
 	serverCmd.Flags().IntVarP(&serverPort, "port", "p", 8080, "Port to listen on")
@@ -72,6 +76,7 @@ func init() {
 
 	// Metadata command flags
 	metadataCmd.Flags().StringVarP(&metadataFormat, "format", "f", "table", "Output format (table|json|yaml)")
+	metadataCmd.Flags().StringVarP(&metadataOutput, "output", "o", "", "Save results to file")
 	metadataCmd.Flags().StringVar(&metadataFields, "fields", "", "Comma-separated list of fields")
 	metadataCmd.Flags().BoolVar(&metadataExpand, "expand", false, "Expand nested structures")
 
