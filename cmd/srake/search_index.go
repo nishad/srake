@@ -512,10 +512,9 @@ func displayProgress(ctx context.Context, builder *builder.IndexBuilder) {
 			state := builder.GetState()
 
 			// Clear line and show progress
-			fmt.Printf("\r[%s] Processed: %d / %d docs | Indexed: %d | Failed: %d | Batch: %d",
+			fmt.Printf("\r[%s] Processed: %d docs | Indexed: %d | Failed: %d | Batch: %d",
 				state,
 				progress.ProcessedDocs,
-				progress.TotalDocuments,
 				progress.IndexedDocs,
 				progress.FailedDocs,
 				progress.CurrentBatch)

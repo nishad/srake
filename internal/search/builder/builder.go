@@ -232,13 +232,9 @@ func (b *IndexBuilder) GetState() BuildState {
 
 // executeBuild performs the actual index building
 func (b *IndexBuilder) executeBuild(ctx context.Context) error {
-	// Get total document count
-	totalDocs, err := b.getTotalDocumentCount()
-	if err != nil {
-		return fmt.Errorf("failed to get document count: %w", err)
-	}
-
-	b.progress.TotalDocuments = totalDocs
+	// We don't count total documents upfront to avoid slow COUNT queries
+	// Progress will show documents processed so far
+	b.progress.TotalDocuments = 0
 
 	// Index each document type
 	docTypes := []string{"studies", "experiments", "samples", "runs"}
@@ -280,22 +276,8 @@ func (b *IndexBuilder) indexDocumentType(ctx context.Context, docType string) er
 	return b.ProcessDocumentType(ctx, docType)
 }
 
-// getTotalDocumentCount returns the total number of documents to index
-func (b *IndexBuilder) getTotalDocumentCount() (int64, error) {
-	var total int64
-
-	tables := []string{"studies", "experiments", "samples", "runs"}
-	for _, table := range tables {
-		var count int64
-		query := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
-		if err := b.db.QueryRow(query).Scan(&count); err != nil {
-			return 0, fmt.Errorf("failed to count %s: %w", table, err)
-		}
-		total += count
-	}
-
-	return total, nil
-}
+// Note: We removed getTotalDocumentCount to avoid slow COUNT queries on large tables
+// Progress tracking now just shows documents processed so far
 
 // monitorProgress monitors and reports progress
 func (b *IndexBuilder) monitorProgress() {

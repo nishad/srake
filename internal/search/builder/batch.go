@@ -27,19 +27,14 @@ func (b *IndexBuilder) ProcessDocumentType(ctx context.Context, docType string) 
 
 	typeProgress := b.progress.TypeProgress[docType]
 
-	// Get total count for this type
-	totalCount, err := b.getDocumentTypeCount(docType)
-	if err != nil {
-		return fmt.Errorf("failed to get %s count: %w", docType, err)
-	}
-
-	typeProgress.TotalDocs = totalCount
+	// We don't count total upfront - just process until no more rows
+	typeProgress.TotalDocs = 0 // Will be updated as we process
 
 	// Process in batches
 	offset := typeProgress.LastOffset
 	batchNum := 0
 
-	for offset < totalCount {
+	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
@@ -82,11 +77,16 @@ func (b *IndexBuilder) ProcessDocumentType(ctx context.Context, docType string) 
 				"batch":      batchNum,
 				"processed":  processed,
 				"offset":     offset,
-				"total":      totalCount,
+				"total":      typeProgress.ProcessedDocs,
 			},
 		}
 
-		offset += int64(b.options.BatchSize)
+		// If we got fewer rows than batch size, we're done
+		if processed < b.options.BatchSize {
+			break
+		}
+
+		offset += int64(processed)
 		batchNum++
 
 		// Check if we should create a checkpoint
@@ -367,31 +367,8 @@ func (b *IndexBuilder) processRunsBatch(ctx context.Context, offset int64, limit
 	return count, nil
 }
 
-// getDocumentTypeCount returns the count of documents for a specific type
-func (b *IndexBuilder) getDocumentTypeCount(docType string) (int64, error) {
-	var count int64
-	var table string
-
-	switch docType {
-	case "studies":
-		table = "studies"
-	case "experiments":
-		table = "experiments"
-	case "samples":
-		table = "samples"
-	case "runs":
-		table = "runs"
-	default:
-		return 0, fmt.Errorf("unknown document type: %s", docType)
-	}
-
-	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
-	if err := b.db.QueryRow(query).Scan(&count); err != nil {
-		return 0, fmt.Errorf("failed to count %s: %w", table, err)
-	}
-
-	return count, nil
-}
+// Note: We removed getDocumentTypeCount to avoid slow COUNT queries
+// The loop now continues until it gets fewer rows than batch size
 
 // handlePause handles the pause state
 func (b *IndexBuilder) handlePause() {
