@@ -1,6 +1,7 @@
 package export
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -37,6 +38,10 @@ func (e *Exporter) exportStudies() error {
 	// Skip counting for performance - large databases may have millions of records
 	// The count was only used for progress tracking which is handled elsewhere
 
+	// Set query timeout to avoid hanging on large databases
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	defer cancel()
+
 	// Prepare insert statement
 	stmt, err := e.targetDB.Prepare(`INSERT INTO study (
 		study_ID, study_alias, study_accession, study_title, study_type,
@@ -50,8 +55,15 @@ func (e *Exporter) exportStudies() error {
 	}
 	defer stmt.Close()
 
-	// Query source data
-	rows, err := e.sourceDB.DB.Query(`
+	// Begin transaction for performance
+	tx, err := e.targetDB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Query source data with context for timeout
+	rows, err := e.sourceDB.DB.QueryContext(ctx, `
 		SELECT
 			study_accession, study_title, study_type, study_abstract,
 			organism, submission_date, metadata
@@ -61,13 +73,6 @@ func (e *Exporter) exportStudies() error {
 		return err
 	}
 	defer rows.Close()
-
-	// Begin transaction for performance
-	tx, err := e.targetDB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
 
 	txStmt := tx.Stmt(stmt)
 	studyID := 1

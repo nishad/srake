@@ -50,10 +50,16 @@ type Exporter struct {
 
 // NewExporter creates a new exporter instance
 func NewExporter(cfg *Config) (*Exporter, error) {
-	// Open source database
-	sourceDB, err := database.Initialize(cfg.SourceDB)
+	// Open source database with minimal setup for read-only access
+	// Using simple connection without heavy pragmas for large databases
+	sourceConn, err := sql.Open("sqlite3", cfg.SourceDB+"?mode=ro")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open source database: %w", err)
+	}
+
+	// Wrap in database struct for compatibility
+	sourceDB := &database.DB{
+		DB: sourceConn,
 	}
 
 	// Create output directory if needed
