@@ -44,42 +44,43 @@ func createBiologicalIndexMapping() mapping.IndexMapping {
 	indexMapping := bleve.NewIndexMapping()
 
 	// Use standard analyzer for now
-	// Future: implement custom analyzers when Bleve supports them better
 	indexMapping.DefaultAnalyzer = "standard"
 
-	// Define document mappings
-	studyMapping := bleve.NewDocumentMapping()
-	studyMapping.AddFieldMappingsAt("study_accession", createKeywordFieldMapping())
-	studyMapping.AddFieldMappingsAt("study_title", createTextFieldMapping())
-	studyMapping.AddFieldMappingsAt("study_abstract", createTextFieldMapping())
-	studyMapping.AddFieldMappingsAt("organism", createTextFieldMapping())
-	studyMapping.AddFieldMappingsAt("study_type", createKeywordFieldMapping())
+	// Use a single default mapping for all documents
+	// This avoids issues with type detection
+	docMapping := bleve.NewDocumentMapping()
 
-	experimentMapping := bleve.NewDocumentMapping()
-	experimentMapping.AddFieldMappingsAt("experiment_accession", createKeywordFieldMapping())
-	experimentMapping.AddFieldMappingsAt("title", createTextFieldMapping())
-	experimentMapping.AddFieldMappingsAt("library_strategy", createKeywordFieldMapping())
-	experimentMapping.AddFieldMappingsAt("platform", createKeywordFieldMapping())
-	experimentMapping.AddFieldMappingsAt("instrument_model", createKeywordFieldMapping())
+	// Common fields
+	docMapping.AddFieldMappingsAt("type", createKeywordFieldMapping())
 
-	sampleMapping := bleve.NewDocumentMapping()
-	sampleMapping.AddFieldMappingsAt("sample_accession", createKeywordFieldMapping())
-	sampleMapping.AddFieldMappingsAt("organism", createTextFieldMapping())
-	sampleMapping.AddFieldMappingsAt("scientific_name", createTextFieldMapping())
-	sampleMapping.AddFieldMappingsAt("tissue", createTextFieldMapping())
-	sampleMapping.AddFieldMappingsAt("cell_type", createTextFieldMapping())
-	sampleMapping.AddFieldMappingsAt("description", createTextFieldMapping())
+	// Study fields
+	docMapping.AddFieldMappingsAt("study_accession", createKeywordFieldMapping())
+	docMapping.AddFieldMappingsAt("study_title", createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("study_abstract", createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("study_type", createKeywordFieldMapping())
 
-	runMapping := bleve.NewDocumentMapping()
-	runMapping.AddFieldMappingsAt("run_accession", createKeywordFieldMapping())
-	runMapping.AddFieldMappingsAt("spots", createNumericFieldMapping())
-	runMapping.AddFieldMappingsAt("bases", createNumericFieldMapping())
+	// Experiment fields
+	docMapping.AddFieldMappingsAt("experiment_accession", createKeywordFieldMapping())
+	docMapping.AddFieldMappingsAt("title", createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("library_strategy", createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("platform", createKeywordFieldMapping())
+	docMapping.AddFieldMappingsAt("instrument_model", createKeywordFieldMapping())
 
-	// Add document mappings
-	indexMapping.AddDocumentMapping("study", studyMapping)
-	indexMapping.AddDocumentMapping("experiment", experimentMapping)
-	indexMapping.AddDocumentMapping("sample", sampleMapping)
-	indexMapping.AddDocumentMapping("run", runMapping)
+	// Sample fields
+	docMapping.AddFieldMappingsAt("sample_accession", createKeywordFieldMapping())
+	docMapping.AddFieldMappingsAt("organism", createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("scientific_name", createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("tissue", createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("cell_type", createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("description", createTextFieldMapping())
+
+	// Run fields
+	docMapping.AddFieldMappingsAt("run_accession", createKeywordFieldMapping())
+	docMapping.AddFieldMappingsAt("spots", createNumericFieldMapping())
+	docMapping.AddFieldMappingsAt("bases", createNumericFieldMapping())
+
+	// Set the default mapping (applies to all documents)
+	indexMapping.DefaultMapping = docMapping
 
 	return indexMapping
 }
@@ -204,12 +205,23 @@ func (b *BleveIndex) SearchWithFilters(queryStr string, filters map[string]strin
 	}
 
 	// Add filter queries
-	// For keyword fields, we need exact matches
+	// Use appropriate query types based on field mapping
 	for field, value := range filters {
-		// Use MatchQuery which works with keyword analyzer fields
-		matchQuery := bleve.NewMatchQuery(value)
-		matchQuery.SetField(field)
-		queries = append(queries, matchQuery)
+		var fieldQuery query.Query
+
+		// Platform uses keyword analyzer (exact match)
+		if field == "platform" {
+			termQuery := bleve.NewTermQuery(value)
+			termQuery.SetField(field)
+			fieldQuery = termQuery
+		} else {
+			// For text fields, use phrase match for exact matching
+			phraseQuery := bleve.NewMatchPhraseQuery(value)
+			phraseQuery.SetField(field)
+			fieldQuery = phraseQuery
+		}
+
+		queries = append(queries, fieldQuery)
 	}
 
 	// Create the final query
@@ -219,6 +231,7 @@ func (b *BleveIndex) SearchWithFilters(queryStr string, filters map[string]strin
 	} else if len(queries) == 1 {
 		finalQuery = queries[0]
 	} else {
+		// Use ConjunctionQuery to AND all conditions
 		finalQuery = bleve.NewConjunctionQuery(queries...)
 	}
 
@@ -247,21 +260,30 @@ func (b *BleveIndex) BatchIndex(docs []interface{}) error {
 
 	for _, doc := range docs {
 		var id string
+		var typedDoc interface{}
 
 		switch d := doc.(type) {
 		case StudyDoc:
 			id = d.StudyAccession
+			d.Type = "study"
+			typedDoc = d
 		case ExperimentDoc:
 			id = d.ExperimentAccession
+			d.Type = "experiment"
+			typedDoc = d
 		case SampleDoc:
 			id = d.SampleAccession
+			d.Type = "sample"
+			typedDoc = d
 		case RunDoc:
 			id = d.RunAccession
+			d.Type = "run"
+			typedDoc = d
 		default:
 			continue
 		}
 
-		if err := batch.Index(id, doc); err != nil {
+		if err := batch.Index(id, typedDoc); err != nil {
 			return fmt.Errorf("failed to add document %s to batch: %w", id, err)
 		}
 	}

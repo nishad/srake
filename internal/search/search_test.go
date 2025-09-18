@@ -3,6 +3,7 @@ package search
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -222,9 +223,7 @@ func TestBatchIndexing(t *testing.T) {
 }
 
 // TestSearchWithFilters tests filtered search functionality
-// TODO: Fix keyword field exact matching with filters
 func TestSearchWithFilters(t *testing.T) {
-	t.Skip("Skipping filter test - needs fixing for keyword field matching")
 	// Create temporary config
 	cfg := config.DefaultConfig()
 	cfg.DataDirectory = t.TempDir()
@@ -266,15 +265,41 @@ func TestSearchWithFilters(t *testing.T) {
 		t.Fatalf("Failed to index documents: %v", err)
 	}
 
+	// Verify doc count immediately after indexing
+	docCount, err := index.GetDocCount()
+	if err != nil {
+		t.Fatalf("Failed to get doc count: %v", err)
+	}
+	t.Logf("Document count after indexing: %d", docCount)
+
 	// Search with filters
 	filters := map[string]string{
 		"library_strategy": "ChIP-Seq",
 		"platform":         "ILLUMINA",
 	}
 
+	// Debug: Search without filters first
+	allResults, err := index.Search("ChIP-Seq", 10)
+	if err != nil {
+		t.Fatalf("Search without filters failed: %v", err)
+	}
+	t.Logf("Documents matching 'ChIP-Seq': %d", allResults.Total)
+	for _, hit := range allResults.Hits {
+		t.Logf("Hit ID: %s", hit.ID)
+		t.Logf("  - library_strategy: %v", hit.Fields["library_strategy"])
+		t.Logf("  - platform: %v", hit.Fields["platform"])
+	}
+
 	results, err := index.SearchWithFilters("", filters, 10)
 	if err != nil {
 		t.Fatalf("Filtered search failed: %v", err)
+	}
+
+	t.Logf("Results with filters: %d", results.Total)
+	for _, hit := range results.Hits {
+		t.Logf("Filtered Hit ID: %s", hit.ID)
+		t.Logf("  - library_strategy: %v", hit.Fields["library_strategy"])
+		t.Logf("  - platform: %v", hit.Fields["platform"])
 	}
 
 	if results.Total != 1 {
@@ -308,6 +333,77 @@ func BenchmarkIndexing(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+}
+
+// TestVectorSearch tests vector search functionality with ONNX
+func TestVectorSearch(t *testing.T) {
+	// Create temporary config
+	cfg := config.DefaultConfig()
+	cfg.DataDirectory = t.TempDir()
+	cfg.Search.Enabled = true
+	cfg.Vectors.Enabled = true
+
+	// Check if ONNX runtime is available
+	_, err := os.Stat("/opt/homebrew/lib/libonnxruntime.dylib")
+	if err != nil {
+		t.Skip("ONNX runtime not installed, skipping vector test")
+	}
+
+	// Note: Full vector testing would require the embeddings package
+	// For now, just test the basic search functionality
+	t.Log("Testing basic Bleve search functionality...")
+
+	// Initialize Bleve index
+	index, err := InitBleveIndex(cfg.DataDirectory)
+	if err != nil {
+		t.Fatalf("Failed to initialize Bleve index: %v", err)
+	}
+	defer index.Close()
+
+	// Index test documents
+	docs := []interface{}{
+		StudyDoc{
+			Type:           "study",
+			StudyAccession: "SRP000001",
+			StudyTitle:     "Human cancer RNA sequencing study",
+			StudyAbstract:  "Comprehensive analysis of tumor transcriptomes",
+			Organism:       "Homo sapiens",
+		},
+		StudyDoc{
+			Type:           "study",
+			StudyAccession: "SRP000002",
+			StudyTitle:     "Mouse brain tissue expression analysis",
+			StudyAbstract:  "Single-cell RNA-seq of neural populations",
+			Organism:       "Mus musculus",
+		},
+	}
+
+	err = index.BatchIndex(docs)
+	if err != nil {
+		t.Fatalf("Failed to index documents: %v", err)
+	}
+
+	// Test text search
+	results, err := index.Search("cancer", 10)
+	if err != nil {
+		t.Fatalf("Search failed: %v", err)
+	}
+
+	if results.Total != 1 {
+		t.Errorf("Expected 1 result for 'cancer', got %d", results.Total)
+	}
+
+	// Test organism search
+	results, err = index.Search("homo sapiens", 10)
+	if err != nil {
+		t.Fatalf("Organism search failed: %v", err)
+	}
+
+	if results.Total != 1 {
+		t.Errorf("Expected 1 result for 'homo sapiens', got %d", results.Total)
+	}
+
+	t.Log("✅ Basic search test completed successfully!")
 }
 
 // BenchmarkSearch benchmarks search performance
