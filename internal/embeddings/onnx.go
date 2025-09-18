@@ -10,14 +10,15 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/daulet/tokenizers"
+	"github.com/sugarme/tokenizer"
+	"github.com/sugarme/tokenizer/pretrained"
 	ort "github.com/yalue/onnxruntime_go"
 )
 
 // ONNXEmbedder generates embeddings using ONNX Runtime
 type ONNXEmbedder struct {
 	session   *ort.DynamicAdvancedSession
-	tokenizer *tokenizers.Tokenizer
+	tokenizer *tokenizer.Tokenizer
 	modelPath string
 	enabled   bool
 }
@@ -44,13 +45,15 @@ func NewONNXEmbedder(modelPath string, cacheDir string) (*ONNXEmbedder, error) {
 	}
 
 	// Load the model
-	session, err := ort.NewDynamicAdvancedSession(localModelPath, nil, nil, nil)
+	inputs := []string{"input_ids", "attention_mask", "token_type_ids"}
+	outputs := []string{"last_hidden_state"}
+	session, err := ort.NewDynamicAdvancedSession(localModelPath, inputs, outputs, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create ONNX session: %w", err)
 	}
 	embedder.session = session
 
-	// Load HuggingFace tokenizer
+	// Load tokenizer using sugarme/tokenizer
 	tokenizerPath := filepath.Join(filepath.Dir(localModelPath), "tokenizer.json")
 
 	// Check if tokenizer exists, if not download it
@@ -62,8 +65,8 @@ func NewONNXEmbedder(modelPath string, cacheDir string) (*ONNXEmbedder, error) {
 		}
 	}
 
-	// Load tokenizer using HuggingFace tokenizers library
-	tokenizer, err := tokenizers.FromFile(tokenizerPath)
+	// Load tokenizer using sugarme pretrained loader
+	tokenizer, err := pretrained.FromFile(tokenizerPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load tokenizer: %w", err)
 	}
@@ -140,22 +143,25 @@ func (e *ONNXEmbedder) Embed(text string) ([]float32, error) {
 		return nil, fmt.Errorf("embedder is not enabled")
 	}
 
-	// Tokenize the text using HuggingFace tokenizer
-	// Add special tokens ([CLS] and [SEP] for BERT)
-	encoding := e.tokenizer.EncodeWithOptions(text, true,
-		tokenizers.WithReturnTypeIDs(),
-		tokenizers.WithReturnAttentionMask())
+	// Tokenize the text using sugarme tokenizer
+	// The tokenizer automatically adds special tokens ([CLS] and [SEP] for BERT)
+	encoding, err := e.tokenizer.EncodeSingle(text)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode text: %w", err)
+	}
 
 	// Get token IDs and attention mask
-	tokenIDs := encoding.IDs
+	tokenIDs := encoding.Ids
 	attentionMask := encoding.AttentionMask
 
 	// Convert to int64 for ONNX
 	inputIDs := make([]int64, len(tokenIDs))
 	maskIDs := make([]int64, len(attentionMask))
+	typeIDs := make([]int64, len(tokenIDs)) // All zeros for single sequence
 	for i := range tokenIDs {
 		inputIDs[i] = int64(tokenIDs[i])
 		maskIDs[i] = int64(attentionMask[i])
+		typeIDs[i] = 0 // Single sequence, so all zeros
 	}
 
 	// Create tensors
@@ -172,12 +178,18 @@ func (e *ONNXEmbedder) Embed(text string) ([]float32, error) {
 	}
 	defer maskTensor.Destroy()
 
+	typeIDsTensor, err := ort.NewTensor[int64](inputShape, typeIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create type IDs tensor: %w", err)
+	}
+	defer typeIDsTensor.Destroy()
+
 	// Prepare outputs (will be allocated by Run)
 	outputs := []ort.Value{nil} // Model has 1 output
 
-	// Run inference
+	// Run inference with all 3 inputs
 	err = e.session.Run(
-		[]ort.Value{inputIDsTensor, maskTensor},
+		[]ort.Value{inputIDsTensor, maskTensor, typeIDsTensor},
 		outputs,
 	)
 	if err != nil {
@@ -236,9 +248,7 @@ func (e *ONNXEmbedder) Close() error {
 	if e.session != nil {
 		e.session.Destroy()
 	}
-	if e.tokenizer != nil {
-		e.tokenizer.Close()
-	}
+	// Tokenizer doesn't need explicit cleanup with sugarme
 	return nil
 }
 
