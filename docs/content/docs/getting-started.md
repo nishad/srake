@@ -321,10 +321,10 @@ srake ingest \
 ## Next Steps
 
 {{< cards >}}
-  {{< card link="/docs/features/filtering" title="Filtering System" icon="funnel" subtitle="Learn advanced filtering techniques" />}}
-  {{< card link="/docs/features/resume" title="Resume Capability" icon="arrow-path" subtitle="Handle large files reliably" />}}
-  {{< card link="/docs/api" title="API Reference" icon="code-bracket" subtitle="Programmatic access guide" />}}
-  {{< card link="/docs/examples" title="Examples" icon="academic-cap" subtitle="Real-world use cases" />}}
+  {{< card link="/docs/features/filtering" title="Filtering System" subtitle="Learn advanced filtering techniques" >}}
+  {{< card link="/docs/features/resume" title="Resume Capability" subtitle="Handle large files reliably" >}}
+  {{< card link="/docs/api" title="API Reference" subtitle="Programmatic access guide" >}}
+  {{< card link="/docs/examples" title="Examples" subtitle="Real-world use cases" >}}
 {{< /cards >}}
 
 ## Getting Help

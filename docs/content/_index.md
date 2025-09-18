@@ -151,7 +151,7 @@ layout: hextra-home
 
 {{< cards >}}
   {{< card link="docs" title="Documentation" icon="book-open" subtitle="Complete guides and references" >}}
-  {{< card link="docs/getting-started" title="Getting Started" icon="rocket" subtitle="Install and run in minutes" >}}
+  {{< card link="docs/getting-started" title="Getting Started" subtitle="Install and run in minutes" >}}
   {{< card link="docs/features" title="Features" icon="sparkles" subtitle="Explore all capabilities" >}}
-  {{< card link="docs/api" title="API Reference" icon="code-bracket" subtitle="REST API and Go library" >}}
+  {{< card link="docs/api" title="API Reference" subtitle="REST API and Go library" >}}
 {{< /cards >}}

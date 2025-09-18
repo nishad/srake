@@ -14,9 +14,9 @@ next: /docs/features/resume
 The filtering system operates during the streaming pipeline, applying filters before data is inserted into the database:
 
 {{< cards >}}
-  {{< card title="Memory Efficient" icon="chip" subtitle="Filters applied during streaming without loading entire datasets" />}}
-  {{< card title="Early Rejection" icon="x-mark" subtitle="Unwanted records discarded before expensive database operations" />}}
-  {{< card title="Real-time Stats" icon="chart-bar" subtitle="Track filtering effectiveness as processing occurs" />}}
+  {{< card title="Memory Efficient" subtitle="Filters applied during streaming without loading entire datasets" >}}
+  {{< card title="Early Rejection" subtitle="Unwanted records discarded before expensive database operations" >}}
+  {{< card title="Real-time Stats" subtitle="Track filtering effectiveness as processing occurs" >}}
 {{< /cards >}}
 
 ## Filter Types
@@ -82,27 +82,29 @@ srake ingest --file archive.tar.gz \
 
 ### Date Range Filtering
 
-{{< cards >}}
-  {{< card title="Year 2024" icon="calendar" >}}
-```bash
-srake ingest --file archive.tar.gz \
-  --date-from 2024-01-01 \
-  --date-to 2024-12-31
-```
-  {{< /card >}}
-  {{< card title="Last 90 Days" icon="clock" >}}
-```bash
-srake ingest --file archive.tar.gz \
-  --date-from 2024-10-01
-```
-  {{< /card >}}
-  {{< card title="Historical Data" icon="archive-box" >}}
-```bash
-srake ingest --file archive.tar.gz \
-  --date-to 2020-12-31
-```
-  {{< /card >}}
-{{< /cards >}}
+Filter by submission or publication dates:
+
+{{< tabs items="Year 2024,Last 90 Days,Historical Data" >}}
+  {{< tab >}}
+  ```bash
+  srake ingest --file archive.tar.gz \
+    --date-from 2024-01-01 \
+    --date-to 2024-12-31
+  ```
+  {{< /tab >}}
+  {{< tab >}}
+  ```bash
+  srake ingest --file archive.tar.gz \
+    --date-from 2024-10-01
+  ```
+  {{< /tab >}}
+  {{< tab >}}
+  ```bash
+  srake ingest --file archive.tar.gz \
+    --date-to 2020-12-31
+  ```
+  {{< /tab >}}
+{{< /tabs >}}
 
 ### Platform Filtering
 
@@ -190,28 +192,31 @@ Filter by experimental strategy:
 
 Filter by sequencing depth and quality:
 
-{{< cards >}}
-  {{< card title="High Coverage" icon="arrow-trending-up" >}}
-```bash
-srake ingest --file archive.tar.gz \
-  --min-reads 10000000 \
-  --min-bases 1000000000
-```
-  {{< /card >}}
-  {{< card title="Specific Range" icon="adjustments-horizontal" >}}
-```bash
-srake ingest --file archive.tar.gz \
-  --min-reads 5000000 \
-  --max-reads 50000000
-```
-  {{< /card >}}
-  {{< card title="Ultra Deep" icon="rocket-launch" >}}
-```bash
-srake ingest --file archive.tar.gz \
-  --min-bases 10000000000
-```
-  {{< /card >}}
-{{< /cards >}}
+{{< tabs items="High Coverage,Specific Range,Ultra Deep" >}}
+  {{< tab >}}
+  ```bash
+  # Minimum 10M reads and 1GB bases
+  srake ingest --file archive.tar.gz \
+    --min-reads 10000000 \
+    --min-bases 1000000000
+  ```
+  {{< /tab >}}
+  {{< tab >}}
+  ```bash
+  # Between 5M and 50M reads
+  srake ingest --file archive.tar.gz \
+    --min-reads 5000000 \
+    --max-reads 50000000
+  ```
+  {{< /tab >}}
+  {{< tab >}}
+  ```bash
+  # Ultra-deep sequencing (10GB+ bases)
+  srake ingest --file archive.tar.gz \
+    --min-bases 10000000000
+  ```
+  {{< /tab >}}
+{{< /tabs >}}
 
 ## Complex Filter Combinations
 
@@ -306,10 +311,10 @@ srake ingest --file archive.tar.gz \
 ## Performance Characteristics
 
 {{< cards >}}
-  {{< card title="< 5%" icon="lightning-bolt" subtitle="Performance overhead with filtering" />}}
-  {{< card title="99%" icon="funnel" subtitle="Potential database size reduction" />}}
-  {{< card title="Real-time" icon="clock" subtitle="Filter application during streaming" />}}
-  {{< card title="Zero Memory" icon="cpu-chip" subtitle="Additional memory for filtering" />}}
+  {{< card title="< 5%" subtitle="Performance overhead with filtering" >}}
+  {{< card title="99%" subtitle="Potential database size reduction" >}}
+  {{< card title="Real-time" subtitle="Filter application during streaming" >}}
+  {{< card title="Zero Memory" subtitle="Additional memory for filtering" >}}
 {{< /cards >}}
 
 ### Benchmarks
@@ -379,10 +384,10 @@ For complex, reusable filter sets, use YAML configuration:
 ### Common Patterns
 
 {{< cards >}}
-  {{< card title="Model Organisms" icon="beaker" subtitle="Focus on well-studied species for comparative analysis" />}}
-  {{< card title="Recent Data" icon="calendar" subtitle="Filter by date for the latest sequencing technologies" />}}
-  {{< card title="High Quality" icon="shield-check" subtitle="Use quality filters for publication-ready datasets" />}}
-  {{< card title="Technology Specific" icon="cpu-chip" subtitle="Filter by platform for consistent processing pipelines" />}}
+  {{< card title="Model Organisms" icon="beaker" subtitle="Focus on well-studied species for comparative analysis" >}}
+  {{< card title="Recent Data" icon="calendar" subtitle="Filter by date for the latest sequencing technologies" >}}
+  {{< card title="High Quality" icon="shield-check" subtitle="Use quality filters for publication-ready datasets" >}}
+  {{< card title="Technology Specific" subtitle="Filter by platform for consistent processing pipelines" >}}
 {{< /cards >}}
 
 ## Troubleshooting
@@ -420,7 +425,7 @@ srake ingest --file archive.tar.gz \
 ## Next Steps
 
 {{< cards >}}
-  {{< card link="/docs/features/resume" title="Resume Capability" icon="arrow-path" subtitle="Handle interruptions gracefully" >}}
+  {{< card link="/docs/features/resume" title="Resume Capability" subtitle="Handle interruptions gracefully" >}}
   {{< card link="/docs/features/performance" title="Performance" icon="lightning-bolt" subtitle="Optimization techniques" >}}
   {{< card link="/docs/examples" title="Examples" icon="academic-cap" subtitle="Real-world filtering scenarios" >}}
 {{< /cards >}}
