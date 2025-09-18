@@ -5,11 +5,6 @@ import (
 	"path/filepath"
 
 	"github.com/blevesearch/bleve/v2"
-	"github.com/blevesearch/bleve/v2/analysis/analyzer/custom"
-	"github.com/blevesearch/bleve/v2/analysis/lang/en"
-	"github.com/blevesearch/bleve/v2/analysis/token/lowercase"
-	"github.com/blevesearch/bleve/v2/analysis/token/porter"
-	"github.com/blevesearch/bleve/v2/analysis/tokenizer/unicode"
 	"github.com/blevesearch/bleve/v2/mapping"
 	"github.com/blevesearch/bleve/v2/search/query"
 )
@@ -48,79 +43,31 @@ func createBiologicalIndexMapping() mapping.IndexMapping {
 	// Create a new index mapping
 	indexMapping := bleve.NewIndexMapping()
 
-	// Define biological synonyms
-	synonyms := map[string][]string{
-		"human":     {"homo sapiens", "h sapiens", "homo_sapiens"},
-		"mouse":     {"mus musculus", "m musculus", "mus_musculus"},
-		"rat":       {"rattus norvegicus", "r norvegicus"},
-		"zebrafish": {"danio rerio", "d rerio"},
-		"fly":       {"drosophila melanogaster", "d melanogaster", "fruit fly"},
-		"worm":      {"caenorhabditis elegans", "c elegans"},
-		"yeast":     {"saccharomyces cerevisiae", "s cerevisiae"},
-		"ecoli":     {"escherichia coli", "e coli"},
-		"rna-seq":   {"rna sequencing", "rnaseq", "transcriptome", "rna_seq"},
-		"chip-seq":  {"chromatin immunoprecipitation", "chipseq", "chip_seq"},
-		"atac-seq":  {"atacseq", "atac_seq", "chromatin accessibility"},
-		"wgs":       {"whole genome sequencing", "whole_genome_sequencing"},
-		"wes":       {"whole exome sequencing", "whole_exome_sequencing", "exome-seq"},
-		"scrna-seq": {"single cell rna-seq", "single-cell rna sequencing", "scrnaseq"},
-		"hi-c":      {"hic", "chromatin conformation"},
-		"bisulfite": {"bisulfite sequencing", "methylation sequencing", "bs-seq"},
-	}
-
-	// Create a custom token filter for synonyms
-	err := indexMapping.AddCustomTokenFilter("bio_synonyms",
-		map[string]interface{}{
-			"type":     "synonym",
-			"synonyms": formatSynonyms(synonyms),
-		})
-	if err != nil {
-		// Handle error but continue with basic analyzer
-		fmt.Printf("Warning: failed to add synonym filter: %v\n", err)
-	}
-
-	// Create a custom analyzer for biological terms
-	err = indexMapping.AddCustomAnalyzer("bio",
-		map[string]interface{}{
-			"type":      custom.Name,
-			"tokenizer": unicode.Name,
-			"token_filters": []string{
-				lowercase.Name,
-				"bio_synonyms",
-				en.StopName,
-				porter.Name,
-			},
-		})
-	if err != nil {
-		// Fallback to standard analyzer
-		fmt.Printf("Warning: failed to add bio analyzer, using standard: %v\n", err)
-		indexMapping.DefaultAnalyzer = "standard"
-	} else {
-		// For now use standard analyzer
-		indexMapping.DefaultAnalyzer = "standard"
-	}
+	// Use standard analyzer for now
+	// Future: implement custom analyzers when Bleve supports them better
+	indexMapping.DefaultAnalyzer = "standard"
 
 	// Define document mappings
 	studyMapping := bleve.NewDocumentMapping()
 	studyMapping.AddFieldMappingsAt("study_accession", createKeywordFieldMapping())
 	studyMapping.AddFieldMappingsAt("study_title", createTextFieldMapping())
 	studyMapping.AddFieldMappingsAt("study_abstract", createTextFieldMapping())
-	studyMapping.AddFieldMappingsAt("organism", createBioFieldMapping())
+	studyMapping.AddFieldMappingsAt("organism", createTextFieldMapping())
 	studyMapping.AddFieldMappingsAt("study_type", createKeywordFieldMapping())
 
 	experimentMapping := bleve.NewDocumentMapping()
 	experimentMapping.AddFieldMappingsAt("experiment_accession", createKeywordFieldMapping())
 	experimentMapping.AddFieldMappingsAt("title", createTextFieldMapping())
-	experimentMapping.AddFieldMappingsAt("library_strategy", createBioFieldMapping())
+	experimentMapping.AddFieldMappingsAt("library_strategy", createKeywordFieldMapping())
 	experimentMapping.AddFieldMappingsAt("platform", createKeywordFieldMapping())
 	experimentMapping.AddFieldMappingsAt("instrument_model", createKeywordFieldMapping())
 
 	sampleMapping := bleve.NewDocumentMapping()
 	sampleMapping.AddFieldMappingsAt("sample_accession", createKeywordFieldMapping())
-	sampleMapping.AddFieldMappingsAt("organism", createBioFieldMapping())
-	sampleMapping.AddFieldMappingsAt("scientific_name", createBioFieldMapping())
-	sampleMapping.AddFieldMappingsAt("tissue", createBioFieldMapping())
-	sampleMapping.AddFieldMappingsAt("cell_type", createBioFieldMapping())
+	sampleMapping.AddFieldMappingsAt("organism", createTextFieldMapping())
+	sampleMapping.AddFieldMappingsAt("scientific_name", createTextFieldMapping())
+	sampleMapping.AddFieldMappingsAt("tissue", createTextFieldMapping())
+	sampleMapping.AddFieldMappingsAt("cell_type", createTextFieldMapping())
 	sampleMapping.AddFieldMappingsAt("description", createTextFieldMapping())
 
 	runMapping := bleve.NewDocumentMapping()
@@ -154,9 +101,11 @@ func createTextFieldMapping() *mapping.FieldMapping {
 	return fieldMapping
 }
 
-func createBioFieldMapping() *mapping.FieldMapping {
+func createSimpleFieldMapping() *mapping.FieldMapping {
+	// Use keyword analyzer for exact matches (case-sensitive)
+	// Will handle case normalization in the query
 	fieldMapping := bleve.NewTextFieldMapping()
-	fieldMapping.Analyzer = "standard" // Use standard until bio analyzer is available
+	fieldMapping.Analyzer = "keyword"
 	fieldMapping.Store = true
 	fieldMapping.IncludeInAll = true
 	return fieldMapping
@@ -167,23 +116,6 @@ func createNumericFieldMapping() *mapping.FieldMapping {
 	fieldMapping.Store = true
 	fieldMapping.IncludeInAll = false
 	return fieldMapping
-}
-
-// formatSynonyms converts the synonym map to the format expected by Bleve
-func formatSynonyms(synonyms map[string][]string) []string {
-	var result []string
-	for key, values := range synonyms {
-		// Create bidirectional synonyms
-		allTerms := append([]string{key}, values...)
-		for i := range allTerms {
-			for j := range allTerms {
-				if i != j {
-					result = append(result, allTerms[i]+","+allTerms[j])
-				}
-			}
-		}
-	}
-	return result
 }
 
 // Document types for indexing
@@ -272,10 +204,12 @@ func (b *BleveIndex) SearchWithFilters(queryStr string, filters map[string]strin
 	}
 
 	// Add filter queries
+	// For keyword fields, we need exact matches
 	for field, value := range filters {
-		termQuery := bleve.NewTermQuery(value)
-		termQuery.SetField(field)
-		queries = append(queries, termQuery)
+		// Use MatchQuery which works with keyword analyzer fields
+		matchQuery := bleve.NewMatchQuery(value)
+		matchQuery.SetField(field)
+		queries = append(queries, matchQuery)
 	}
 
 	// Create the final query

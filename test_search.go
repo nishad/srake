@@ -8,6 +8,7 @@ import (
 
 	"github.com/nishad/srake/internal/config"
 	"github.com/nishad/srake/internal/database"
+	"github.com/nishad/srake/internal/embeddings"
 	"github.com/nishad/srake/internal/search"
 )
 
@@ -37,6 +38,27 @@ func main() {
 		log.Fatalf("Failed to create search manager: %v", err)
 	}
 	defer manager.Close()
+
+	// Test embedder if enabled
+	if cfg.IsVectorEnabled() {
+		fmt.Println("\nInitializing embedder...")
+		embedder, err := embeddings.NewSearchEmbedder(cfg)
+		if err != nil {
+			log.Printf("Warning: Failed to initialize embedder: %v", err)
+		} else {
+			manager.SetEmbedder(embedder)
+
+			// Test embedding generation
+			testText := "human cancer RNA-seq transcriptome"
+			fmt.Printf("\nTesting embedding for: %q\n", testText)
+			embedding, err := embedder.Embed(testText)
+			if err != nil {
+				log.Printf("Failed to generate embedding: %v", err)
+			} else {
+				fmt.Printf("Generated embedding with %d dimensions\n", len(embedding))
+			}
+		}
+	}
 
 	// Get search stats
 	stats, err := manager.GetStats()

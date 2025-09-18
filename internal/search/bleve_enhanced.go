@@ -1,4 +1,5 @@
-// +build search
+//go:build search || vectors
+// +build search vectors
 
 package search
 
@@ -53,56 +54,15 @@ func (b *BleveBackend) createIndexMapping() mapping.IndexMapping {
 	// Create a new index mapping
 	indexMapping := bleve.NewIndexMapping()
 
-	// Create biological analyzer
-	err := b.createBiologicalAnalyzer(indexMapping)
-	if err != nil {
-		fmt.Printf("Warning: failed to create biological analyzer: %v\n", err)
-	}
-
 	// Create document mappings
 	indexMapping.DefaultMapping = b.createDocumentMapping()
 
-	// Set default analyzer
-	if err == nil {
-		indexMapping.DefaultAnalyzer = "bio"
-	} else {
-		indexMapping.DefaultAnalyzer = "standard"
-	}
+	// Use standard analyzer
+	indexMapping.DefaultAnalyzer = "standard"
 
 	return indexMapping
 }
 
-// createBiologicalAnalyzer creates a custom analyzer for biological terms
-func (b *BleveBackend) createBiologicalAnalyzer(m mapping.IndexMapping) error {
-	// Define biological synonyms (for future use when custom analyzers are supported)
-	_ = []string{
-		// Organisms
-		"human,homo sapiens,h sapiens,homo_sapiens",
-		"mouse,mus musculus,m musculus,mus_musculus",
-		"rat,rattus norvegicus,r norvegicus",
-		"zebrafish,danio rerio,d rerio",
-		"fly,drosophila melanogaster,d melanogaster,fruit fly",
-		"worm,caenorhabditis elegans,c elegans",
-		"yeast,saccharomyces cerevisiae,s cerevisiae",
-		"ecoli,escherichia coli,e coli",
-		// Sequencing methods
-		"rna-seq,rna sequencing,rnaseq,transcriptome,rna_seq",
-		"chip-seq,chromatin immunoprecipitation,chipseq,chip_seq",
-		"atac-seq,atacseq,atac_seq,chromatin accessibility",
-		"wgs,whole genome sequencing,whole_genome_sequencing",
-		"wes,whole exome sequencing,whole_exome_sequencing,exome-seq",
-		"scrna-seq,single cell rna-seq,single-cell rna sequencing,scrnaseq",
-		"hi-c,hic,chromatin conformation",
-		"bisulfite,bisulfite sequencing,methylation sequencing,bs-seq",
-	}
-
-	// Note: Custom token filters and analyzers are not directly supported
-	// in the mapping API in Bleve v2.3. We'll use standard analyzers instead.
-	// TODO: Upgrade to Bleve v2.4+ for full vector and custom analyzer support
-
-	// For now, return nil to indicate no error
-	return nil
-}
 
 // createDocumentMapping creates the document mapping with optional vector field
 func (b *BleveBackend) createDocumentMapping() *mapping.DocumentMapping {
@@ -113,13 +73,13 @@ func (b *BleveBackend) createDocumentMapping() *mapping.DocumentMapping {
 	docMapping.AddFieldMappingsAt("type", b.createKeywordFieldMapping())
 	docMapping.AddFieldMappingsAt("title", b.createTextFieldMapping())
 	docMapping.AddFieldMappingsAt("abstract", b.createTextFieldMapping())
-	docMapping.AddFieldMappingsAt("organism", b.createBioFieldMapping())
-	docMapping.AddFieldMappingsAt("library_strategy", b.createBioFieldMapping())
+	docMapping.AddFieldMappingsAt("organism", b.createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("library_strategy", b.createTextFieldMapping())
 	docMapping.AddFieldMappingsAt("platform", b.createKeywordFieldMapping())
 	docMapping.AddFieldMappingsAt("instrument_model", b.createKeywordFieldMapping())
-	docMapping.AddFieldMappingsAt("scientific_name", b.createBioFieldMapping())
-	docMapping.AddFieldMappingsAt("tissue", b.createBioFieldMapping())
-	docMapping.AddFieldMappingsAt("cell_type", b.createBioFieldMapping())
+	docMapping.AddFieldMappingsAt("scientific_name", b.createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("tissue", b.createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("cell_type", b.createTextFieldMapping())
 	docMapping.AddFieldMappingsAt("study_type", b.createKeywordFieldMapping())
 
 	// Numeric fields
@@ -128,16 +88,9 @@ func (b *BleveBackend) createDocumentMapping() *mapping.DocumentMapping {
 	docMapping.AddFieldMappingsAt("submission_date", b.createDateTimeFieldMapping())
 
 	// Vector field if enabled
-	// Note: Vector fields are not supported in Bleve v2.3
-	// TODO: Upgrade to Bleve v2.4+ for vector support
 	if b.config.IsVectorEnabled() {
-		// For now, store embeddings as a regular field
-		// They won't be searchable but will be stored
-		embeddingMapping := bleve.NewTextFieldMapping()
-		embeddingMapping.Store = true
-		embeddingMapping.IncludeInAll = false
-		embeddingMapping.Index = false // Don't index the embedding
-		docMapping.AddFieldMappingsAt("embedding", embeddingMapping)
+		vectorMapping := b.createVectorFieldMapping()
+		docMapping.AddFieldMappingsAt("embedding", vectorMapping)
 	}
 
 	return docMapping
@@ -155,14 +108,6 @@ func (b *BleveBackend) createKeywordFieldMapping() *mapping.FieldMapping {
 func (b *BleveBackend) createTextFieldMapping() *mapping.FieldMapping {
 	fm := bleve.NewTextFieldMapping()
 	fm.Analyzer = "standard"
-	fm.Store = true
-	fm.IncludeInAll = true
-	return fm
-}
-
-func (b *BleveBackend) createBioFieldMapping() *mapping.FieldMapping {
-	fm := bleve.NewTextFieldMapping()
-	fm.Analyzer = "bio"
 	fm.Store = true
 	fm.IncludeInAll = true
 	return fm
@@ -338,10 +283,13 @@ func (b *BleveBackend) SearchWithVector(queryStr string, vector []float32, opts 
 		searchRequest = bleve.NewSearchRequest(bleve.NewMatchNoneQuery())
 	}
 
-	// kNN vector search is not supported in Bleve v2.3
-	// TODO: Upgrade to Bleve v2.4+ for vector search support
-	// For now, we'll just do regular text search
-	_ = vector // Avoid unused variable warning
+	// Add kNN vector search if vector provided
+	if len(vector) > 0 && b.config.IsVectorEnabled() {
+		if err := addKNNToRequest(searchRequest, "embedding", vector, opts.Limit, 1.0); err != nil {
+			// Fall back to text-only search if vectors not available
+			fmt.Printf("Warning: %v\n", err)
+		}
+	}
 
 	// Configure request
 	searchRequest.Size = opts.Limit
