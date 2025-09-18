@@ -101,6 +101,13 @@ var (
 	searchIndexPath string
 	searchNoCache   bool
 	searchTimeout   int
+
+	// Search mode flags
+	searchMode        string
+	searchNoFTS       bool
+	searchNoVectors   bool
+	searchVectorWeight float64
+	searchKNN         int
 )
 
 func runSearch(cmd *cobra.Command, args []string) error {
@@ -183,6 +190,18 @@ func performSearch(query string, filters map[string]string) error {
 	dataDir := paths.GetPaths().DataDir
 	cfg.DataDirectory = dataDir
 
+	// Apply search mode overrides from CLI flags
+	if searchNoFTS {
+		cfg.Search.Enabled = false
+	}
+	if searchNoVectors {
+		cfg.Vectors.Enabled = false
+		cfg.Embeddings.Enabled = false
+	}
+
+	// Determine effective search mode
+	effectiveMode := determineSearchMode(cfg)
+
 	// Override index path if specified
 	if searchIndexPath != "" {
 		cfg.Search.IndexPath = searchIndexPath
@@ -190,12 +209,21 @@ func performSearch(query string, filters map[string]string) error {
 		cfg.Search.IndexPath = paths.GetIndexPath()
 	}
 
-	// Check if index exists
+	// For database-only mode, skip index check
+	if effectiveMode == "database" {
+		return performDatabaseSearch(query, filters)
+	}
+
+	// Check if index exists for FTS/vector modes
 	if _, err := os.Stat(cfg.Search.IndexPath); os.IsNotExist(err) {
-		printError("Search index not found at %s", cfg.Search.IndexPath)
-		fmt.Fprintf(os.Stderr, "\nPlease build the search index first:\n")
-		fmt.Fprintf(os.Stderr, "  srake search index --build\n")
-		return fmt.Errorf("index not found")
+		if searchMode != "database" {
+			printError("Search index not found at %s", cfg.Search.IndexPath)
+			fmt.Fprintf(os.Stderr, "\nPlease build the search index first:\n")
+			fmt.Fprintf(os.Stderr, "  srake search index --build\n")
+			fmt.Fprintf(os.Stderr, "\nOr use database-only mode:\n")
+			fmt.Fprintf(os.Stderr, "  srake search --search-mode database \"your query\"\n")
+			return fmt.Errorf("index not found")
+		}
 	}
 
 	// Initialize Bleve index
@@ -568,6 +596,94 @@ func showSearchStats() error {
 }
 
 // Helper functions
+
+// determineSearchMode determines the effective search mode based on config and flags
+func determineSearchMode(cfg *config.Config) string {
+	// Explicit mode from CLI
+	if searchMode != "auto" && searchMode != "" {
+		return searchMode
+	}
+
+	// Auto-detect based on what's enabled
+	if !cfg.Search.Enabled || searchNoFTS {
+		return "database"
+	}
+
+	if cfg.Vectors.Enabled && !searchNoVectors {
+		if searchVectorWeight >= 1.0 {
+			return "vector"
+		}
+		return "hybrid"
+	}
+
+	return "fts"
+}
+
+// performDatabaseSearch performs search using only SQLite database
+func performDatabaseSearch(query string, filters map[string]string) error {
+	db, err := database.Initialize(paths.GetDatabasePath())
+	if err != nil {
+		return fmt.Errorf("failed to open database: %v", err)
+	}
+	defer db.Close()
+
+	// Build SQL query with filters
+	sqlQuery := buildSQLQuery(query, filters)
+
+	// Execute query
+	rows, err := db.GetSQLDB().Query(sqlQuery)
+	if err != nil {
+		return fmt.Errorf("database query failed: %v", err)
+	}
+	defer rows.Close()
+
+	// Process and display results
+	return displayDatabaseResults(rows)
+}
+
+// buildSQLQuery builds a SQL query for database-only search
+func buildSQLQuery(query string, filters map[string]string) string {
+	// Basic implementation - will be expanded
+	whereClause := []string{}
+
+	if query != "" {
+		// Simple text search across key fields
+		whereClause = append(whereClause, fmt.Sprintf(
+			"(study_title LIKE '%%%s%%' OR study_abstract LIKE '%%%s%%' OR organism LIKE '%%%s%%')",
+			query, query, query))
+	}
+
+	for field, value := range filters {
+		// Map filter fields to database columns
+		dbField := field
+		switch field {
+		case "library_strategy", "library_source", "library_selection", "library_layout":
+			// These are in metadata JSON
+			whereClause = append(whereClause, fmt.Sprintf("json_extract(metadata, '$.%s') = '%s'", field, value))
+		case "platform", "instrument_model":
+			// Also in metadata
+			whereClause = append(whereClause, fmt.Sprintf("json_extract(metadata, '$.%s') = '%s'", field, value))
+		default:
+			whereClause = append(whereClause, fmt.Sprintf("%s = '%s'", dbField, value))
+		}
+	}
+
+	sql := "SELECT * FROM studies"
+	if len(whereClause) > 0 {
+		sql += " WHERE " + strings.Join(whereClause, " AND ")
+	}
+	sql += fmt.Sprintf(" LIMIT %d OFFSET %d", searchLimit, searchOffset)
+
+	return sql
+}
+
+// displayDatabaseResults displays results from database-only search
+func displayDatabaseResults(rows *sql.Rows) error {
+	// Implementation to display database results
+	// This will format the results similar to the existing display logic
+	return nil
+}
+
 func getField(fields map[string]interface{}, keys ...string) string {
 	for _, key := range keys {
 		if val, ok := fields[key]; ok {

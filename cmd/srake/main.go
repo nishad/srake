@@ -104,6 +104,13 @@ func init() {
 	searchCmd.Flags().BoolVar(&searchNoCache, "no-cache", false, "Disable search result caching")
 	searchCmd.Flags().IntVar(&searchTimeout, "timeout", 30, "Search timeout in seconds")
 
+	// Search command flags - Search Mode Control
+	searchCmd.Flags().StringVar(&searchMode, "search-mode", "auto", "Search mode: auto|database|fts|vector|hybrid")
+	searchCmd.Flags().BoolVar(&searchNoFTS, "no-fts", false, "Disable full-text search (use database only)")
+	searchCmd.Flags().BoolVar(&searchNoVectors, "no-vectors", false, "Disable vector search")
+	searchCmd.Flags().Float64Var(&searchVectorWeight, "vector-weight", 0.3, "Weight for vector scoring in hybrid search (0-1)")
+	searchCmd.Flags().IntVar(&searchKNN, "knn", 100, "Number of nearest neighbors for vector search")
+
 	// The ingest command for data ingestion
 	ingestCmd := cli.NewIngestCmd()
 
