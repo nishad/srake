@@ -75,6 +75,8 @@ The exported database contains all the standard SRAmetadb tables and structures:
 
 ## FTS Version Comparison
 
+> **Build Note:** FTS5 support requires building srake with the `sqlite_fts5` build tag. Use `make build` or `go build -tags "sqlite_fts5"`.
+
 ### FTS5 (Default - Recommended)
 
 ```bash

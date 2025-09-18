@@ -7,6 +7,8 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -ldflags="-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(BUILD_DATE)"
+# Enable FTS5 support for SQLite
+TAGS := -tags "sqlite_fts5"
 
 # Go commands
 GOCMD := go
@@ -30,8 +32,8 @@ help:
 
 ## build: Build the binary
 build:
-	@echo "Building $(BINARY_NAME)..."
-	$(GOBUILD) $(LDFLAGS) -o $(BINARY_NAME) $(MAIN_PATH)
+	@echo "Building $(BINARY_NAME) with FTS5 support..."
+	$(GOBUILD) $(TAGS) $(LDFLAGS) -o $(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: ./$(BINARY_NAME)"
 
 ## clean: Remove build artifacts
@@ -47,7 +49,7 @@ clean:
 ## test: Run all tests
 test:
 	@echo "Running tests..."
-	$(GOTEST) -v -race -coverprofile=coverage.out ./...
+	$(GOTEST) $(TAGS) -v -race -coverprofile=coverage.out ./...
 
 ## test-coverage: Run tests with coverage report
 test-coverage: test
@@ -58,12 +60,12 @@ test-coverage: test
 ## benchmark: Run benchmarks
 benchmark:
 	@echo "Running benchmarks..."
-	$(GOTEST) -bench=. -benchmem ./internal/processor
+	$(GOTEST) $(TAGS) -bench=. -benchmem ./internal/processor
 
 ## install: Install the binary to GOPATH/bin
 install: build
-	@echo "Installing $(BINARY_NAME)..."
-	$(GOCMD) install $(MAIN_PATH)
+	@echo "Installing $(BINARY_NAME) with FTS5 support..."
+	$(GOCMD) install $(TAGS) $(MAIN_PATH)
 	@echo "Installed to $$(go env GOPATH)/bin/$(BINARY_NAME)"
 
 ## lint: Run linters
