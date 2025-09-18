@@ -13,6 +13,7 @@ import (
 	"github.com/nishad/srake/internal/database"
 	"github.com/nishad/srake/internal/paths"
 	"github.com/nishad/srake/internal/search"
+	"github.com/nishad/srake/internal/search/builder"
 	"github.com/spf13/cobra"
 )
 
@@ -35,6 +36,12 @@ The search index enables powerful search capabilities including:
   # Build index with vector embeddings
   srake search index --build --with-embeddings
 
+  # Build index with progress tracking
+  srake search index --build --progress
+
+  # Resume interrupted index build
+  srake search index --resume
+
   # Show index statistics
   srake search index --stats
 
@@ -52,6 +59,10 @@ var (
 	indexPath        string
 	indexEmbeddings  bool
 	embeddingModel   string
+	indexProgress    bool
+	indexResume      bool
+	progressFile     string
+	checkpointDir    string
 )
 
 func init() {
@@ -64,6 +75,10 @@ func init() {
 	searchIndexCmd.Flags().StringVar(&indexPath, "path", "", "Custom index path")
 	searchIndexCmd.Flags().BoolVar(&indexEmbeddings, "with-embeddings", false, "Generate vector embeddings for documents")
 	searchIndexCmd.Flags().StringVar(&embeddingModel, "embedding-model", "Xenova/SapBERT-from-PubMedBERT-fulltext", "Model to use for embeddings")
+	searchIndexCmd.Flags().BoolVar(&indexProgress, "progress", false, "Show real-time indexing progress")
+	searchIndexCmd.Flags().BoolVar(&indexResume, "resume", false, "Resume interrupted index build from checkpoint")
+	searchIndexCmd.Flags().StringVar(&progressFile, "progress-file", "", "Custom progress file path (default: .srake/index-progress.json)")
+	searchIndexCmd.Flags().StringVar(&checkpointDir, "checkpoint-dir", "", "Custom checkpoint directory (default: .srake/checkpoints)")
 
 	searchIndexCmd.RunE = runSearchIndex
 
@@ -73,7 +88,7 @@ func init() {
 
 func runSearchIndex(cmd *cobra.Command, args []string) error {
 	// Determine action
-	if !indexBuild && !indexRebuild && !indexVerify && !indexStats {
+	if !indexBuild && !indexRebuild && !indexVerify && !indexStats && !indexResume {
 		indexStats = true // Default to showing stats
 	}
 
@@ -120,6 +135,10 @@ func runSearchIndex(cmd *cobra.Command, args []string) error {
 		return verifyIndex(cfg, db)
 	}
 
+	if indexResume {
+		return resumeIndex(cfg, db)
+	}
+
 	if indexBuild || indexRebuild {
 		return buildIndex(cfg, db, indexRebuild)
 	}
@@ -134,7 +153,7 @@ func buildIndex(cfg *config.Config, db *database.DB, rebuild bool) error {
 		indexExists = true
 	}
 
-	if indexExists && !rebuild {
+	if indexExists && !rebuild && !indexProgress {
 		printInfo("Index already exists at %s", cfg.Search.IndexPath)
 		fmt.Println("\nUse --rebuild to rebuild from scratch")
 		return nil
@@ -147,7 +166,12 @@ func buildIndex(cfg *config.Config, db *database.DB, rebuild bool) error {
 	}
 	defer manager.Close()
 
-	// Create syncer
+	// If progress tracking is enabled, use the new IndexBuilder
+	if indexProgress || progressFile != "" || checkpointDir != "" {
+		return buildWithProgress(cfg, db, manager.GetBackend(), rebuild)
+	}
+
+	// Otherwise, use the standard syncer
 	syncer, err := search.NewSyncer(cfg, db, manager.GetBackend())
 	if err != nil {
 		return fmt.Errorf("failed to create syncer: %v", err)
@@ -312,5 +336,190 @@ func verifyIndex(cfg *config.Config, db *database.DB) error {
 
 	printSuccess("Index verification passed!")
 	return nil
+}
+
+// buildWithProgress builds the index using the new IndexBuilder with progress tracking
+func buildWithProgress(cfg *config.Config, db *database.DB, backend search.SearchBackend, rebuild bool) error {
+	// Setup build options
+	opts := builder.BuildOptions{
+		BatchSize:          indexBatchSize,
+		NumWorkers:         indexWorkers,
+		WithEmbeddings:     indexEmbeddings,
+		EmbeddingModel:     embeddingModel,
+		ProgressFile:       progressFile,
+		CheckpointDir:      checkpointDir,
+		CheckpointInterval: 10000, // Default checkpoint interval
+		MaxMemoryMB:        2048,  // Default max memory
+		Verbose:            verbose,
+	}
+
+	// Use custom progress file path if specified
+	if opts.ProgressFile == "" {
+		opts.ProgressFile = ".srake/index-progress.json"
+	}
+
+	// Use custom checkpoint directory if specified
+	if opts.CheckpointDir == "" {
+		opts.CheckpointDir = ".srake/checkpoints"
+	}
+
+	// Create index builder
+	idxBuilder, err := builder.NewIndexBuilder(cfg, db, backend, opts)
+	if err != nil {
+		return fmt.Errorf("failed to create index builder: %v", err)
+	}
+
+	// Show starting message
+	if !quiet {
+		if rebuild {
+			printInfo("Rebuilding search index with progress tracking...")
+		} else {
+			printInfo("Building search index with progress tracking...")
+		}
+		fmt.Printf("Index path:     %s\n", cfg.Search.IndexPath)
+		fmt.Printf("Batch size:     %d\n", opts.BatchSize)
+		fmt.Printf("Progress file:  %s\n", opts.ProgressFile)
+		fmt.Printf("Checkpoint dir: %s\n", opts.CheckpointDir)
+		if indexEmbeddings {
+			fmt.Printf("Embeddings:     Enabled (model: %s)\n", embeddingModel)
+		}
+	}
+
+	// Create progress display goroutine
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if indexProgress && !quiet {
+		go displayProgress(ctx, idxBuilder)
+	}
+
+	// Start building
+	startTime := time.Now()
+	err = idxBuilder.Build(ctx)
+
+	if err != nil {
+		return fmt.Errorf("index build failed: %v", err)
+	}
+
+	elapsed := time.Since(startTime)
+
+	// Show completion message
+	progress := idxBuilder.GetProgress()
+	if !quiet {
+		printSuccess("Index built successfully with progress tracking!")
+		fmt.Printf("Processed: %d documents\n", progress.ProcessedDocs)
+		fmt.Printf("Indexed:   %d documents\n", progress.IndexedDocs)
+		fmt.Printf("Failed:    %d documents\n", progress.FailedDocs)
+		fmt.Printf("Time:      %v\n", elapsed)
+		fmt.Printf("Speed:     %.1f docs/sec\n", float64(progress.ProcessedDocs)/elapsed.Seconds())
+	}
+
+	return nil
+}
+
+// resumeIndex resumes an interrupted index build from checkpoint
+func resumeIndex(cfg *config.Config, db *database.DB) error {
+	// Create search manager
+	manager, err := search.NewManager(cfg, db)
+	if err != nil {
+		return fmt.Errorf("failed to create search manager: %v", err)
+	}
+	defer manager.Close()
+
+	// Setup build options
+	opts := builder.BuildOptions{
+		BatchSize:          indexBatchSize,
+		NumWorkers:         indexWorkers,
+		WithEmbeddings:     indexEmbeddings,
+		EmbeddingModel:     embeddingModel,
+		ProgressFile:       progressFile,
+		CheckpointDir:      checkpointDir,
+		CheckpointInterval: 10000,
+		MaxMemoryMB:        2048,
+		Resume:             true,
+		Verbose:            verbose,
+	}
+
+	// Use default paths if not specified
+	if opts.ProgressFile == "" {
+		opts.ProgressFile = ".srake/index-progress.json"
+	}
+	if opts.CheckpointDir == "" {
+		opts.CheckpointDir = ".srake/checkpoints"
+	}
+
+	// Check if progress file exists
+	if _, err := os.Stat(opts.ProgressFile); os.IsNotExist(err) {
+		return fmt.Errorf("no progress file found at %s\nCannot resume without a previous build", opts.ProgressFile)
+	}
+
+	// Create index builder
+	idxBuilder, err := builder.NewIndexBuilder(cfg, db, manager.GetBackend(), opts)
+	if err != nil {
+		return fmt.Errorf("failed to create index builder: %v", err)
+	}
+
+	// Show resuming message
+	progress := idxBuilder.GetProgress()
+	if !quiet {
+		printInfo("Resuming index build from checkpoint...")
+		fmt.Printf("Progress file:    %s\n", opts.ProgressFile)
+		fmt.Printf("Previously indexed: %d documents\n", progress.ProcessedDocs)
+		fmt.Printf("Last checkpoint:    Batch %d\n", progress.CurrentBatch)
+	}
+
+	// Create progress display
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	if indexProgress && !quiet {
+		go displayProgress(ctx, idxBuilder)
+	}
+
+	// Resume building
+	startTime := time.Now()
+	err = idxBuilder.Resume(ctx)
+
+	if err != nil {
+		return fmt.Errorf("resume failed: %v", err)
+	}
+
+	elapsed := time.Since(startTime)
+
+	// Show completion message
+	finalProgress := idxBuilder.GetProgress()
+	if !quiet {
+		printSuccess("Index build resumed and completed!")
+		fmt.Printf("Total processed: %d documents\n", finalProgress.ProcessedDocs)
+		fmt.Printf("Total indexed:   %d documents\n", finalProgress.IndexedDocs)
+		fmt.Printf("Resume time:     %v\n", elapsed)
+	}
+
+	return nil
+}
+
+// displayProgress shows real-time progress updates
+func displayProgress(ctx context.Context, builder *builder.IndexBuilder) {
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			progress := builder.GetProgress()
+			state := builder.GetState()
+
+			// Clear line and show progress
+			fmt.Printf("\r[%s] Processed: %d / %d docs | Indexed: %d | Failed: %d | Batch: %d",
+				state,
+				progress.ProcessedDocs,
+				progress.TotalDocuments,
+				progress.IndexedDocs,
+				progress.FailedDocs,
+				progress.CurrentBatch)
+		}
+	}
 }
 
