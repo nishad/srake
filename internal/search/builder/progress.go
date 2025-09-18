@@ -57,6 +57,8 @@ type Progress struct {
 	ProcessedDocs      int64         `json:"documents_processed"`
 	IndexedDocs        int64         `json:"documents_indexed"`
 	FailedDocs         int64         `json:"documents_failed"`
+	EmbeddingsGenerated int64        `json:"embeddings_generated"`
+	EmbeddingsFailed   int64         `json:"embeddings_failed"`
 	LastDocumentID     string        `json:"last_document_id"`
 	LastCheckpointDocs int64         `json:"last_checkpoint_docs"`
 	Error              *string       `json:"error,omitempty"`
@@ -112,6 +114,8 @@ type BuildMetrics struct {
 	AvgBatchTimeMs     int64   `json:"avg_batch_time_ms"`
 	TotalIndexSizeBytes int64   `json:"total_index_size_bytes"`
 	MemoryPeakMB       int64   `json:"memory_peak_mb"`
+	EmbeddingRate      float64 `json:"embedding_rate"`
+	AvgEmbeddingTimeMs int64   `json:"avg_embedding_time_ms"`
 	TotalDuration      string  `json:"total_duration,omitempty"`
 }
 

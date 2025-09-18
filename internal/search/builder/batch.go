@@ -137,6 +137,7 @@ func (b *IndexBuilder) processStudiesBatch(ctx context.Context, offset int64, li
 	defer rows.Close()
 
 	docs := make([]interface{}, 0, limit)
+	texts := make([]string, 0, limit) // For batch embedding
 	count := 0
 
 	for rows.Next() {
@@ -170,11 +171,34 @@ func (b *IndexBuilder) processStudiesBatch(ctx context.Context, offset int64, li
 			doc["submission_date"] = study.SubmissionDate.Time
 		}
 
+		// Prepare text for embedding if enabled
+		if b.isEmbeddingEnabled() {
+			text := prepareStudyText(study.Title.String, study.Abstract.String)
+			texts = append(texts, text)
+		}
+
 		docs = append(docs, doc)
 		count++
 
 		// Update last document ID for progress tracking
 		b.progress.LastDocumentID = study.Accession
+	}
+
+	// Generate embeddings if enabled
+	if b.isEmbeddingEnabled() && len(texts) > 0 {
+		embeddings, err := b.generateBatchEmbeddings(texts)
+		if err != nil {
+			// Log error but continue without embeddings
+			fmt.Printf("Warning: Failed to generate embeddings for studies batch: %v\n", err)
+		} else {
+			// Add embeddings to documents
+			for i, doc := range docs {
+				if i < len(embeddings) && embeddings[i] != nil {
+					docMap := doc.(map[string]interface{})
+					docMap["embedding"] = embeddings[i]
+				}
+			}
+		}
 	}
 
 	// Index the batch
@@ -203,6 +227,7 @@ func (b *IndexBuilder) processExperimentsBatch(ctx context.Context, offset int64
 	defer rows.Close()
 
 	docs := make([]interface{}, 0, limit)
+	texts := make([]string, 0, limit) // For batch embedding
 	count := 0
 
 	for rows.Next() {
@@ -228,11 +253,34 @@ func (b *IndexBuilder) processExperimentsBatch(ctx context.Context, offset int64
 			"instrument_model": exp.InstrumentModel.String,
 		}
 
+		// Prepare text for embedding if enabled
+		if b.isEmbeddingEnabled() {
+			text := prepareExperimentText(exp.Title.String, exp.LibraryStrategy.String, exp.Platform.String)
+			texts = append(texts, text)
+		}
+
 		docs = append(docs, doc)
 		count++
 
 		// Update last document ID
 		b.progress.LastDocumentID = exp.Accession
+	}
+
+	// Generate embeddings if enabled
+	if b.isEmbeddingEnabled() && len(texts) > 0 {
+		embeddings, err := b.generateBatchEmbeddings(texts)
+		if err != nil {
+			// Log error but continue without embeddings
+			fmt.Printf("Warning: Failed to generate embeddings for experiments batch: %v\n", err)
+		} else {
+			// Add embeddings to documents
+			for i, doc := range docs {
+				if i < len(embeddings) && embeddings[i] != nil {
+					docMap := doc.(map[string]interface{})
+					docMap["embedding"] = embeddings[i]
+				}
+			}
+		}
 	}
 
 	// Index the batch
@@ -260,6 +308,7 @@ func (b *IndexBuilder) processSamplesBatch(ctx context.Context, offset int64, li
 	defer rows.Close()
 
 	docs := make([]interface{}, 0, limit)
+	texts := make([]string, 0, limit) // For batch embedding
 	count := 0
 
 	for rows.Next() {
@@ -286,11 +335,34 @@ func (b *IndexBuilder) processSamplesBatch(ctx context.Context, offset int64, li
 			doc["attributes"] = sample.Attributes.String
 		}
 
+		// Prepare text for embedding if enabled
+		if b.isEmbeddingEnabled() {
+			text := prepareSampleText(sample.Title.String, sample.Organism.String, sample.Attributes.String)
+			texts = append(texts, text)
+		}
+
 		docs = append(docs, doc)
 		count++
 
 		// Update last document ID
 		b.progress.LastDocumentID = sample.Accession
+	}
+
+	// Generate embeddings if enabled
+	if b.isEmbeddingEnabled() && len(texts) > 0 {
+		embeddings, err := b.generateBatchEmbeddings(texts)
+		if err != nil {
+			// Log error but continue without embeddings
+			fmt.Printf("Warning: Failed to generate embeddings for samples batch: %v\n", err)
+		} else {
+			// Add embeddings to documents
+			for i, doc := range docs {
+				if i < len(embeddings) && embeddings[i] != nil {
+					docMap := doc.(map[string]interface{})
+					docMap["embedding"] = embeddings[i]
+				}
+			}
+		}
 	}
 
 	// Index the batch

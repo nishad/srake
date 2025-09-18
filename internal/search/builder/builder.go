@@ -8,6 +8,7 @@ import (
 
 	"github.com/nishad/srake/internal/config"
 	"github.com/nishad/srake/internal/database"
+	"github.com/nishad/srake/internal/embeddings"
 	"github.com/nishad/srake/internal/search"
 )
 
@@ -46,6 +47,7 @@ type IndexBuilder struct {
 	syncer   *search.Syncer
 	progress *Progress
 	options  BuildOptions
+	embedder *embeddings.SearchEmbedder
 
 	// Runtime state
 	mu           sync.RWMutex
@@ -102,6 +104,30 @@ func NewIndexBuilder(cfg *config.Config, db *database.DB, backend search.SearchB
 		return nil, fmt.Errorf("failed to create syncer: %w", err)
 	}
 	builder.syncer = syncer
+
+	// Initialize embedder if embeddings are enabled
+	if options.WithEmbeddings {
+		// Configure embeddings in config if not already set
+		if !cfg.Embeddings.Enabled {
+			cfg.Embeddings.Enabled = true
+			if options.EmbeddingModel != "" {
+				cfg.Embeddings.DefaultModel = options.EmbeddingModel
+			} else {
+				cfg.Embeddings.DefaultModel = "Xenova/SapBERT-from-PubMedBERT-fulltext"
+			}
+			if cfg.Embeddings.ModelsDirectory == "" {
+				cfg.Embeddings.ModelsDirectory = "/Users/nishad/.srake/models"
+			}
+		}
+
+		embedder, err := embeddings.NewSearchEmbedder(cfg)
+		if err != nil {
+			// Log warning but continue without embeddings
+			fmt.Printf("Warning: Failed to initialize embedder: %v\n", err)
+		} else {
+			builder.embedder = embedder
+		}
+	}
 
 	// Load or create progress
 	if options.Resume {
@@ -209,6 +235,12 @@ func (b *IndexBuilder) Stop() error {
 
 	if b.state != StateRunning && b.state != StatePaused {
 		return fmt.Errorf("builder is not running")
+	}
+
+	// Clean up embedder if initialized
+	if b.embedder != nil {
+		b.embedder.Close()
+		b.embedder = nil
 	}
 
 	close(b.stopChan)
