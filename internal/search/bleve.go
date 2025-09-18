@@ -63,6 +63,9 @@ func createBiologicalIndexMapping() mapping.IndexMapping {
 	docMapping.AddFieldMappingsAt("experiment_accession", createKeywordFieldMapping())
 	docMapping.AddFieldMappingsAt("title", createTextFieldMapping())
 	docMapping.AddFieldMappingsAt("library_strategy", createTextFieldMapping())
+	docMapping.AddFieldMappingsAt("library_source", createKeywordFieldMapping())
+	docMapping.AddFieldMappingsAt("library_selection", createKeywordFieldMapping())
+	docMapping.AddFieldMappingsAt("library_layout", createKeywordFieldMapping())
 	docMapping.AddFieldMappingsAt("platform", createKeywordFieldMapping())
 	docMapping.AddFieldMappingsAt("instrument_model", createKeywordFieldMapping())
 
@@ -78,6 +81,9 @@ func createBiologicalIndexMapping() mapping.IndexMapping {
 	docMapping.AddFieldMappingsAt("run_accession", createKeywordFieldMapping())
 	docMapping.AddFieldMappingsAt("spots", createNumericFieldMapping())
 	docMapping.AddFieldMappingsAt("bases", createNumericFieldMapping())
+
+	// Date fields
+	docMapping.AddFieldMappingsAt("submission_date", createDateFieldMapping())
 
 	// Set the default mapping (applies to all documents)
 	indexMapping.DefaultMapping = docMapping
@@ -114,6 +120,13 @@ func createSimpleFieldMapping() *mapping.FieldMapping {
 
 func createNumericFieldMapping() *mapping.FieldMapping {
 	fieldMapping := bleve.NewNumericFieldMapping()
+	fieldMapping.Store = true
+	fieldMapping.IncludeInAll = false
+	return fieldMapping
+}
+
+func createDateFieldMapping() *mapping.FieldMapping {
+	fieldMapping := bleve.NewDateTimeFieldMapping()
 	fieldMapping.Store = true
 	fieldMapping.IncludeInAll = false
 	return fieldMapping
@@ -193,6 +206,46 @@ func (b *BleveIndex) Search(queryStr string, limit int) (*bleve.SearchResult, er
 	searchRequest.AddFacet("type", bleve.NewFacetRequest("type", 5))
 
 	return b.index.Search(searchRequest)
+}
+
+// SearchWithQuery performs a search with a pre-built query
+func (b *BleveIndex) SearchWithQuery(q interface{}, limit int) (*bleve.SearchResult, error) {
+	var searchQuery query.Query
+
+	switch qt := q.(type) {
+	case query.Query:
+		searchQuery = qt
+	default:
+		return nil, fmt.Errorf("invalid query type")
+	}
+
+	searchRequest := bleve.NewSearchRequest(searchQuery)
+	searchRequest.Size = limit
+	searchRequest.Fields = []string{"*"}
+
+	// Add facets for filtering
+	searchRequest.AddFacet("organism", bleve.NewFacetRequest("organism", 10))
+	searchRequest.AddFacet("library_strategy", bleve.NewFacetRequest("library_strategy", 10))
+	searchRequest.AddFacet("platform", bleve.NewFacetRequest("platform", 10))
+	searchRequest.AddFacet("type", bleve.NewFacetRequest("type", 5))
+	searchRequest.AddFacet("library_source", bleve.NewFacetRequest("library_source", 10))
+	searchRequest.AddFacet("library_layout", bleve.NewFacetRequest("library_layout", 5))
+
+	return b.index.Search(searchRequest)
+}
+
+// BuildConjunctionQuery creates a conjunction query from multiple queries
+func (b *BleveIndex) BuildConjunctionQuery(queries []interface{}) query.Query {
+	var queryList []query.Query
+	for _, q := range queries {
+		if qq, ok := q.(query.Query); ok {
+			queryList = append(queryList, qq)
+		}
+	}
+	if len(queryList) == 1 {
+		return queryList[0]
+	}
+	return bleve.NewConjunctionQuery(queryList...)
 }
 
 // SearchWithFilters performs a search with additional filters

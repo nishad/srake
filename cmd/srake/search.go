@@ -63,11 +63,20 @@ Search modes:
 
 var (
 	// Filter flags
-	searchOrganism       string
-	searchPlatform       string
+	searchOrganism        string
+	searchPlatform        string
 	searchLibraryStrategy string
-	searchStudyType      string
+	searchLibrarySource   string
+	searchLibrarySelection string
+	searchLibraryLayout   string
+	searchStudyType       string
 	searchInstrumentModel string
+	searchDateFrom        string
+	searchDateTo          string
+	searchSpotsMin        int64
+	searchSpotsMax        int64
+	searchBasesMin        int64
+	searchBasesMax        int64
 
 	// Output flags
 	searchLimit    int
@@ -78,11 +87,16 @@ var (
 	searchFields   string
 
 	// Search mode flags
-	searchFuzzy    bool
-	searchExact    bool
-	searchStats    bool
-	searchFacets   bool
-	searchHighlight bool
+	searchFuzzy         bool
+	searchExact         bool
+	searchStats         bool
+	searchFacets        bool
+	searchHighlight     bool
+	searchAdvanced      bool
+	searchBoolOp        string
+	searchAggregateBy   string
+	searchCountOnly     bool
+	searchGroupBy       string
 
 	// Advanced flags
 	searchIndexPath string
@@ -112,11 +126,38 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	if searchLibraryStrategy != "" {
 		filters["library_strategy"] = searchLibraryStrategy
 	}
+	if searchLibrarySource != "" {
+		filters["library_source"] = searchLibrarySource
+	}
+	if searchLibrarySelection != "" {
+		filters["library_selection"] = searchLibrarySelection
+	}
+	if searchLibraryLayout != "" {
+		filters["library_layout"] = searchLibraryLayout
+	}
 	if searchStudyType != "" {
 		filters["study_type"] = searchStudyType
 	}
 	if searchInstrumentModel != "" {
 		filters["instrument_model"] = searchInstrumentModel
+	}
+	if searchDateFrom != "" {
+		filters["submission_date_from"] = searchDateFrom
+	}
+	if searchDateTo != "" {
+		filters["submission_date_to"] = searchDateTo
+	}
+	if searchSpotsMin > 0 {
+		filters["spots_min"] = fmt.Sprintf("%d", searchSpotsMin)
+	}
+	if searchSpotsMax > 0 {
+		filters["spots_max"] = fmt.Sprintf("%d", searchSpotsMax)
+	}
+	if searchBasesMin > 0 {
+		filters["bases_min"] = fmt.Sprintf("%d", searchBasesMin)
+	}
+	if searchBasesMax > 0 {
+		filters["bases_max"] = fmt.Sprintf("%d", searchBasesMax)
 	}
 
 	// Show search progress
@@ -262,7 +303,42 @@ func runLocalSearch(query string, filters map[string]string) error {
 	var results interface{}
 	startTime := time.Now()
 
-	if searchFuzzy && query != "" {
+	if searchAdvanced && query != "" {
+		// Advanced query parsing
+		parser := search.NewQueryParser()
+		advancedQuery, err := parser.ParseAdvancedQuery(query)
+		if err != nil {
+			return fmt.Errorf("failed to parse advanced query: %v", err)
+		}
+
+		// Add filters to advanced query
+		if len(filters) > 0 {
+			filterQueries := parser.ParseFilters(filters)
+			allQueries := []interface{}{advancedQuery}
+			for _, fq := range filterQueries {
+				allQueries = append(allQueries, fq)
+			}
+			// Use bleve directly for conjunction
+			var finalQuery interface{}
+			if len(allQueries) > 1 {
+				// Import needed at top
+				finalQuery = idx.BuildConjunctionQuery(allQueries)
+			} else {
+				finalQuery = advancedQuery
+			}
+			bleveResult, err := idx.SearchWithQuery(finalQuery, searchLimit)
+			if err != nil {
+				return fmt.Errorf("advanced search failed: %v", err)
+			}
+			results = bleveResult
+		} else {
+			bleveResult, err := idx.SearchWithQuery(advancedQuery, searchLimit)
+			if err != nil {
+				return fmt.Errorf("advanced search failed: %v", err)
+			}
+			results = bleveResult
+		}
+	} else if searchFuzzy && query != "" {
 		// Fuzzy search
 		bleveResult, err := idx.FuzzySearch(query, 2, searchLimit)
 		if err != nil {
@@ -286,6 +362,11 @@ func runLocalSearch(query string, filters map[string]string) error {
 	}
 
 	elapsed := time.Since(startTime)
+
+	// Handle aggregation if requested
+	if searchAggregateBy != "" || searchCountOnly {
+		return formatAggregatedResults(results, query, elapsed)
+	}
 
 	// Format and output results
 	return formatSearchResults(results, query, elapsed)
@@ -598,4 +679,101 @@ func truncate(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen-3] + "..."
+}
+
+// formatAggregatedResults formats aggregated search results
+func formatAggregatedResults(results interface{}, query string, elapsed time.Duration) error {
+	bleveResult, ok := results.(*search.BleveSearchResult)
+	if !ok {
+		return fmt.Errorf("unexpected result type")
+	}
+
+	// If count-only, just show the count
+	if searchCountOnly {
+		if searchFormat == "json" {
+			output := map[string]interface{}{
+				"query": query,
+				"count": bleveResult.Total,
+				"time_ms": elapsed.Milliseconds(),
+			}
+			encoder := json.NewEncoder(os.Stdout)
+			encoder.SetIndent("", "  ")
+			return encoder.Encode(output)
+		}
+		fmt.Printf("%d\n", bleveResult.Total)
+		if verbose {
+			fmt.Printf("# Query: %s, Time: %v\n", query, elapsed)
+		}
+		return nil
+	}
+
+	// Aggregate by field
+	if searchAggregateBy != "" && len(bleveResult.Facets) > 0 {
+		// Find the requested facet
+		facet, exists := bleveResult.Facets[searchAggregateBy]
+		if !exists {
+			// Try to find it in the results
+			aggregation := make(map[string]int)
+			for _, hit := range bleveResult.Hits {
+				if val, ok := hit.Fields[searchAggregateBy]; ok {
+					key := fmt.Sprintf("%v", val)
+					aggregation[key]++
+				}
+			}
+
+			// Output aggregation
+			if searchFormat == "json" {
+				output := map[string]interface{}{
+					"query": query,
+					"aggregation_field": searchAggregateBy,
+					"values": aggregation,
+					"total": bleveResult.Total,
+				}
+				encoder := json.NewEncoder(os.Stdout)
+				encoder.SetIndent("", "  ")
+				return encoder.Encode(output)
+			}
+
+			// Table format
+			fmt.Println(colorize(colorBold, fmt.Sprintf("Aggregation by %s", searchAggregateBy)))
+			fmt.Println(strings.Repeat("─", 50))
+
+			for key, count := range aggregation {
+				fmt.Printf("%-40s %d\n", key, count)
+			}
+
+			if !quiet {
+				fmt.Printf("\n%s\n", colorize(colorGray,
+					fmt.Sprintf("Total: %d results in %v", bleveResult.Total, elapsed)))
+			}
+		} else {
+			// Use facet data
+			if searchFormat == "json" {
+				output := map[string]interface{}{
+					"query": query,
+					"aggregation_field": searchAggregateBy,
+					"facet": facet,
+					"total": bleveResult.Total,
+				}
+				encoder := json.NewEncoder(os.Stdout)
+				encoder.SetIndent("", "  ")
+				return encoder.Encode(output)
+			}
+
+			// Table format
+			fmt.Println(colorize(colorBold, fmt.Sprintf("Aggregation by %s", searchAggregateBy)))
+			fmt.Println(strings.Repeat("─", 50))
+
+			for _, term := range facet.Terms.Terms() {
+				fmt.Printf("%-40s %d\n", term.Term, term.Count)
+			}
+
+			if !quiet {
+				fmt.Printf("\n%s\n", colorize(colorGray,
+					fmt.Sprintf("Total: %d results in %v", bleveResult.Total, elapsed)))
+			}
+		}
+	}
+
+	return nil
 }

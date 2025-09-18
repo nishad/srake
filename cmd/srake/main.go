@@ -66,8 +66,17 @@ func init() {
 	searchCmd.Flags().StringVarP(&searchOrganism, "organism", "o", "", "Filter by organism")
 	searchCmd.Flags().StringVar(&searchPlatform, "platform", "", "Filter by platform (ILLUMINA, OXFORD_NANOPORE, PACBIO, etc.)")
 	searchCmd.Flags().StringVar(&searchLibraryStrategy, "library-strategy", "", "Filter by library strategy (RNA-Seq, ChIP-Seq, WGS, etc.)")
+	searchCmd.Flags().StringVar(&searchLibrarySource, "library-source", "", "Filter by library source (GENOMIC, TRANSCRIPTOMIC, etc.)")
+	searchCmd.Flags().StringVar(&searchLibrarySelection, "library-selection", "", "Filter by library selection (RANDOM, PCR, etc.)")
+	searchCmd.Flags().StringVar(&searchLibraryLayout, "library-layout", "", "Filter by library layout (SINGLE, PAIRED)")
 	searchCmd.Flags().StringVar(&searchStudyType, "study-type", "", "Filter by study type")
 	searchCmd.Flags().StringVar(&searchInstrumentModel, "instrument", "", "Filter by instrument model")
+	searchCmd.Flags().StringVar(&searchDateFrom, "date-from", "", "Filter by submission date from (YYYY-MM-DD)")
+	searchCmd.Flags().StringVar(&searchDateTo, "date-to", "", "Filter by submission date to (YYYY-MM-DD)")
+	searchCmd.Flags().Int64Var(&searchSpotsMin, "spots-min", 0, "Minimum number of spots")
+	searchCmd.Flags().Int64Var(&searchSpotsMax, "spots-max", 0, "Maximum number of spots")
+	searchCmd.Flags().Int64Var(&searchBasesMin, "bases-min", 0, "Minimum number of bases")
+	searchCmd.Flags().Int64Var(&searchBasesMax, "bases-max", 0, "Maximum number of bases")
 
 	// Search command flags - Output control
 	searchCmd.Flags().IntVarP(&searchLimit, "limit", "l", 100, "Maximum results to return")
@@ -83,6 +92,11 @@ func init() {
 	searchCmd.Flags().BoolVar(&searchStats, "stats", false, "Show search statistics instead of results")
 	searchCmd.Flags().BoolVar(&searchFacets, "facets", false, "Show faceted search results (counts by category)")
 	searchCmd.Flags().BoolVar(&searchHighlight, "highlight", false, "Highlight matching terms in results")
+	searchCmd.Flags().BoolVar(&searchAdvanced, "advanced", false, "Enable advanced query syntax (field:value, AND/OR/NOT)")
+	searchCmd.Flags().StringVar(&searchBoolOp, "bool-op", "AND", "Default boolean operator (AND or OR)")
+	searchCmd.Flags().StringVar(&searchAggregateBy, "aggregate-by", "", "Aggregate results by field (organism, platform, strategy)")
+	searchCmd.Flags().BoolVar(&searchCountOnly, "count-only", false, "Return only result count")
+	searchCmd.Flags().StringVar(&searchGroupBy, "group-by", "", "Group results by field")
 
 	// Search command flags - Advanced
 	searchCmd.Flags().StringVar(&searchIndexPath, "index-path", "", "Path to search index (default: auto-detect)")
