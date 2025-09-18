@@ -1,62 +1,157 @@
 ---
 title: srake 🍶🧬
-toc: false
+layout: hextra-home
 ---
 
-# srake - Blazing-Fast SRA Metadata Processing
+{{< hextra/hero-badge >}}
+  <div class="hx-w-2 hx-h-2 hx-rounded-full hx-bg-primary-400"></div>
+  <span>Free, open source</span>
+  {{< icon name="arrow-circle-right" attributes="height=14" >}}
+{{< /hextra/hero-badge >}}
 
-> Process multi-gigabyte NCBI SRA metadata archives with zero-copy streaming, intelligent filtering, and resume capabilities
+<div class="hx-mt-6 hx-mb-6">
+{{< hextra/hero-headline >}}
+  Blazing-Fast SRA&nbsp;<br class="sm:hx-block hx-hidden" />Metadata Processing
+{{< /hextra/hero-headline >}}
+</div>
 
-## Quick Start
+<div class="hx-mb-12">
+{{< hextra/hero-subtitle >}}
+  Process multi-gigabyte NCBI SRA metadata archives with&nbsp;<br class="sm:hx-block hx-hidden" />
+  zero-copy streaming, intelligent filtering, and resume capabilities
+{{< /hextra/hero-subtitle >}}
+</div>
 
-```bash
-# Install srake
-go install github.com/nishad/srake/cmd/srake@latest
+<div class="hx-mb-6">
+{{< hextra/hero-button text="Get Started" link="docs/getting-started" >}}
+{{< hextra/hero-button text="View on GitHub" link="https://github.com/nishad/srake" style="secondary" >}}
+</div>
 
-# Ingest SRA metadata
-srake ingest --auto
+<div class="hx-mt-6"></div>
 
-# Search the database
-srake search "homo sapiens"
-```
+{{< hextra/feature-grid >}}
+  {{< hextra/feature-card
+    title="Lightning Fast"
+    subtitle="Process 20,000+ records per second with concurrent processing and optimized SQLite backend"
+    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
+    image="images/hextra-doc.webp"
+    imageClass="hx-top-[40%] hx-left-[24px] hx-w-[180%] sm:hx-w-[110%] dark:hx-opacity-80"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(194,97,254,0.15),hsla(0,0%,100%,0));"
+  >}}
+  {{< hextra/feature-card
+    title="Memory Efficient"
+    subtitle="Constant < 500MB memory usage regardless of file size with zero-copy streaming architecture"
+    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
+    image="images/hextra-markdown.webp"
+    imageClass="hx-top-[40%] hx-left-[36px] hx-w-[180%] sm:hx-w-[110%] dark:hx-opacity-80"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(142,53,74,0.15),hsla(0,0%,100%,0));"
+  >}}
+  {{< hextra/feature-card
+    title="Smart Filtering"
+    subtitle="Filter by taxonomy, organism, platform, date ranges, and quality metrics during ingestion"
+    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
+    image="images/hextra-search.webp"
+    imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(221,210,59,0.15),hsla(0,0%,100%,0));"
+  >}}
+  {{< hextra/feature-card
+    title="Resume Support"
+    subtitle="Intelligent resume from interruption with checkpoint system and progress tracking"
+    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
+    image="images/hextra-theme.webp"
+    imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(120,119,198,0.15),hsla(0,0%,100%,0));"
+  >}}
+  {{< hextra/feature-card
+    title="Full-Text Search"
+    subtitle="Query your database with optimized SQLite full-text search and smart indexing"
+    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
+    image="images/hextra-theme.webp"
+    imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(24,188,156,0.15),hsla(0,0%,100%,0));"
+  >}}
+  {{< hextra/feature-card
+    title="REST API"
+    subtitle="Built-in API server for programmatic access to your SRA metadata"
+    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
+    image="images/hextra-theme.webp"
+    imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(34,184,207,0.15),hsla(0,0%,100%,0));"
+  >}}
+{{< /hextra/feature-grid >}}
 
-## Key Features
+## Quick Start {.hx-mt-12}
 
-### ⚡ Lightning Fast
-Process 20,000+ records per second with concurrent processing and optimized SQLite backend
+{{< tabs items="Install,Ingest,Search" >}}
+  {{< tab >}}
+  ```bash
+  # Using Go
+  go install github.com/nishad/srake/cmd/srake@latest
 
-### 💾 Memory Efficient
-Constant < 500MB memory usage regardless of file size with zero-copy streaming architecture
+  # Using Homebrew
+  brew tap nishad/srake
+  brew install srake
 
-### 🔍 Smart Filtering
-Filter by taxonomy, organism, platform, date ranges, and quality metrics during ingestion
+  # Using Docker
+  docker pull ghcr.io/nishad/srake:latest
+  ```
+  {{< /tab >}}
+  {{< tab >}}
+  ```bash
+  # Auto-select and ingest
+  srake ingest --auto
 
-### 🔄 Resume Support
-Intelligent resume from interruption with checkpoint system and progress tracking
+  # With filters
+  srake ingest --file archive.tar.gz \
+    --taxon-ids 9606 \
+    --platforms ILLUMINA \
+    --strategies RNA-Seq
+  ```
+  {{< /tab >}}
+  {{< tab >}}
+  ```bash
+  # Search the database
+  srake search "homo sapiens"
 
-### 📊 Full-Text Search
-Query your database with optimized SQLite full-text search and smart indexing
+  # Start API server
+  srake server --port 8080
 
-### 🌐 REST API
-Built-in API server for programmatic access to your SRA metadata
+  # Query via API
+  curl "localhost:8080/api/search?q=human"
+  ```
+  {{< /tab >}}
+{{< /tabs >}}
 
-## Documentation
+## Performance Metrics
 
-- [Getting Started](/docs/getting-started) - Installation and quick start guide
-- [Features](/docs/features) - Explore all capabilities
-- [API Reference](/docs/api) - REST API and Go library documentation
-- [Examples](/docs/examples) - Real-world usage examples
+{{< hextra/feature-grid >}}
+  {{< hextra/feature-card
+    title="20,000+"
+    subtitle="Records per second"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(194,97,254,0.15),hsla(0,0%,100%,0));"
+  >}}
+  {{< hextra/feature-card
+    title="< 500MB"
+    subtitle="Memory usage (constant)"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(142,53,74,0.15),hsla(0,0%,100%,0));"
+  >}}
+  {{< hextra/feature-card
+    title="14GB+"
+    subtitle="File size support"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(221,210,59,0.15),hsla(0,0%,100%,0));"
+  >}}
+  {{< hextra/feature-card
+    title="< 5%"
+    subtitle="Filter overhead"
+    style="background: radial-gradient(ellipse at 50% 80%,rgba(120,119,198,0.15),hsla(0,0%,100%,0));"
+  >}}
+{{< /hextra/feature-grid >}}
 
-## Performance
+## Learn More
 
-| Metric | Performance |
-|--------|-------------|
-| **Throughput** | 20,000+ records/second |
-| **Memory Usage** | < 500MB constant |
-| **Large File Support** | 14GB+ without disk storage |
-| **Resume Time** | < 5 seconds |
-| **Filter Overhead** | < 5% |
-
-## Get Started
-
-[Read the Documentation](/docs) or [View on GitHub](https://github.com/nishad/srake)
+{{< cards >}}
+  {{< card link="docs" title="Documentation" icon="book-open" subtitle="Complete guides and references" >}}
+  {{< card link="docs/getting-started" title="Getting Started" icon="rocket" subtitle="Install and run in minutes" >}}
+  {{< card link="docs/features" title="Features" icon="sparkles" subtitle="Explore all capabilities" >}}
+  {{< card link="docs/api" title="API Reference" icon="code-bracket" subtitle="REST API and Go library" >}}
+{{< /cards >}}

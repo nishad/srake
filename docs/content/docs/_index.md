@@ -13,10 +13,12 @@ srake (pronounced "ess-RAH-keh" like Japanese sake 酒) is a blazing-fast, memor
 
 ## Key Features
 
-- **[Getting Started](getting-started)** - Install and run srake in minutes
-- **[Filtering System](features/filtering)** - Process only the data you need
-- **[Resume Capability](features/resume)** - Handle interruptions gracefully
-- **[API Reference](api)** - REST API and Go library
+{{< cards >}}
+  {{< card link="getting-started" title="Getting Started" icon="rocket" subtitle="Install and run srake in minutes" >}}
+  {{< card link="features/filtering" title="Filtering System" icon="funnel" subtitle="Process only the data you need" >}}
+  {{< card link="features/resume" title="Resume Capability" icon="arrow-path" subtitle="Handle interruptions gracefully" >}}
+  {{< card link="api" title="API Reference" icon="code-bracket" subtitle="REST API and Go library" >}}
+{{< /cards >}}
 
 ## Why srake?
 
