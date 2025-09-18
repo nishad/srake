@@ -165,7 +165,7 @@ func (s *Syncer) indexStudies(ctx context.Context) error {
 	query := `
 		SELECT study_accession, study_title, study_abstract, study_type,
 		       organism, submission_date
-		FROM study
+		FROM studies
 		LIMIT ? OFFSET ?
 	`
 
@@ -265,7 +265,7 @@ func (s *Syncer) indexExperiments(ctx context.Context) error {
 	query := `
 		SELECT experiment_accession, title, library_strategy,
 		       platform, instrument_model
-		FROM experiment
+		FROM experiments
 		LIMIT ? OFFSET ?
 	`
 
@@ -357,7 +357,7 @@ func (s *Syncer) indexSamples(ctx context.Context) error {
 	query := `
 		SELECT sample_accession, organism, scientific_name,
 		       tissue, cell_type, description
-		FROM sample
+		FROM samples
 		LIMIT ? OFFSET ?
 	`
 
@@ -449,8 +449,8 @@ func (s *Syncer) indexSamples(ctx context.Context) error {
 // indexRuns indexes all runs from the database
 func (s *Syncer) indexRuns(ctx context.Context) error {
 	query := `
-		SELECT run_accession, spots, bases
-		FROM run
+		SELECT run_accession, total_spots, total_bases
+		FROM runs
 		LIMIT ? OFFSET ?
 	`
 

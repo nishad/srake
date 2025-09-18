@@ -215,10 +215,10 @@ func showIndexStats(cfg *config.Config, db *database.DB) error {
 
 	// Get database counts for comparison
 	var studyCount, experimentCount, sampleCount, runCount int
-	db.DB.QueryRow("SELECT COUNT(*) FROM study").Scan(&studyCount)
-	db.DB.QueryRow("SELECT COUNT(*) FROM experiment").Scan(&experimentCount)
-	db.DB.QueryRow("SELECT COUNT(*) FROM sample").Scan(&sampleCount)
-	db.DB.QueryRow("SELECT COUNT(*) FROM run").Scan(&runCount)
+	db.DB.QueryRow("SELECT COUNT(*) FROM studies").Scan(&studyCount)
+	db.DB.QueryRow("SELECT COUNT(*) FROM experiments").Scan(&experimentCount)
+	db.DB.QueryRow("SELECT COUNT(*) FROM samples").Scan(&sampleCount)
+	db.DB.QueryRow("SELECT COUNT(*) FROM runs").Scan(&runCount)
 
 	totalDBDocs := studyCount + experimentCount + sampleCount + runCount
 
