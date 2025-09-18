@@ -7,8 +7,8 @@ VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 LDFLAGS := -ldflags="-s -w -X main.version=$(VERSION) -X main.commit=$(COMMIT) -X main.date=$(BUILD_DATE)"
-# Enable FTS5 support for SQLite
-TAGS := -tags "sqlite_fts5"
+# Enable FTS5 support for SQLite and search features
+TAGS := -tags "sqlite_fts5,search"
 
 # Go commands
 GOCMD := go

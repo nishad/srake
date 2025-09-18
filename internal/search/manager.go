@@ -57,16 +57,13 @@ func NewManager(cfg *config.Config, db *database.DB) (*Manager, error) {
 		}
 	}
 
-	// Initialize Bleve if enabled
+	// Initialize search backend if enabled
 	if cfg.IsSearchEnabled() {
-		// For now, use the existing BleveIndex
-		// TODO: Switch to BleveBackend when ready
-		bleveIndex, err := InitBleveIndex(cfg.DataDirectory)
+		backend, err := CreateSearchBackend(cfg)
 		if err != nil {
-			return nil, fmt.Errorf("failed to initialize Bleve: %w", err)
+			return nil, fmt.Errorf("failed to create search backend: %w", err)
 		}
-		// Wrap it as a simple backend
-		m.bleve = &bleveIndexWrapper{index: bleveIndex}
+		m.bleve = backend
 	}
 
 	return m, nil

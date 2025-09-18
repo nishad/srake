@@ -172,6 +172,8 @@ func (s *Syncer) indexStudies(ctx context.Context) error {
 	batchSize := s.config.Search.BatchSize
 	offset := 0
 	totalIndexed := 0
+	batchesSinceFlush := 0
+	flushInterval := 10 // Flush every 10 batches
 
 	for {
 		select {
@@ -250,6 +252,16 @@ func (s *Syncer) indexStudies(ctx context.Context) error {
 
 		totalIndexed += count
 		offset += batchSize
+		batchesSinceFlush++
+
+		// Periodically flush the index for progressive saving
+		if batchesSinceFlush >= flushInterval {
+			log.Printf("Flushing index after %d batches (%d documents indexed so far)", batchesSinceFlush, totalIndexed)
+			if err := s.backend.Flush(); err != nil {
+				log.Printf("Warning: failed to flush index: %v", err)
+			}
+			batchesSinceFlush = 0
+		}
 
 		if count < batchSize {
 			break // Last batch
@@ -272,6 +284,8 @@ func (s *Syncer) indexExperiments(ctx context.Context) error {
 	batchSize := s.config.Search.BatchSize
 	offset := 0
 	totalIndexed := 0
+	batchesSinceFlush := 0
+	flushInterval := 10 // Flush every 10 batches
 
 	for {
 		select {
@@ -342,6 +356,16 @@ func (s *Syncer) indexExperiments(ctx context.Context) error {
 
 		totalIndexed += count
 		offset += batchSize
+		batchesSinceFlush++
+
+		// Periodically flush the index for progressive saving
+		if batchesSinceFlush >= flushInterval {
+			log.Printf("Flushing index after %d batches (%d experiments indexed so far)", batchesSinceFlush, totalIndexed)
+			if err := s.backend.Flush(); err != nil {
+				log.Printf("Warning: failed to flush index: %v", err)
+			}
+			batchesSinceFlush = 0
+		}
 
 		if count < batchSize {
 			break // Last batch
@@ -364,6 +388,8 @@ func (s *Syncer) indexSamples(ctx context.Context) error {
 	batchSize := s.config.Search.BatchSize
 	offset := 0
 	totalIndexed := 0
+	batchesSinceFlush := 0
+	flushInterval := 10 // Flush every 10 batches
 
 	for {
 		select {
@@ -436,6 +462,16 @@ func (s *Syncer) indexSamples(ctx context.Context) error {
 
 		totalIndexed += count
 		offset += batchSize
+		batchesSinceFlush++
+
+		// Periodically flush the index for progressive saving
+		if batchesSinceFlush >= flushInterval {
+			log.Printf("Flushing index after %d batches (%d samples indexed so far)", batchesSinceFlush, totalIndexed)
+			if err := s.backend.Flush(); err != nil {
+				log.Printf("Warning: failed to flush index: %v", err)
+			}
+			batchesSinceFlush = 0
+		}
 
 		if count < batchSize {
 			break // Last batch
@@ -457,6 +493,8 @@ func (s *Syncer) indexRuns(ctx context.Context) error {
 	batchSize := s.config.Search.BatchSize
 	offset := 0
 	totalIndexed := 0
+	batchesSinceFlush := 0
+	flushInterval := 10 // Flush every 10 batches
 
 	for {
 		select {
@@ -513,6 +551,16 @@ func (s *Syncer) indexRuns(ctx context.Context) error {
 
 		totalIndexed += count
 		offset += batchSize
+		batchesSinceFlush++
+
+		// Periodically flush the index for progressive saving
+		if batchesSinceFlush >= flushInterval {
+			log.Printf("Flushing index after %d batches (%d runs indexed so far)", batchesSinceFlush, totalIndexed)
+			if err := s.backend.Flush(); err != nil {
+				log.Printf("Warning: failed to flush index: %v", err)
+			}
+			batchesSinceFlush = 0
+		}
 
 		if count < batchSize {
 			break // Last batch

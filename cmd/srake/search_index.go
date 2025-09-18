@@ -252,7 +252,7 @@ func verifyIndex(cfg *config.Config, db *database.DB) error {
 	printInfo("Verifying search index...")
 
 	// Open index
-	idx, err := search.InitBleveIndex(cfg.DataDirectory)
+	idx, err := search.InitBleveIndex(cfg.Search.IndexPath)
 	if err != nil {
 		return fmt.Errorf("failed to open index: %v", err)
 	}

@@ -227,7 +227,7 @@ func performSearch(query string, filters map[string]string) error {
 	}
 
 	// Initialize Bleve index
-	idx, err := search.InitBleveIndex(dataDir)
+	idx, err := search.InitBleveIndex(cfg.Search.IndexPath)
 	if err != nil {
 		return fmt.Errorf("failed to open search index: %v", err)
 	}

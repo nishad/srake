@@ -2,7 +2,6 @@ package search
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/mapping"
@@ -16,8 +15,8 @@ type BleveIndex struct {
 }
 
 // InitBleveIndex initializes or opens a Bleve index
-func InitBleveIndex(dataDir string) (*BleveIndex, error) {
-	indexPath := filepath.Join(dataDir, "search.blv")
+func InitBleveIndex(indexPath string) (*BleveIndex, error) {
+	// Use the provided index path directly
 
 	// Try to open existing index
 	index, err := bleve.Open(indexPath)
@@ -332,6 +331,14 @@ func (b *BleveIndex) BatchIndex(docs []interface{}) error {
 			id = d.RunAccession
 			d.Type = "run"
 			typedDoc = d
+		case map[string]interface{}:
+			// Handle generic documents from sync
+			if docID, ok := d["id"].(string); ok {
+				id = docID
+				typedDoc = d
+			} else {
+				continue
+			}
 		default:
 			continue
 		}

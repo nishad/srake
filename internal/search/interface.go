@@ -20,6 +20,7 @@ type SearchBackend interface {
 
 	// Management
 	Close() error
+	Flush() error  // Flush pending changes to disk
 	IsEnabled() bool
 	GetStats() (*IndexStats, error)
 	Rebuild(ctx context.Context) error

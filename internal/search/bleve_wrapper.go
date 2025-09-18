@@ -112,6 +112,12 @@ func (w *bleveIndexWrapper) Close() error {
 	return w.index.Close()
 }
 
+func (w *bleveIndexWrapper) Flush() error {
+	// BleveIndex doesn't have a flush method, so we return nil
+	// The underlying Bleve index handles persistence automatically
+	return nil
+}
+
 func (w *bleveIndexWrapper) IsEnabled() bool {
 	return true
 }
