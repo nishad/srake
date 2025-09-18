@@ -387,12 +387,68 @@ srake db <subcommand> [flags]
 
 #### Subcommands
 - `info` - Show database statistics and information
+- `export` - Export database to SRAmetadb format
 
 #### Examples
 ```bash
 # Show database statistics
 srake db info
+
+# Export to SRAmetadb format
+srake db export -o SRAmetadb.sqlite
 ```
+
+---
+
+### `srake db export`
+
+Export the srake database to SRAmetadb.sqlite format for compatibility with tools expecting the original SRAmetadb schema.
+
+```bash
+srake db export [flags]
+```
+
+#### Flags
+- `-o, --output <file>` - Output database file path (default: "SRAmetadb.sqlite")
+- `--db <path>` - Source database path (defaults to ~/.local/share/srake/srake.db)
+- `--fts-version <n>` - FTS version: 3 for compatibility, 5 for modern (default: 5)
+- `--batch-size <n>` - Batch size for data transfer (default: 10000)
+- `--progress` - Show progress bar (default: true)
+- `--compress` - Compress output with gzip
+- `-f, --force` - Overwrite existing output file
+
+#### Examples
+```bash
+# Basic export with FTS5 (recommended)
+srake db export -o SRAmetadb.sqlite
+
+# Export with FTS3 for 100% compatibility
+srake db export -o SRAmetadb.sqlite --fts-version 3
+
+# Export from specific database
+srake db export --db /path/to/srake.db -o SRAmetadb.sqlite
+
+# Export with compression
+srake db export -o SRAmetadb.sqlite.gz --compress
+
+# Large dataset with custom batch size
+srake db export -o SRAmetadb.sqlite --batch-size 50000
+```
+
+#### Output Schema
+The exported database contains:
+- **Standard tables**: `study`, `experiment`, `sample`, `run`, `submission`
+- **Denormalized table**: `sra` (joins all tables for easy querying)
+- **Full-text search**: `sra_ft` (FTS3 or FTS5 virtual table)
+- **Metadata**: `metaInfo` (version and creation info)
+- **Column descriptions**: `col_desc` (field documentation)
+
+#### Compatibility Notes
+- **FTS5** (default): Modern, faster, smaller index size, better Unicode support
+- **FTS3**: Use for compatibility with older tools that require FTS3
+- The export maps srake's modern schema to the classic SRAmetadb format
+- JSON fields are converted to pipe-delimited strings
+- Missing legacy fields are populated with appropriate defaults
 
 ### `srake config`
 

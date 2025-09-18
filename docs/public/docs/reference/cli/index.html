@@ -48,7 +48,7 @@ Commands
   <meta itemprop="description" content="CLI ReferenceComplete reference for all srake commands and options.
 Global Flags These flags are available for all commands:
 --no-color - Disable colored output -v, --verbose - Enable verbose output -q, --quiet - Suppress non-error output -y, --yes - Assume yes to all prompts (non-interactive mode) --debug - Enable debug output for troubleshooting --help - Show help for any command Commands srake ingest Ingest SRA metadata from NCBI or local archives.">
-  <meta itemprop="wordCount" content="1554">
+  <meta itemprop="wordCount" content="1808">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="CLI Reference">
   <meta name="twitter:description" content="CLI ReferenceComplete reference for all srake commands and options.
@@ -672,6 +672,26 @@ Global Flags These flags are available for all commands:
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#srake-db-export">srake db export
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-8 hx:rtl:pr-8 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#flags-10">Flags
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-8 hx:rtl:pr-8 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#examples-11">Examples
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-8 hx:rtl:pr-8 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#output-schema">Output Schema
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-8 hx:rtl:pr-8 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#compatibility-notes">Compatibility Notes
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
         <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#srake-config">srake config
         </a>
       </li>
@@ -684,7 +704,7 @@ Global Flags These flags are available for all commands:
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:ltr:pl-8 hx:rtl:pr-8 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#examples-11">Examples
+        <a class="hx:ltr:pl-8 hx:rtl:pr-8 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#examples-12">Examples
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
@@ -700,7 +720,7 @@ Global Flags These flags are available for all commands:
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:ltr:pl-8 hx:rtl:pr-8 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#examples-12">Examples
+        <a class="hx:ltr:pl-8 hx:rtl:pr-8 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#examples-13">Examples
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
@@ -1317,12 +1337,16 @@ Global Flags These flags are available for all commands:
 <h4>Subcommands<span class="hx:absolute hx:-mt-20" id="subcommands"></span>
     <a href="#subcommands" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><ul>
 <li><code>info</code> - Show database statistics and information</li>
+<li><code>export</code> - Export database to SRAmetadb format</li>
 </ul>
 <h4>Examples<span class="hx:absolute hx:-mt-20" id="examples-10"></span>
     <a href="#examples-10" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Show database statistics</span>
-</span></span><span class="line"><span class="cl">srake db info</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+</span></span><span class="line"><span class="cl">srake db info
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Export to SRAmetadb format</span>
+</span></span><span class="line"><span class="cl">srake db <span class="nb">export</span> -o SRAmetadb.sqlite</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
   <button
     class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
     title="Copy code"
@@ -1332,6 +1356,74 @@ Global Flags These flags are available for all commands:
   </button>
 </div>
 </div>
+<hr>
+<h3><code>srake db export</code><span class="hx:absolute hx:-mt-20" id="srake-db-export"></span>
+    <a href="#srake-db-export" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Export the srake database to SRAmetadb.sqlite format for compatibility with tools expecting the original SRAmetadb schema.</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">srake db <span class="nb">export</span> <span class="o">[</span>flags<span class="o">]</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h4>Flags<span class="hx:absolute hx:-mt-20" id="flags-10"></span>
+    <a href="#flags-10" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><ul>
+<li><code>-o, --output &lt;file&gt;</code> - Output database file path (default: &ldquo;SRAmetadb.sqlite&rdquo;)</li>
+<li><code>--db &lt;path&gt;</code> - Source database path (defaults to ~/.local/share/srake/srake.db)</li>
+<li><code>--fts-version &lt;n&gt;</code> - FTS version: 3 for compatibility, 5 for modern (default: 5)</li>
+<li><code>--batch-size &lt;n&gt;</code> - Batch size for data transfer (default: 10000)</li>
+<li><code>--progress</code> - Show progress bar (default: true)</li>
+<li><code>--compress</code> - Compress output with gzip</li>
+<li><code>-f, --force</code> - Overwrite existing output file</li>
+</ul>
+<h4>Examples<span class="hx:absolute hx:-mt-20" id="examples-11"></span>
+    <a href="#examples-11" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Basic export with FTS5 (recommended)</span>
+</span></span><span class="line"><span class="cl">srake db <span class="nb">export</span> -o SRAmetadb.sqlite
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Export with FTS3 for 100% compatibility</span>
+</span></span><span class="line"><span class="cl">srake db <span class="nb">export</span> -o SRAmetadb.sqlite --fts-version <span class="m">3</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Export from specific database</span>
+</span></span><span class="line"><span class="cl">srake db <span class="nb">export</span> --db /path/to/srake.db -o SRAmetadb.sqlite
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Export with compression</span>
+</span></span><span class="line"><span class="cl">srake db <span class="nb">export</span> -o SRAmetadb.sqlite.gz --compress
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Large dataset with custom batch size</span>
+</span></span><span class="line"><span class="cl">srake db <span class="nb">export</span> -o SRAmetadb.sqlite --batch-size <span class="m">50000</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h4>Output Schema<span class="hx:absolute hx:-mt-20" id="output-schema"></span>
+    <a href="#output-schema" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><p>The exported database contains:</p>
+<ul>
+<li><strong>Standard tables</strong>: <code>study</code>, <code>experiment</code>, <code>sample</code>, <code>run</code>, <code>submission</code></li>
+<li><strong>Denormalized table</strong>: <code>sra</code> (joins all tables for easy querying)</li>
+<li><strong>Full-text search</strong>: <code>sra_ft</code> (FTS3 or FTS5 virtual table)</li>
+<li><strong>Metadata</strong>: <code>metaInfo</code> (version and creation info)</li>
+<li><strong>Column descriptions</strong>: <code>col_desc</code> (field documentation)</li>
+</ul>
+<h4>Compatibility Notes<span class="hx:absolute hx:-mt-20" id="compatibility-notes"></span>
+    <a href="#compatibility-notes" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><ul>
+<li><strong>FTS5</strong> (default): Modern, faster, smaller index size, better Unicode support</li>
+<li><strong>FTS3</strong>: Use for compatibility with older tools that require FTS3</li>
+<li>The export maps srake&rsquo;s modern schema to the classic SRAmetadb format</li>
+<li>JSON fields are converted to pipe-delimited strings</li>
+<li>Missing legacy fields are populated with appropriate defaults</li>
+</ul>
 <h3><code>srake config</code><span class="hx:absolute hx:-mt-20" id="srake-config"></span>
     <a href="#srake-config" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Configuration and path management commands.</p>
 <div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
@@ -1357,8 +1449,8 @@ Global Flags These flags are available for all commands:
     <a href="#flags-init" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><ul>
 <li><code>--force</code> - Overwrite existing configuration</li>
 </ul>
-<h4>Examples<span class="hx:absolute hx:-mt-20" id="examples-11"></span>
-    <a href="#examples-11" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+<h4>Examples<span class="hx:absolute hx:-mt-20" id="examples-12"></span>
+    <a href="#examples-12" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># View all paths</span>
 </span></span><span class="line"><span class="cl">srake config paths
@@ -1407,8 +1499,8 @@ Global Flags These flags are available for all commands:
 <li><code>--downloads</code> - Remove downloaded files</li>
 <li><code>--index</code> - Remove search index (requires rebuild)</li>
 </ul>
-<h4>Examples<span class="hx:absolute hx:-mt-20" id="examples-12"></span>
-    <a href="#examples-12" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+<h4>Examples<span class="hx:absolute hx:-mt-20" id="examples-13"></span>
+    <a href="#examples-13" class="subheading-anchor" aria-label="Permalink for this section"></a></h4><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
 
 <div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># View cache usage</span>
 </span></span><span class="line"><span class="cl">srake cache info
