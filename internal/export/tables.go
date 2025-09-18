@@ -151,9 +151,8 @@ func (e *Exporter) exportSamples() error {
 
 	rows, err := e.sourceDB.DB.Query(`
 		SELECT
-			sample_accession, alias, center_name, broker_name,
-			title, description, taxon_id, scientific_name,
-			common_name, organism, sample_attributes
+			sample_accession, description, taxon_id, scientific_name,
+			organism, tissue, cell_type, metadata
 		FROM samples
 	`)
 	if err != nil {
@@ -173,40 +172,45 @@ func (e *Exporter) exportSamples() error {
 	for rows.Next() {
 		var s struct {
 			accession      string
-			alias          sql.NullString
-			centerName     sql.NullString
-			brokerName     sql.NullString
-			title          sql.NullString
 			description    sql.NullString
 			taxonID        sql.NullInt64
 			scientificName sql.NullString
-			commonName     sql.NullString
 			organism       sql.NullString
-			attributes     sql.NullString
+			tissue         sql.NullString
+			cellType       sql.NullString
+			metadata       sql.NullString
 		}
 
 		err := rows.Scan(
-			&s.accession, &s.alias, &s.centerName, &s.brokerName,
-			&s.title, &s.description, &s.taxonID, &s.scientificName,
-			&s.commonName, &s.organism, &s.attributes,
+			&s.accession, &s.description, &s.taxonID, &s.scientificName,
+			&s.organism, &s.tissue, &s.cellType, &s.metadata,
 		)
 		if err != nil {
 			return err
 		}
 
-		attributesStr := jsonToDelimited(s.attributes.String, "|")
+		// Build attributes from tissue and cell_type if available
+		var attributes []string
+		if s.tissue.Valid && s.tissue.String != "" {
+			attributes = append(attributes, fmt.Sprintf("tissue=%s", s.tissue.String))
+		}
+		if s.cellType.Valid && s.cellType.String != "" {
+			attributes = append(attributes, fmt.Sprintf("cell_type=%s", s.cellType.String))
+		}
+		attributesStr := strings.Join(attributes, "|")
+
 		sraLink := fmt.Sprintf("https://www.ncbi.nlm.nih.gov/sra/%s", s.accession)
 		entrezLink := fmt.Sprintf("https://www.ncbi.nlm.nih.gov/sra/?term=%s", s.accession)
 
 		_, err = txStmt.Exec(
 			sampleID,
-			s.alias.String,
+			"", // alias - not in simplified schema
 			s.accession,
-			s.brokerName.String,
-			s.centerName.String,
+			"", // broker_name - not in simplified schema
+			"", // center_name - not in simplified schema
 			s.taxonID.Int64,
 			s.scientificName.String,
-			s.commonName.String,
+			"", // common_name - not in simplified schema
 			"", // anonymized_name
 			"", // individual_name
 			s.description.String,
@@ -252,15 +256,12 @@ func (e *Exporter) exportExperiments() error {
 
 	rows, err := e.sourceDB.DB.Query(`
 		SELECT
-			exp.experiment_accession, e.alias, e.center_name, e.broker_name,
-			exp.study_accession, e.sample_accession, e.title, e.design_description,
-			exp.library_name, e.library_strategy, e.library_source, e.library_selection,
-			exp.library_layout, e.library_construction_protocol, e.platform,
-			exp.instrument_model, e.spot_length, e.experiment_attributes,
-			s.alias as study_alias, sa.alias as sample_alias
+			e.experiment_accession, e.study_accession, e.title,
+			e.library_strategy, e.library_source, e.platform,
+			e.instrument_model, e.metadata,
+			es.sample_accession
 		FROM experiments e
-		LEFT JOIN studies s ON e.study_accession = s.study_accession
-		LEFT JOIN samples sa ON e.sample_accession = sa.sample_accession
+		LEFT JOIN experiment_samples es ON e.experiment_accession = es.experiment_accession
 	`)
 	if err != nil {
 		return err
@@ -278,41 +279,32 @@ func (e *Exporter) exportExperiments() error {
 
 	for rows.Next() {
 		var exp struct {
-			accession        string
-			alias            sql.NullString
-			centerName       sql.NullString
-			brokerName       sql.NullString
-			studyAccession   sql.NullString
-			sampleAccession  sql.NullString
-			title            sql.NullString
-			designDesc       sql.NullString
-			libraryName      sql.NullString
-			libraryStrategy  sql.NullString
-			librarySource    sql.NullString
-			librarySelection sql.NullString
-			libraryLayout    sql.NullString
-			libraryProtocol  sql.NullString
-			platform         sql.NullString
-			instrumentModel  sql.NullString
-			spotLength       sql.NullInt64
-			attributes       sql.NullString
-			studyAlias       sql.NullString
-			sampleAlias      sql.NullString
+			accession       string
+			studyAccession  sql.NullString
+			title           sql.NullString
+			libraryStrategy sql.NullString
+			librarySource   sql.NullString
+			platform        sql.NullString
+			instrumentModel sql.NullString
+			metadata        sql.NullString
+			sampleAccession sql.NullString
 		}
 
 		err := rows.Scan(
-			&exp.accession, &exp.alias, &exp.centerName, &exp.brokerName,
-			&exp.studyAccession, &exp.sampleAccession, &exp.title, &exp.designDesc,
-			&exp.libraryName, &exp.libraryStrategy, &exp.librarySource, &exp.librarySelection,
-			&exp.libraryLayout, &exp.libraryProtocol, &exp.platform,
-			&exp.instrumentModel, &exp.spotLength, &exp.attributes,
-			&exp.studyAlias, &exp.sampleAlias,
+			&exp.accession, &exp.studyAccession, &exp.title,
+			&exp.libraryStrategy, &exp.librarySource, &exp.platform,
+			&exp.instrumentModel, &exp.metadata, &exp.sampleAccession,
 		)
 		if err != nil {
 			return err
 		}
 
-		attributesStr := jsonToDelimited(exp.attributes.String, "|")
+		// Extract any additional info from metadata if available
+		attributesStr := ""
+		if exp.metadata.Valid {
+			attributesStr = jsonToDelimited(exp.metadata.String, "|")
+		}
+
 		sraLink := fmt.Sprintf("https://www.ncbi.nlm.nih.gov/sra/%s", exp.accession)
 		entrezLink := fmt.Sprintf("https://www.ncbi.nlm.nih.gov/sra/?term=%s", exp.accession)
 
@@ -320,25 +312,25 @@ func (e *Exporter) exportExperiments() error {
 			expID,
 			"", // bamFile
 			"", // fastqFTP
-			exp.alias.String,
+			"", // alias - not in simplified schema
 			exp.accession,
-			exp.brokerName.String,
-			exp.centerName.String,
+			"", // broker_name - not in simplified schema
+			"", // center_name - not in simplified schema
 			exp.title.String,
-			exp.studyAlias.String,
+			"", // study_name/alias - not in simplified schema
 			exp.studyAccession.String,
-			exp.designDesc.String,
-			exp.sampleAlias.String,
+			"", // design_description - not in simplified schema
+			"", // sample_name/alias - not in simplified schema
 			exp.sampleAccession.String,
 			"", // sample_member
-			exp.libraryName.String,
+			"", // library_name - not in simplified schema
 			exp.libraryStrategy.String,
 			exp.librarySource.String,
-			exp.librarySelection.String,
-			exp.libraryLayout.String,
+			"", // library_selection - not in simplified schema
+			"", // library_layout - not in simplified schema
 			"", // targeted_loci
-			exp.libraryProtocol.String,
-			exp.spotLength.Int64,
+			"", // library_construction_protocol - not in simplified schema
+			0,  // spot_length - not in simplified schema
 			"", // adapter_spec
 			"", // read_spec
 			exp.platform.String,
@@ -387,12 +379,9 @@ func (e *Exporter) exportRuns() error {
 
 	rows, err := e.sourceDB.DB.Query(`
 		SELECT
-			r.run_accession, r.alias, r.center_name, r.broker_name,
-			r.run_center, r.experiment_accession, r.run_date,
-			r.total_spots, r.total_bases, r.run_attributes,
-			exp.alias as exp_alias
+			r.run_accession, r.experiment_accession,
+			r.total_spots, r.total_bases, r.published, r.metadata
 		FROM runs r
-		LEFT JOIN experiments e ON r.experiment_accession = e.experiment_accession
 	`)
 	if err != nil {
 		return err
@@ -411,50 +400,48 @@ func (e *Exporter) exportRuns() error {
 	for rows.Next() {
 		var r struct {
 			accession    string
-			alias        sql.NullString
-			centerName   sql.NullString
-			brokerName   sql.NullString
-			runCenter    sql.NullString
 			expAccession sql.NullString
-			runDate      sql.NullTime
 			totalSpots   sql.NullInt64
 			totalBases   sql.NullInt64
-			attributes   sql.NullString
-			expAlias     sql.NullString
+			published    sql.NullTime
+			metadata     sql.NullString
 		}
 
 		err := rows.Scan(
-			&r.accession, &r.alias, &r.centerName, &r.brokerName,
-			&r.runCenter, &r.expAccession, &r.runDate,
-			&r.totalSpots, &r.totalBases, &r.attributes,
-			&r.expAlias,
+			&r.accession, &r.expAccession,
+			&r.totalSpots, &r.totalBases, &r.published, &r.metadata,
 		)
 		if err != nil {
 			return err
 		}
 
-		attributesStr := jsonToDelimited(r.attributes.String, "|")
+		// Extract any additional info from metadata if available
+		attributesStr := ""
+		if r.metadata.Valid {
+			attributesStr = jsonToDelimited(r.metadata.String, "|")
+		}
+
 		sraLink := fmt.Sprintf("https://www.ncbi.nlm.nih.gov/sra/%s", r.accession)
 		entrezLink := fmt.Sprintf("https://www.ncbi.nlm.nih.gov/sra/?term=%s", r.accession)
 
 		runDateStr := ""
-		if r.runDate.Valid {
-			runDateStr = r.runDate.Time.Format("2006-01-02 15:04:05")
+		if r.published.Valid {
+			runDateStr = r.published.Time.Format("2006-01-02 15:04:05")
 		}
 
 		_, err = txStmt.Exec(
 			runID,
 			"", // bamFile
-			r.alias.String,
+			"", // alias - not in simplified schema
 			r.accession,
-			r.brokerName.String,
+			"", // broker_name - not in simplified schema
 			"", // instrument_name
-			runDateStr,
+			runDateStr, // using published date as run_date
 			"", // run_file
-			r.runCenter.String,
-			0, // total_data_blocks
+			"", // run_center - not in simplified schema
+			0,  // total_data_blocks
 			r.expAccession.String,
-			r.expAlias.String,
+			"", // experiment_name/alias - not in simplified schema
 			sraLink,
 			"", // run_url_link
 			"", // xref_link
