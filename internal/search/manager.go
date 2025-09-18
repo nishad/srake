@@ -256,6 +256,11 @@ func (m *Manager) Close() error {
 	return nil
 }
 
+// GetBackend returns the search backend
+func (m *Manager) GetBackend() SearchBackend {
+	return m.bleve
+}
+
 // SetEmbedder sets the embedder interface
 func (m *Manager) SetEmbedder(embedder EmbedderInterface) {
 	m.mu.Lock()

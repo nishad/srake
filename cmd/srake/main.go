@@ -62,14 +62,32 @@ func init() {
 	serverCmd.Flags().StringVar(&serverLogLevel, "log-level", "info", "Log level (debug|info|warn|error)")
 	serverCmd.Flags().BoolVar(&serverDev, "dev", false, "Enable development mode")
 
-	// Search command flags
+	// Search command flags - Filters
 	searchCmd.Flags().StringVarP(&searchOrganism, "organism", "o", "", "Filter by organism")
-	searchCmd.Flags().StringVar(&searchPlatform, "platform", "", "Filter by platform")
-	searchCmd.Flags().StringVar(&searchStrategy, "strategy", "", "Filter by strategy")
+	searchCmd.Flags().StringVar(&searchPlatform, "platform", "", "Filter by platform (ILLUMINA, OXFORD_NANOPORE, PACBIO, etc.)")
+	searchCmd.Flags().StringVar(&searchLibraryStrategy, "library-strategy", "", "Filter by library strategy (RNA-Seq, ChIP-Seq, WGS, etc.)")
+	searchCmd.Flags().StringVar(&searchStudyType, "study-type", "", "Filter by study type")
+	searchCmd.Flags().StringVar(&searchInstrumentModel, "instrument", "", "Filter by instrument model")
+
+	// Search command flags - Output control
 	searchCmd.Flags().IntVarP(&searchLimit, "limit", "l", 100, "Maximum results to return")
-	searchCmd.Flags().StringVarP(&searchFormat, "format", "f", "table", "Output format (table|json|csv|tsv)")
-	searchCmd.Flags().StringVar(&searchOutput, "output", "", "Save results to file")
-	searchCmd.Flags().BoolVar(&searchNoHeader, "no-header", false, "Omit header in output")
+	searchCmd.Flags().IntVar(&searchOffset, "offset", 0, "Number of results to skip (for pagination)")
+	searchCmd.Flags().StringVarP(&searchFormat, "format", "f", "table", "Output format (table|json|csv|tsv|accession)")
+	searchCmd.Flags().StringVar(&searchOutput, "output", "", "Save results to file instead of stdout")
+	searchCmd.Flags().BoolVar(&searchNoHeader, "no-header", false, "Omit header in table/csv/tsv output")
+	searchCmd.Flags().StringVar(&searchFields, "fields", "", "Comma-separated list of fields to display")
+
+	// Search command flags - Search modes
+	searchCmd.Flags().BoolVar(&searchFuzzy, "fuzzy", false, "Enable fuzzy search for typo tolerance")
+	searchCmd.Flags().BoolVar(&searchExact, "exact", false, "Require exact phrase matching")
+	searchCmd.Flags().BoolVar(&searchStats, "stats", false, "Show search statistics instead of results")
+	searchCmd.Flags().BoolVar(&searchFacets, "facets", false, "Show faceted search results (counts by category)")
+	searchCmd.Flags().BoolVar(&searchHighlight, "highlight", false, "Highlight matching terms in results")
+
+	// Search command flags - Advanced
+	searchCmd.Flags().StringVar(&searchIndexPath, "index-path", "", "Path to search index (default: auto-detect)")
+	searchCmd.Flags().BoolVar(&searchNoCache, "no-cache", false, "Disable search result caching")
+	searchCmd.Flags().IntVar(&searchTimeout, "timeout", 30, "Search timeout in seconds")
 
 	// The ingest command for data ingestion
 	ingestCmd := cli.NewIngestCmd()

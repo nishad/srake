@@ -1,56 +1,144 @@
 package main
 
 import (
+	"database/sql"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/tabwriter"
+	"time"
 
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/nishad/srake/internal/config"
+	"github.com/nishad/srake/internal/database"
+	"github.com/nishad/srake/internal/search"
 	"github.com/spf13/cobra"
 )
 
 var searchCmd = &cobra.Command{
-	Use:   "search <query>",
-	Short: "Search SRA metadata",
-	Long: `Search the SRA metadata database for experiments matching your query.
+	Use:   "search [query]",
+	Short: "Search SRA metadata using full-text or vector search",
+	Long: `Search the SRA metadata database using powerful full-text search with Bleve.
 
-The search supports organism names, accession numbers, and keywords.
-Results can be filtered by platform, strategy, and other criteria.`,
-	Example: `  srake search "homo sapiens"
-  srake search mouse --limit 10
-  srake search human --platform ILLUMINA --format json`,
-	Args: cobra.ExactArgs(1),
+The search supports:
+  • Full-text search across all metadata fields
+  • Organism names, accession numbers, and keywords
+  • Advanced filtering by platform, library strategy, and other fields
+  • Fuzzy search for typo tolerance
+  • Multiple output formats (table, JSON, CSV, TSV)
+  • Export results to file
+
+Search modes:
+  • text: Standard full-text search (default)
+  • fuzzy: Typo-tolerant search
+  • filter: Search with specific field filters
+  • stats: Show search statistics only`,
+	Example: `  # Basic search
+  srake search "homo sapiens"
+  srake search "RNA-seq human cancer"
+
+  # Search with filters
+  srake search --organism "homo sapiens" --platform ILLUMINA
+  srake search --library-strategy "RNA-Seq" --limit 50
+
+  # Fuzzy search for typo tolerance
+  srake search "humna" --fuzzy
+
+  # Export results
+  srake search "mouse brain" --format json --output results.json
+  srake search "COVID-19" --format csv > results.csv
+
+  # Show all available data (no query)
+  srake search --limit 100
+
+  # Get search statistics
+  srake search --stats`,
+	Args: cobra.MaximumNArgs(1),
 	RunE: runSearch,
 }
 
 var (
-	searchOrganism string
-	searchPlatform string
-	searchStrategy string
+	// Filter flags
+	searchOrganism       string
+	searchPlatform       string
+	searchLibraryStrategy string
+	searchStudyType      string
+	searchInstrumentModel string
+
+	// Output flags
 	searchLimit    int
+	searchOffset   int
 	searchFormat   string
 	searchOutput   string
 	searchNoHeader bool
+	searchFields   string
+
+	// Search mode flags
+	searchFuzzy    bool
+	searchExact    bool
+	searchStats    bool
+	searchFacets   bool
+	searchHighlight bool
+
+	// Advanced flags
+	searchIndexPath string
+	searchNoCache   bool
+	searchTimeout   int
 )
 
 func runSearch(cmd *cobra.Command, args []string) error {
-	query := args[0]
+	query := ""
+	if len(args) > 0 {
+		query = args[0]
+	}
+
+	// If --stats flag is set, show statistics only
+	if searchStats {
+		return showSearchStats()
+	}
+
+	// Build filters from flags
+	filters := make(map[string]string)
+	if searchOrganism != "" {
+		filters["organism"] = searchOrganism
+	}
+	if searchPlatform != "" {
+		filters["platform"] = searchPlatform
+	}
+	if searchLibraryStrategy != "" {
+		filters["library_strategy"] = searchLibraryStrategy
+	}
+	if searchStudyType != "" {
+		filters["study_type"] = searchStudyType
+	}
+	if searchInstrumentModel != "" {
+		filters["instrument_model"] = searchInstrumentModel
+	}
 
 	// Show search progress
 	if !quiet && isTerminal() {
-		printInfo("Searching for \"%s\"...", query)
+		if query != "" {
+			printInfo("Searching for \"%s\"...", query)
+		} else if len(filters) > 0 {
+			printInfo("Searching with filters...")
+		} else {
+			printInfo("Fetching all records...")
+		}
 	}
 
-	// Make request to server (or query database directly)
+	// Try to connect to server first
 	resp, err := http.Get(fmt.Sprintf("http://localhost:%d/api/search?q=%s&limit=%d",
 		serverPort, query, searchLimit))
 	if err != nil {
-		printError("Search failed: Cannot connect to server")
-		fmt.Fprintf(os.Stderr, "\nMake sure the server is running:\n")
-		fmt.Fprintf(os.Stderr, "  srake server\n")
-		return fmt.Errorf("connection failed")
+		// If server is not running, use local search
+		if verbose {
+			printInfo("Server not running, using local search")
+		}
+		return runLocalSearch(query, filters)
 	}
 	defer resp.Body.Close()
 
@@ -134,4 +222,380 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	}
 
 	return nil
+}
+
+// runLocalSearch performs search using local Bleve index
+func runLocalSearch(query string, filters map[string]string) error {
+	// Load config
+	cfg := config.DefaultConfig()
+
+	// Find data directory
+	dataDir := os.Getenv("SRAKE_DATA_DIR")
+	if dataDir == "" {
+		dataDir = "./data"
+	}
+	cfg.DataDirectory = dataDir
+
+	// Override index path if specified
+	if searchIndexPath != "" {
+		cfg.Search.IndexPath = searchIndexPath
+	} else {
+		cfg.Search.IndexPath = filepath.Join(dataDir, "search.blv")
+	}
+
+	// Check if index exists
+	if _, err := os.Stat(cfg.Search.IndexPath); os.IsNotExist(err) {
+		printError("Search index not found at %s", cfg.Search.IndexPath)
+		fmt.Fprintf(os.Stderr, "\nPlease build the search index first:\n")
+		fmt.Fprintf(os.Stderr, "  srake search index --build\n")
+		return fmt.Errorf("index not found")
+	}
+
+	// Initialize Bleve index
+	idx, err := search.InitBleveIndex(dataDir)
+	if err != nil {
+		return fmt.Errorf("failed to open search index: %v", err)
+	}
+	defer idx.Close()
+
+	// Perform search based on mode
+	var results interface{}
+	startTime := time.Now()
+
+	if searchFuzzy && query != "" {
+		// Fuzzy search
+		bleveResult, err := idx.FuzzySearch(query, 2, searchLimit)
+		if err != nil {
+			return fmt.Errorf("fuzzy search failed: %v", err)
+		}
+		results = bleveResult
+	} else if len(filters) > 0 {
+		// Filtered search
+		bleveResult, err := idx.SearchWithFilters(query, filters, searchLimit)
+		if err != nil {
+			return fmt.Errorf("filtered search failed: %v", err)
+		}
+		results = bleveResult
+	} else {
+		// Regular search
+		bleveResult, err := idx.Search(query, searchLimit)
+		if err != nil {
+			return fmt.Errorf("search failed: %v", err)
+		}
+		results = bleveResult
+	}
+
+	elapsed := time.Since(startTime)
+
+	// Format and output results
+	return formatSearchResults(results, query, elapsed)
+}
+
+// formatSearchResults formats search results based on output format
+func formatSearchResults(results interface{}, query string, elapsed time.Duration) error {
+	// Type assertion for Bleve results
+	bleveResult, ok := results.(*search.BleveSearchResult)
+	if !ok {
+		return fmt.Errorf("unexpected result type")
+	}
+
+	// Handle different output formats
+	switch searchFormat {
+	case "json":
+		return outputJSON(bleveResult)
+	case "csv":
+		return outputCSV(bleveResult, ",")
+	case "tsv":
+		return outputCSV(bleveResult, "\t")
+	case "accession":
+		return outputAccessions(bleveResult)
+	default:
+		return outputTable(bleveResult, query, elapsed)
+	}
+}
+
+// outputTable outputs results in table format
+func outputTable(result *search.BleveSearchResult, query string, elapsed time.Duration) error {
+	if result.Total == 0 {
+		if query != "" {
+			printInfo("No results found for \"%s\"", query)
+		} else {
+			printInfo("No results found")
+		}
+		return nil
+	}
+
+	// Create output writer
+	var w *tabwriter.Writer
+	if searchOutput != "" {
+		file, err := os.Create(searchOutput)
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer file.Close()
+		w = tabwriter.NewWriter(file, 0, 0, 2, ' ', 0)
+	} else {
+		w = tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	}
+
+	// Header
+	if !searchNoHeader {
+		headers := []string{"ACCESSION", "TYPE", "TITLE", "ORGANISM", "PLATFORM"}
+		if searchFields != "" {
+			headers = strings.Split(strings.ToUpper(searchFields), ",")
+		}
+
+		for i, h := range headers {
+			if i > 0 {
+				fmt.Fprint(w, "\t")
+			}
+			fmt.Fprint(w, colorize(colorBold, h))
+		}
+		fmt.Fprintln(w)
+
+		// Separator line
+		if isTerminal() && !noColor {
+			fmt.Fprintln(w, colorize(colorGray, strings.Repeat("─", 100)))
+		}
+	}
+
+	// Results
+	for _, hit := range result.Hits {
+		fields := hit.Fields
+
+		// Extract common fields
+		accession := hit.ID
+		docType := getField(fields, "type")
+		title := truncate(getField(fields, "title", "study_title"), 40)
+		organism := getField(fields, "organism")
+		platform := getField(fields, "platform")
+
+		if searchFields != "" {
+			// Custom fields
+			requestedFields := strings.Split(searchFields, ",")
+			for i, f := range requestedFields {
+				if i > 0 {
+					fmt.Fprint(w, "\t")
+				}
+				value := getField(fields, strings.TrimSpace(f))
+				if i == 0 && isTerminal() && !noColor {
+					fmt.Fprint(w, colorize(colorCyan, value))
+				} else {
+					fmt.Fprint(w, value)
+				}
+			}
+		} else {
+			// Default fields
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s",
+				colorize(colorCyan, accession),
+				docType,
+				title,
+				organism,
+				platform)
+		}
+
+		// Add highlights if requested
+		if searchHighlight && len(hit.Fragments) > 0 {
+			fmt.Fprint(w, "\t")
+			for field, fragments := range hit.Fragments {
+				for _, fragment := range fragments {
+					fmt.Fprintf(w, "[%s: %s] ", field, fragment)
+				}
+			}
+		}
+
+		fmt.Fprintln(w)
+	}
+
+	w.Flush()
+
+	// Summary
+	if !quiet {
+		fmt.Printf("\n%s\n", colorize(colorGray,
+			fmt.Sprintf("Found %d results in %v (showing %d)",
+				result.Total, elapsed, len(result.Hits))))
+
+		// Show facets if requested
+		if searchFacets && len(result.Facets) > 0 {
+			fmt.Println("\n" + colorize(colorBold, "Facets:"))
+			for facetName, facet := range result.Facets {
+				fmt.Printf("\n  %s:\n", colorize(colorBold, facetName))
+				for _, term := range facet.Terms.Terms() {
+					fmt.Printf("    %s: %d\n", term.Term, term.Count)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// outputJSON outputs results as JSON
+func outputJSON(result *search.BleveSearchResult) error {
+	output := map[string]interface{}{
+		"total":   result.Total,
+		"hits":    result.Hits,
+		"facets":  result.Facets,
+		"max_score": result.MaxScore,
+	}
+
+	var encoder *json.Encoder
+	if searchOutput != "" {
+		file, err := os.Create(searchOutput)
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer file.Close()
+		encoder = json.NewEncoder(file)
+	} else {
+		encoder = json.NewEncoder(os.Stdout)
+	}
+
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(output)
+}
+
+// outputCSV outputs results as CSV or TSV
+func outputCSV(result *search.BleveSearchResult, separator string) error {
+	var writer *csv.Writer
+
+	if searchOutput != "" {
+		file, err := os.Create(searchOutput)
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer file.Close()
+		writer = csv.NewWriter(file)
+	} else {
+		writer = csv.NewWriter(os.Stdout)
+	}
+
+	if separator == "\t" {
+		writer.Comma = '\t'
+	}
+
+	// Write header
+	if !searchNoHeader {
+		headers := []string{"accession", "type", "title", "organism", "platform", "library_strategy"}
+		if searchFields != "" {
+			headers = strings.Split(searchFields, ",")
+		}
+		if err := writer.Write(headers); err != nil {
+			return err
+		}
+	}
+
+	// Write data
+	for _, hit := range result.Hits {
+		fields := hit.Fields
+
+		row := []string{
+			hit.ID,
+			getField(fields, "type"),
+			getField(fields, "title", "study_title"),
+			getField(fields, "organism"),
+			getField(fields, "platform"),
+			getField(fields, "library_strategy"),
+		}
+
+		if searchFields != "" {
+			row = nil
+			for _, f := range strings.Split(searchFields, ",") {
+				row = append(row, getField(fields, strings.TrimSpace(f)))
+			}
+		}
+
+		if err := writer.Write(row); err != nil {
+			return err
+		}
+	}
+
+	writer.Flush()
+	return writer.Error()
+}
+
+// outputAccessions outputs only accession numbers
+func outputAccessions(result *search.BleveSearchResult) error {
+	var output *os.File
+	if searchOutput != "" {
+		file, err := os.Create(searchOutput)
+		if err != nil {
+			return fmt.Errorf("failed to create output file: %v", err)
+		}
+		defer file.Close()
+		output = file
+	} else {
+		output = os.Stdout
+	}
+
+	for _, hit := range result.Hits {
+		fmt.Fprintln(output, hit.ID)
+	}
+
+	return nil
+}
+
+// showSearchStats displays search index statistics
+func showSearchStats() error {
+	cfg := config.DefaultConfig()
+	dataDir := os.Getenv("SRAKE_DATA_DIR")
+	if dataDir == "" {
+		dataDir = "./data"
+	}
+
+	// Open database for stats
+	dbPath := filepath.Join(dataDir, "SRAmetadb.sqlite")
+	sqlDB, err := sql.Open("sqlite3", dbPath+"?mode=ro")
+	if err != nil {
+		return fmt.Errorf("failed to open database: %v", err)
+	}
+	defer sqlDB.Close()
+
+	db := &database.DB{DB: sqlDB}
+
+	// Create search manager
+	cfg.DataDirectory = dataDir
+	cfg.Search.Enabled = true
+
+	manager, err := search.NewManager(cfg, db)
+	if err != nil {
+		return fmt.Errorf("failed to create search manager: %v", err)
+	}
+	defer manager.Close()
+
+	// Get statistics
+	stats, err := manager.GetStats()
+	if err != nil {
+		return fmt.Errorf("failed to get search statistics: %v", err)
+	}
+
+	// Display statistics
+	fmt.Println(colorize(colorBold, "Search Index Statistics"))
+	fmt.Println(strings.Repeat("─", 50))
+
+	fmt.Printf("Backend:         %s\n", stats.Backend)
+	fmt.Printf("Document Count:  %d\n", stats.DocumentCount)
+	fmt.Printf("Index Size:      %.2f MB\n", float64(stats.IndexSize)/(1024*1024))
+	fmt.Printf("Last Modified:   %s\n", stats.LastModified.Format(time.RFC3339))
+	fmt.Printf("Vectors Enabled: %v\n", stats.VectorsEnabled)
+	fmt.Printf("Index Healthy:   %v\n", stats.IsHealthy)
+
+	return nil
+}
+
+// Helper functions
+func getField(fields map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if val, ok := fields[key]; ok {
+			return fmt.Sprintf("%v", val)
+		}
+	}
+	return ""
+}
+
+func truncate(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen-3] + "..."
 }
