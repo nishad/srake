@@ -34,12 +34,8 @@ func (e *Exporter) exportSubmissions() error {
 
 // exportStudies exports study records
 func (e *Exporter) exportStudies() error {
-	// Count total studies
-	var count int
-	err := e.sourceDB.DB.QueryRow(`SELECT COUNT(*) FROM studies`).Scan(&count)
-	if err != nil {
-		return err
-	}
+	// Skip counting for performance - large databases may have millions of records
+	// The count was only used for progress tracking which is handled elsewhere
 
 	// Prepare insert statement
 	stmt, err := e.targetDB.Prepare(`INSERT INTO study (
