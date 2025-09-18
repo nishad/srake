@@ -497,9 +497,17 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		fmt.Printf("\n\n✅ Ingestion completed successfully!\n")
 		fmt.Printf("\n📊 Statistics:\n")
 		fmt.Printf("   Duration:    %s\n", downloader.FormatDuration(duration))
-		fmt.Printf("   Processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
-		fmt.Printf("   Records:     %d\n", stats["records_inserted"].(int64))
-		fmt.Printf("   Speed:       %.1f MB/s\n", float64(stats["bytes_processed"].(int64))/duration.Seconds()/(1024*1024))
+
+		// Safely get statistics with nil checks
+		if bytesProcessed, ok := stats["bytes_processed"].(int64); ok {
+			fmt.Printf("   Processed:   %s\n", downloader.FormatSize(bytesProcessed))
+			if duration.Seconds() > 0 {
+				fmt.Printf("   Speed:       %.1f MB/s\n", float64(bytesProcessed)/duration.Seconds()/(1024*1024))
+			}
+		}
+		if recordsInserted, ok := stats["records_inserted"].(int64); ok {
+			fmt.Printf("   Records:     %d\n", recordsInserted)
+		}
 		fmt.Printf("   Database:    %s\n", dbPath)
 
 		// Display filter statistics
@@ -545,9 +553,17 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		fmt.Printf("\n\n✅ Ingestion completed successfully!\n")
 		fmt.Printf("\n📊 Statistics:\n")
 		fmt.Printf("   Duration:    %s\n", downloader.FormatDuration(duration))
-		fmt.Printf("   Processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
-		fmt.Printf("   Records:     %d\n", stats["records_inserted"].(int64))
-		fmt.Printf("   Speed:       %.1f MB/s\n", float64(stats["bytes_processed"].(int64))/duration.Seconds()/(1024*1024))
+
+		// Safely get statistics with nil checks
+		if bytesProcessed, ok := stats["bytes_processed"].(int64); ok {
+			fmt.Printf("   Processed:   %s\n", downloader.FormatSize(bytesProcessed))
+			if duration.Seconds() > 0 {
+				fmt.Printf("   Speed:       %.1f MB/s\n", float64(bytesProcessed)/duration.Seconds()/(1024*1024))
+			}
+		}
+		if recordsInserted, ok := stats["records_inserted"].(int64); ok {
+			fmt.Printf("   Records:     %d\n", recordsInserted)
+		}
 		fmt.Printf("   Database:    %s\n", dbPath)
 	}
 
