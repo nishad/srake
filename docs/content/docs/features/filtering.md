@@ -5,19 +5,16 @@ prev: /docs/features
 next: /docs/features/resume
 ---
 
-{{< callout type="success" >}}
-**Efficiency First**: Process only the data you need with < 5% performance overhead
-{{< /callout >}}
+The filtering system allows you to process only the data you need, reducing storage requirements.
 
 ## Overview
 
 The filtering system operates during the streaming pipeline, applying filters before data is inserted into the database:
 
-{{< cards >}}
-  {{< card title="Memory Efficient" subtitle="Filters applied during streaming without loading entire datasets" >}}
-  {{< card title="Early Rejection" subtitle="Unwanted records discarded before expensive database operations" >}}
-  {{< card title="Real-time Stats" subtitle="Track filtering effectiveness as processing occurs" >}}
-{{< /cards >}}
+Key features:
+- **Memory Efficient**: Filters applied during streaming
+- **Early Rejection**: Unwanted records discarded before database operations
+- **Statistics**: Track filtering effectiveness
 
 ## Filter Types
 
@@ -308,23 +305,9 @@ srake ingest --file archive.tar.gz \
 
 {{< /steps >}}
 
-## Performance Characteristics
+## Filter Processing
 
-{{< cards >}}
-  {{< card title="< 5%" subtitle="Performance overhead with filtering" >}}
-  {{< card title="99%" subtitle="Potential database size reduction" >}}
-  {{< card title="Real-time" subtitle="Filter application during streaming" >}}
-  {{< card title="Zero Memory" subtitle="Additional memory for filtering" >}}
-{{< /cards >}}
-
-### Benchmarks
-
-| Scenario | Records/sec | Memory | Filter Time |
-|----------|-------------|---------|-------------|
-| No filters | 20,000 | 450 MB | 0 ms |
-| Taxonomy filter | 19,500 | 455 MB | 2 ms |
-| All filters | 19,000 | 460 MB | 5 ms |
-| Complex filters | 18,500 | 465 MB | 8 ms |
+Filters are applied during the streaming pipeline, allowing efficient processing of large datasets without loading everything into memory.
 
 ## Filter Configuration Files
 
@@ -371,15 +354,13 @@ For complex, reusable filter sets, use YAML configuration:
 
 ## Best Practices
 
-{{< callout type="tip" emoji="💡" >}}
-**Tips for Effective Filtering:**
+### Tips for Effective Filtering
 
 1. **Start with --stats-only** to preview results
-2. **Use taxonomy filters** for the biggest impact
-3. **Combine filters** for precise datasets
+2. **Use taxonomy filters** for targeted datasets
+3. **Combine filters** for precise data selection
 4. **Save configurations** for reproducible workflows
 5. **Monitor statistics** to verify filter effectiveness
-{{< /callout >}}
 
 ### Common Patterns
 

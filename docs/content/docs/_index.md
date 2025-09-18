@@ -9,7 +9,7 @@ Welcome to the **srake** documentation! This guide will help you get started wit
 
 ## What is srake?
 
-srake (pronounced "ess-RAH-keh" like Japanese sake 酒) is a blazing-fast, memory-efficient tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a zero-copy streaming architecture, srake can process multi-gigabyte compressed archives without intermediate storage.
+srake is a tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, srake can process large compressed archives without intermediate storage.
 
 ## Key Features
 
@@ -20,14 +20,14 @@ srake (pronounced "ess-RAH-keh" like Japanese sake 酒) is a blazing-fast, memor
   {{< card link="api" title="API Reference" subtitle="REST API and Go library" >}}
 {{< /cards >}}
 
-## Why srake?
+## Features
 
-- **🚀 Performance**: Process 20,000+ records per second
-- **💾 Memory Efficient**: Constant < 500MB memory usage
-- **🔄 Zero-Copy**: Direct HTTP → Gzip → Tar → XML → Database streaming
-- **📊 Smart Filtering**: Filter by taxonomy, organism, platform, and more
-- **✅ Resume Support**: Intelligent recovery from interruptions
-- **🔍 Full-Text Search**: Query with optimized SQLite backend
+- **Performance**: Efficient record processing
+- **Memory Management**: Streaming architecture for large files
+- **Pipeline**: HTTP → Gzip → Tar → XML → Database streaming
+- **Filtering**: Filter by taxonomy, organism, platform, and more
+- **Resume Support**: Recovery from interruptions
+- **Search**: Full-text search with SQLite backend
 
 ## Quick Example
 

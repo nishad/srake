@@ -11,14 +11,14 @@ layout: hextra-home
 
 <div class="hx-mt-6 hx-mb-6">
 {{< hextra/hero-headline >}}
-  Blazing-Fast SRA&nbsp;<br class="sm:hx-block hx-hidden" />Metadata Processing
+  SRA Metadata&nbsp;<br class="sm:hx-block hx-hidden" />Processing Tool
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx-mb-12">
 {{< hextra/hero-subtitle >}}
-  Process multi-gigabyte NCBI SRA metadata archives with&nbsp;<br class="sm:hx-block hx-hidden" />
-  zero-copy streaming, intelligent filtering, and resume capabilities
+  Process NCBI SRA metadata archives with&nbsp;<br class="sm:hx-block hx-hidden" />
+  streaming, filtering, and resume capabilities
 {{< /hextra/hero-subtitle >}}
 </div>
 
@@ -31,8 +31,8 @@ layout: hextra-home
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
-    title="Lightning Fast"
-    subtitle="Process 20,000+ records per second with concurrent processing and optimized SQLite backend"
+    title="Fast Processing"
+    subtitle="Concurrent processing with optimized SQLite backend"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
     image="images/hextra-doc.webp"
     imageClass="hx-top-[40%] hx-left-[24px] hx-w-[180%] sm:hx-w-[110%] dark:hx-opacity-80"
@@ -40,7 +40,7 @@ layout: hextra-home
   >}}
   {{< hextra/feature-card
     title="Memory Efficient"
-    subtitle="Constant < 500MB memory usage regardless of file size with zero-copy streaming architecture"
+    subtitle="Streaming architecture for processing large files"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
     image="images/hextra-markdown.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[180%] sm:hx-w-[110%] dark:hx-opacity-80"
@@ -122,30 +122,6 @@ layout: hextra-home
   {{< /tab >}}
 {{< /tabs >}}
 
-## Performance Metrics
-
-{{< hextra/feature-grid >}}
-  {{< hextra/feature-card
-    title="20,000+"
-    subtitle="Records per second"
-    style="background: radial-gradient(ellipse at 50% 80%,rgba(194,97,254,0.15),hsla(0,0%,100%,0));"
-  >}}
-  {{< hextra/feature-card
-    title="< 500MB"
-    subtitle="Memory usage (constant)"
-    style="background: radial-gradient(ellipse at 50% 80%,rgba(142,53,74,0.15),hsla(0,0%,100%,0));"
-  >}}
-  {{< hextra/feature-card
-    title="14GB+"
-    subtitle="File size support"
-    style="background: radial-gradient(ellipse at 50% 80%,rgba(221,210,59,0.15),hsla(0,0%,100%,0));"
-  >}}
-  {{< hextra/feature-card
-    title="< 5%"
-    subtitle="Filter overhead"
-    style="background: radial-gradient(ellipse at 50% 80%,rgba(120,119,198,0.15),hsla(0,0%,100%,0));"
-  >}}
-{{< /hextra/feature-grid >}}
 
 ## Learn More
 

@@ -5,9 +5,6 @@ prev: /docs
 next: /docs/features
 ---
 
-{{< callout type="info" >}}
-**Quick Setup**: srake can be installed in less than a minute and process your first SRA metadata in seconds!
-{{< /callout >}}
 
 ## Installation
 
@@ -157,9 +154,7 @@ srake server --port 3000
 
 ## Filtering Options
 
-{{< callout type="success" >}}
-**Performance**: Filtering adds < 5% overhead while reducing database size by up to 99%
-{{< /callout >}}
+Filtering helps reduce database size by processing only the data you need.
 
 ### Filter by Taxonomy
 
