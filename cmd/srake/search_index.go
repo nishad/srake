@@ -32,6 +32,9 @@ The search index enables powerful search capabilities including:
   # Build index with custom batch size
   srake search index --build --batch-size 1000
 
+  # Build index with vector embeddings
+  srake search index --build --with-embeddings
+
   # Show index statistics
   srake search index --stats
 
@@ -40,13 +43,15 @@ The search index enables powerful search capabilities including:
 }
 
 var (
-	indexBuild     bool
-	indexRebuild   bool
-	indexVerify    bool
-	indexStats     bool
-	indexBatchSize int
-	indexWorkers   int
-	indexPath      string
+	indexBuild       bool
+	indexRebuild     bool
+	indexVerify      bool
+	indexStats       bool
+	indexBatchSize   int
+	indexWorkers     int
+	indexPath        string
+	indexEmbeddings  bool
+	embeddingModel   string
 )
 
 func init() {
@@ -57,6 +62,8 @@ func init() {
 	searchIndexCmd.Flags().IntVar(&indexBatchSize, "batch-size", 500, "Batch size for indexing")
 	searchIndexCmd.Flags().IntVar(&indexWorkers, "workers", 0, "Number of workers (0 = auto)")
 	searchIndexCmd.Flags().StringVar(&indexPath, "path", "", "Custom index path")
+	searchIndexCmd.Flags().BoolVar(&indexEmbeddings, "with-embeddings", false, "Generate vector embeddings for documents")
+	searchIndexCmd.Flags().StringVar(&embeddingModel, "embedding-model", "Xenova/SapBERT-from-PubMedBERT-fulltext", "Model to use for embeddings")
 
 	searchIndexCmd.RunE = runSearchIndex
 
@@ -82,6 +89,13 @@ func runSearchIndex(cmd *cobra.Command, args []string) error {
 
 	cfg.Search.Enabled = true
 	cfg.Search.BatchSize = indexBatchSize
+
+	// Configure embeddings if requested
+	if indexEmbeddings {
+		cfg.Embeddings.Enabled = true
+		cfg.Embeddings.DefaultModel = embeddingModel
+		cfg.Embeddings.ModelsDirectory = paths.GetModelsPath()
+	}
 
 	// Open database
 	dbPath := paths.GetDatabasePath()
@@ -148,6 +162,9 @@ func buildIndex(cfg *config.Config, db *database.DB, rebuild bool) error {
 		}
 		fmt.Printf("Index path: %s\n", cfg.Search.IndexPath)
 		fmt.Printf("Batch size: %d\n", cfg.Search.BatchSize)
+		if indexEmbeddings {
+			fmt.Printf("Embeddings: Enabled (model: %s)\n", embeddingModel)
+		}
 	}
 
 	// Perform full sync
