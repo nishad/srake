@@ -8,32 +8,84 @@
 <link rel="icon" href="/nishad/srake/favicon-32x32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/nishad/srake/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/nishad/srake/site.webmanifest" rel="manifest" />
-<title>Automation &amp; Scripting – srake - SRA Metadata Processor</title>
-  <meta name="description" content="Automation &amp; Scripting Guidesrake is designed to work seamlessly in automated workflows and scripts, following clig.dev best practices for command-line interfaces.
-Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the --yes flag to automatically accept all prompts:
-#!/bin/bash # Automated daily ingest script srake ingest --auto --yes --quiet Pipeline Composition with stdin srake commands support stdin input, making them perfect for Unix pipelines:" /><link rel="canonical" href="http://localhost:1314/nishad/srake/docs/automation/" itemprop="url" />
+<title>Configuration &amp; Paths – srake - SRA Metadata Processor</title>
+  <meta name="description" content="Configuration &amp; PathsSRake follows the XDG Base Directory Specification and clig.dev best practices for organizing its files and configuration.
+Directory Structure SRake uses a clean, standardized directory structure that separates configuration, data, cache, and state:
+Base Directories Directory Default Path Purpose Config ~/.config/srake/ User configuration files Data ~/.local/share/srake/ Essential persistent data (database, models) Cache ~/.cache/srake/ Deletable cache data (downloads, indices) State ~/.local/state/srake/ Application state (resume files, history) Specific Paths ~/.config/srake/ └── config.yaml # User configuration ~/.local/share/srake/ ├── srake.db # Primary SQLite database └── models/ # ML models (persistent) └── Xenova/ # HuggingFace models └── SapBERT-from-PubMedBERT-fulltext/ ~/.cache/srake/ ├── downloads/ # Downloaded NCBI archives │ ├── NCBI_SRA_Metadata_20250915.tar.gz │ └── checksums.sha256 ├── index/ # Search indices (can be rebuilt) │ └── srake.bleve/ # Bleve search index ├── embeddings/ # Computed embeddings cache └── search/ # Search result cache ~/.local/state/srake/ ├── resume/ # Resume/checkpoint files │ └── checkpoint-*.json └── history.log # Operation history Environment Variables SRake respects environment variables for customizing paths. These follow a clear precedence order:" /><link rel="canonical" href="http://localhost:1314/nishad/srake/docs/reference/configuration/" itemprop="url" />
 
-<meta property="og:title" content="Automation &amp; Scripting">
+<meta property="og:title" content="Configuration &amp; Paths">
 <meta
   property="og:description"
   content="
     
-      Automation &amp; Scripting Guidesrake is designed to work seamlessly in automated workflows and scripts, following clig.dev best practices for command-line interfaces.
-Non-Interactive Mode
-    When running srake in scripts or CI/CD pipelines, use the --yes flag to automatically accept all prompts:
+      Configuration &amp; PathsSRake follows the XDG Base Directory Specification and clig.dev best practices for organizing its files and configuration.
+Directory Structure
+    SRake uses a clean, standardized directory structure that separates configuration, data, cache, and state:
+Base Directories
+    
+  
+      
+          Directory
+          Default Path
+          Purpose
+      
+  
+  
+      
+          Config
+          ~/.config/srake/
+          User configuration files
+      
+      
+          Data
+          ~/.local/share/srake/
+          Essential persistent data (database, models)
+      
+      
+          Cache
+          ~/.cache/srake/
+          Deletable cache data (downloads, indices)
+      
+      
+          State
+          ~/.local/state/srake/
+          Application state (resume files, history)
+      
+  
 
+Specific Paths
+    
 
-#!/bin/bash
-# Automated daily ingest script
-srake ingest --auto --yes --quiet
+~/.config/srake/
+└── config.yaml              # User configuration
+
+~/.local/share/srake/
+├── srake.db                 # Primary SQLite database
+└── models/                  # ML models (persistent)
+    └── Xenova/              # HuggingFace models
+        └── SapBERT-from-PubMedBERT-fulltext/
+
+~/.cache/srake/
+├── downloads/               # Downloaded NCBI archives
+│   ├── NCBI_SRA_Metadata_20250915.tar.gz
+│   └── checksums.sha256
+├── index/                   # Search indices (can be rebuilt)
+│   └── srake.bleve/         # Bleve search index
+├── embeddings/              # Computed embeddings cache
+└── search/                  # Search result cache
+
+~/.local/state/srake/
+├── resume/                  # Resume/checkpoint files
+│   └── checkpoint-*.json
+└── history.log              # Operation history
   
     
 
   
 
 
-Pipeline Composition with stdin
-    srake commands support stdin input, making them perfect for Unix pipelines:
+Environment Variables
+    SRake respects environment variables for customizing paths. These follow a clear precedence order:
     
   ">
 <meta
@@ -41,21 +93,21 @@ Pipeline Composition with stdin
   content="
     article
   ">
-<meta property="og:url" content="http://localhost:1314/nishad/srake/docs/automation/"><meta property="article:section" content="docs">
+<meta property="og:url" content="http://localhost:1314/nishad/srake/docs/reference/configuration/"><meta property="article:section" content="docs">
 
 
 
 
-  <meta itemprop="name" content="Automation & Scripting">
-  <meta itemprop="description" content="Automation &amp; Scripting Guidesrake is designed to work seamlessly in automated workflows and scripts, following clig.dev best practices for command-line interfaces.
-Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the --yes flag to automatically accept all prompts:
-#!/bin/bash # Automated daily ingest script srake ingest --auto --yes --quiet Pipeline Composition with stdin srake commands support stdin input, making them perfect for Unix pipelines:">
-  <meta itemprop="wordCount" content="850">
+  <meta itemprop="name" content="Configuration & Paths">
+  <meta itemprop="description" content="Configuration &amp; PathsSRake follows the XDG Base Directory Specification and clig.dev best practices for organizing its files and configuration.
+Directory Structure SRake uses a clean, standardized directory structure that separates configuration, data, cache, and state:
+Base Directories Directory Default Path Purpose Config ~/.config/srake/ User configuration files Data ~/.local/share/srake/ Essential persistent data (database, models) Cache ~/.cache/srake/ Deletable cache data (downloads, indices) State ~/.local/state/srake/ Application state (resume files, history) Specific Paths ~/.config/srake/ └── config.yaml # User configuration ~/.local/share/srake/ ├── srake.db # Primary SQLite database └── models/ # ML models (persistent) └── Xenova/ # HuggingFace models └── SapBERT-from-PubMedBERT-fulltext/ ~/.cache/srake/ ├── downloads/ # Downloaded NCBI archives │ ├── NCBI_SRA_Metadata_20250915.tar.gz │ └── checksums.sha256 ├── index/ # Search indices (can be rebuilt) │ └── srake.bleve/ # Bleve search index ├── embeddings/ # Computed embeddings cache └── search/ # Search result cache ~/.local/state/srake/ ├── resume/ # Resume/checkpoint files │ └── checkpoint-*.json └── history.log # Operation history Environment Variables SRake respects environment variables for customizing paths. These follow a clear precedence order:">
+  <meta itemprop="wordCount" content="893">
   <meta name="twitter:card" content="summary">
-  <meta name="twitter:title" content="Automation & Scripting">
-  <meta name="twitter:description" content="Automation &amp; Scripting Guidesrake is designed to work seamlessly in automated workflows and scripts, following clig.dev best practices for command-line interfaces.
-Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the --yes flag to automatically accept all prompts:
-#!/bin/bash # Automated daily ingest script srake ingest --auto --yes --quiet Pipeline Composition with stdin srake commands support stdin input, making them perfect for Unix pipelines:">
+  <meta name="twitter:title" content="Configuration & Paths">
+  <meta name="twitter:description" content="Configuration &amp; PathsSRake follows the XDG Base Directory Specification and clig.dev best practices for organizing its files and configuration.
+Directory Structure SRake uses a clean, standardized directory structure that separates configuration, data, cache, and state:
+Base Directories Directory Default Path Purpose Config ~/.config/srake/ User configuration files Data ~/.local/share/srake/ Essential persistent data (database, models) Cache ~/.cache/srake/ Deletable cache data (downloads, indices) State ~/.local/state/srake/ Application state (resume files, history) Specific Paths ~/.config/srake/ └── config.yaml # User configuration ~/.local/share/srake/ ├── srake.db # Primary SQLite database └── models/ # ML models (persistent) └── Xenova/ # HuggingFace models └── SapBERT-from-PubMedBERT-fulltext/ ~/.cache/srake/ ├── downloads/ # Downloaded NCBI archives │ ├── NCBI_SRA_Metadata_20250915.tar.gz │ └── checksums.sha256 ├── index/ # Search indices (can be rebuilt) │ └── srake.bleve/ # Bleve search index ├── embeddings/ # Computed embeddings cache └── search/ # Search result cache ~/.local/state/srake/ ├── resume/ # Resume/checkpoint files │ └── checkpoint-*.json └── history.log # Operation history Environment Variables SRake respects environment variables for customizing paths. These follow a clear precedence order:">
 <link href="/nishad/srake/css/compiled/main.css" rel="stylesheet" />
     <link href="/nishad/srake/css/variables.css" rel="stylesheet" />
     <link href="/nishad/srake/css/custom.css" rel="stylesheet" />
@@ -275,93 +327,19 @@ Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the -
   >CLI Reference
     </a>
               
-            </li><li class="hx:flex hx:flex-col "><a
+            </li><li class="hx:flex hx:flex-col open"><a
     class="hx:flex hx:items-center hx:justify-between hx:gap-2 hx:cursor-pointer hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:contrast-more:border hx:contrast-more:border-transparent hx:contrast-more:text-gray-900 hx:contrast-more:hover:border-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:dark:text-gray-50 hx:contrast-more:dark:hover:border-gray-50"
+      hextra-sidebar-active-item hx:bg-primary-100 hx:font-semibold hx:text-primary-800 hx:contrast-more:border hx:contrast-more:border-primary-500 hx:dark:bg-primary-400/10 hx:dark:text-primary-600 hx:contrast-more:dark:border-primary-500"
     href="/nishad/srake/docs/reference/configuration/"
     
   >Configuration &amp; Paths
     </a>
-              
-            </li><li class="hx:flex hx:flex-col open"><a
-    class="hx:flex hx:items-center hx:justify-between hx:gap-2 hx:cursor-pointer hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hextra-sidebar-active-item hx:bg-primary-100 hx:font-semibold hx:text-primary-800 hx:contrast-more:border hx:contrast-more:border-primary-500 hx:dark:bg-primary-400/10 hx:dark:text-primary-600 hx:contrast-more:dark:border-primary-500"
-    href="/nishad/srake/docs/automation/"
-    
-  >Automation &amp; Scripting
-    </a>
   
     <ul class='hx:flex hx:flex-col hx:gap-1 hx:relative hx:before:absolute hx:before:inset-y-1 hx:before:w-px hx:before:bg-gray-200 hx:before:content-[""] hx:dark:before:bg-neutral-800 hx:ltr:pl-3 hx:ltr:before:left-0 hx:rtl:pr-3 hx:rtl:before:right-0 hx:ltr:ml-3 hx:rtl:mr-3'><li>
               <a
-                href="#non-interactive-mode"
+                href="#directory-structure"
                 class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Non-Interactive Mode</a>
-            </li>
-          <li>
-              <a
-                href="#pipeline-composition-with-stdin"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Pipeline Composition with stdin</a>
-            </li>
-          <li>
-              <a
-                href="#dry-run-mode"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Dry Run Mode</a>
-            </li>
-          <li>
-              <a
-                href="#debugging-scripts"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Debugging Scripts</a>
-            </li>
-          <li>
-              <a
-                href="#error-handling"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Error Handling</a>
-            </li>
-          <li>
-              <a
-                href="#output-formats-for-scripts"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Output Formats for Scripts</a>
-            </li>
-          <li>
-              <a
-                href="#parallel-processing"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Parallel Processing</a>
-            </li>
-          <li>
-              <a
-                href="#cron-jobs"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Cron Jobs</a>
-            </li>
-          <li>
-              <a
-                href="#docker-integration"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Docker Integration</a>
-            </li>
-          <li>
-              <a
-                href="#cicd-integration"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >CI/CD Integration</a>
-            </li>
-          <li>
-              <a
-                href="#shell-functions"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Shell Functions</a>
-            </li>
-          <li>
-              <a
-                href="#best-practices"
-                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Best Practices</a>
+              >Directory Structure</a>
             </li>
           <li>
               <a
@@ -371,12 +349,44 @@ Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the -
             </li>
           <li>
               <a
-                href="#logging"
+                href="#configuration-management"
                 class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >Logging</a>
+              >Configuration Management</a>
+            </li>
+          <li>
+              <a
+                href="#configuration-file"
+                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
+              >Configuration File</a>
+            </li>
+          <li>
+              <a
+                href="#cache-management"
+                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
+              >Cache Management</a>
+            </li>
+          <li>
+              <a
+                href="#best-practices"
+                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
+              >Best Practices</a>
+            </li>
+          <li>
+              <a
+                href="#troubleshooting"
+                class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
+              >Troubleshooting</a>
             </li>
           </ul>
   
+              
+            </li><li class="hx:flex hx:flex-col "><a
+    class="hx:flex hx:items-center hx:justify-between hx:gap-2 hx:cursor-pointer hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
+      hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:contrast-more:border hx:contrast-more:border-transparent hx:contrast-more:text-gray-900 hx:contrast-more:hover:border-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:dark:text-gray-50 hx:contrast-more:dark:hover:border-gray-50"
+    href="/nishad/srake/docs/automation/"
+    
+  >Automation &amp; Scripting
+    </a>
               
             </li><li class="hx:flex hx:flex-col "><a
     class="hx:flex hx:items-center hx:justify-between hx:gap-2 hx:cursor-pointer hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
@@ -480,16 +490,16 @@ Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the -
     
   >CLI Reference
     </a></li>
-          <li class=""><a
+          <li class="open"><a
     class="hx:flex hx:items-center hx:justify-between hx:gap-2 hx:cursor-pointer hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:contrast-more:border hx:contrast-more:border-transparent hx:contrast-more:text-gray-900 hx:contrast-more:hover:border-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:dark:text-gray-50 hx:contrast-more:dark:hover:border-gray-50"
+      hextra-sidebar-active-item hx:bg-primary-100 hx:font-semibold hx:text-primary-800 hx:contrast-more:border hx:contrast-more:border-primary-500 hx:dark:bg-primary-400/10 hx:dark:text-primary-600 hx:contrast-more:dark:border-primary-500"
     href="/nishad/srake/docs/reference/configuration/"
     
   >Configuration &amp; Paths
     </a></li>
-          <li class="open"><a
+          <li class=""><a
     class="hx:flex hx:items-center hx:justify-between hx:gap-2 hx:cursor-pointer hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
-      hextra-sidebar-active-item hx:bg-primary-100 hx:font-semibold hx:text-primary-800 hx:contrast-more:border hx:contrast-more:border-primary-500 hx:dark:bg-primary-400/10 hx:dark:text-primary-600 hx:contrast-more:dark:border-primary-500"
+      hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:contrast-more:border hx:contrast-more:border-transparent hx:contrast-more:text-gray-900 hx:contrast-more:hover:border-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:dark:text-gray-50 hx:contrast-more:dark:hover:border-gray-50"
     href="/nishad/srake/docs/automation/"
     
   >Automation &amp; Scripting
@@ -576,67 +586,15 @@ Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the -
 <nav class="hextra-toc hx:order-last hx:hidden hx:w-64 hx:shrink-0 hx:xl:block hx:print:hidden hx:px-4" aria-label="table of contents">
     <div class="hextra-scrollbar hx:sticky hx:top-16 hx:overflow-y-auto hx:pr-4 hx:pt-6 hx:text-sm [hyphens:auto] hx:max-h-[calc(100vh-var(--navbar-height)-env(safe-area-inset-bottom))] hx:ltr:-mr-4 hx:rtl:-ml-4"><p class="hx:mb-4 hx:font-semibold hx:tracking-tight">On this page</p><ul>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#non-interactive-mode">Non-Interactive Mode
+        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#directory-structure">Directory Structure
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#pipeline-composition-with-stdin">Pipeline Composition with stdin
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#base-directories">Base Directories
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#chaining-commands">Chaining Commands
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#batch-processing">Batch Processing
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#dry-run-mode">Dry Run Mode
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#debugging-scripts">Debugging Scripts
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#error-handling">Error Handling
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#output-formats-for-scripts">Output Formats for Scripts
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#parallel-processing">Parallel Processing
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#cron-jobs">Cron Jobs
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#docker-integration">Docker Integration
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#cicd-integration">CI/CD Integration
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#github-actions-example">GitHub Actions Example
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#gitlab-ci-example">GitLab CI Example
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#shell-functions">Shell Functions
-        </a>
-      </li>
-      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#best-practices">Best Practices
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#specific-paths">Specific Paths
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
@@ -644,10 +602,90 @@ Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the -
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#logging">Logging
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#precedence-order-highest-to-lowest">Precedence Order (highest to lowest)
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#available-environment-variables">Available Environment Variables
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#examples">Examples
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#configuration-management">Configuration Management
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#view-current-paths">View Current Paths
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#initialize-configuration">Initialize Configuration
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#view-configuration">View Configuration
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#edit-configuration">Edit Configuration
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#configuration-file">Configuration File
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#cache-management">Cache Management
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#view-cache-information">View Cache Information
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#clean-cache">Clean Cache
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#best-practices">Best Practices
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#backup">Backup
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#performance-optimization">Performance Optimization
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#multi-user-setup">Multi-User Setup
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#dockercontainer-usage">Docker/Container Usage
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#troubleshooting">Troubleshooting
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#permission-issues">Permission Issues
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#path-not-found">Path Not Found
+        </a>
+      </li>
+      <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
+        <a class="hx:ltr:pl-4 hx:rtl:pr-4 hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#reset-to-defaults">Reset to Defaults
         </a>
       </li></ul>
-      <div class="hx:mt-8 hx:border-t hx:bg-white hx:pt-8 hx:shadow-[0_-12px_16px_white] hx:dark:bg-dark hx:dark:shadow-[0_-12px_16px_#111] hx:sticky hx:bottom-0 hx:flex hx:flex-col hx:items-start hx:gap-2 hx:pb-8 hx:border-gray-200 hx:dark:border-neutral-800 hx:contrast-more:border-t hx:contrast-more:border-neutral-400 hx:contrast-more:shadow-none hx:contrast-more:dark:border-neutral-400"><a class="hx:text-xs hx:font-medium hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-100 hx:contrast-more:text-gray-800 hx:contrast-more:dark:text-gray-50" href="https://github.com/nishad/srake/edit/main/docs/content/docs/automation.md" target="_blank" rel="noreferrer">Edit this page on GitHub →</a>
+      <div class="hx:mt-8 hx:border-t hx:bg-white hx:pt-8 hx:shadow-[0_-12px_16px_white] hx:dark:bg-dark hx:dark:shadow-[0_-12px_16px_#111] hx:sticky hx:bottom-0 hx:flex hx:flex-col hx:items-start hx:gap-2 hx:pb-8 hx:border-gray-200 hx:dark:border-neutral-800 hx:contrast-more:border-t hx:contrast-more:border-neutral-400 hx:contrast-more:shadow-none hx:contrast-more:dark:border-neutral-400"><a class="hx:text-xs hx:font-medium hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-100 hx:contrast-more:text-gray-800 hx:contrast-more:dark:text-gray-50" href="https://github.com/nishad/srake/edit/main/docs/content/docs/reference/configuration.md" target="_blank" rel="noreferrer">Edit this page on GitHub →</a>
         <button aria-hidden="true" id="backToTop" onClick="scrollUp();" class="hx:cursor-pointer hx:transition-all hx:duration-75 hx:opacity-0 hx:text-xs hx:font-medium hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-100 hx:contrast-more:text-gray-800 hx:contrast-more:dark:text-gray-50">
           <span>Scroll to top</span>
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="hx:inline hx:ltr:ml-1 hx:rtl:mr-1 hx:h-3.5 hx:w-3.5 hx:rounded-full hx:border hx:border-gray-500 hx:hover:border-gray-900 hx:dark:border-gray-400 hx:dark:hover:border-gray-100 hx:contrast-more:border-gray-800 hx:contrast-more:dark:border-gray-50">
@@ -664,19 +702,71 @@ Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the -
         <div class="hx:mt-1.5 hx:flex hx:items-center hx:gap-1 hx:overflow-hidden hx:text-sm hx:text-gray-500 hx:dark:text-gray-400 hx:contrast-more:text-current">
         <div class="hx:whitespace-nowrap hx:transition-colors hx:min-w-[24px] hx:overflow-hidden hx:text-ellipsis hx:hover:text-gray-900 hx:dark:hover:text-gray-100">
           <a href="/nishad/srake/docs/">Docs</a>
-        </div><svg class="hx:w-3.5 hx:shrink-0 hx:rtl:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx:whitespace-nowrap hx:transition-colors hx:font-medium hx:text-gray-700 hx:contrast-more:font-bold hx:contrast-more:text-current hx:dark:text-gray-100 hx:contrast-more:dark:text-current">Automation &amp; Scripting</div>
+        </div><svg class="hx:w-3.5 hx:shrink-0 hx:rtl:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg><div class="hx:whitespace-nowrap hx:transition-colors hx:font-medium hx:text-gray-700 hx:contrast-more:font-bold hx:contrast-more:text-current hx:dark:text-gray-100 hx:contrast-more:dark:text-current">Configuration &amp; Paths</div>
   </div>
 
         <div class="content">
-          <h1>Automation &amp; Scripting</h1>
-          <h1>Automation &amp; Scripting Guide</h1><p>srake is designed to work seamlessly in automated workflows and scripts, following <a href="https://clig.dev"target="_blank" rel="noopener">clig.dev</a> best practices for command-line interfaces.</p>
-<h2>Non-Interactive Mode<span class="hx:absolute hx:-mt-20" id="non-interactive-mode"></span>
-    <a href="#non-interactive-mode" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>When running srake in scripts or CI/CD pipelines, use the <code>--yes</code> flag to automatically accept all prompts:</p>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+          <h1>Configuration &amp; Paths</h1>
+          <h1>Configuration &amp; Paths</h1><p>SRake follows the <a href="https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html"target="_blank" rel="noopener">XDG Base Directory Specification</a> and <a href="https://clig.dev"target="_blank" rel="noopener">clig.dev</a> best practices for organizing its files and configuration.</p>
+<h2>Directory Structure<span class="hx:absolute hx:-mt-20" id="directory-structure"></span>
+    <a href="#directory-structure" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>SRake uses a clean, standardized directory structure that separates configuration, data, cache, and state:</p>
+<h3>Base Directories<span class="hx:absolute hx:-mt-20" id="base-directories"></span>
+    <a href="#base-directories" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><table>
+  <thead>
+      <tr>
+          <th>Directory</th>
+          <th>Default Path</th>
+          <th>Purpose</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><strong>Config</strong></td>
+          <td><code>~/.config/srake/</code></td>
+          <td>User configuration files</td>
+      </tr>
+      <tr>
+          <td><strong>Data</strong></td>
+          <td><code>~/.local/share/srake/</code></td>
+          <td>Essential persistent data (database, models)</td>
+      </tr>
+      <tr>
+          <td><strong>Cache</strong></td>
+          <td><code>~/.cache/srake/</code></td>
+          <td>Deletable cache data (downloads, indices)</td>
+      </tr>
+      <tr>
+          <td><strong>State</strong></td>
+          <td><code>~/.local/state/srake/</code></td>
+          <td>Application state (resume files, history)</td>
+      </tr>
+  </tbody>
+</table>
+<h3>Specific Paths<span class="hx:absolute hx:-mt-20" id="specific-paths"></span>
+    <a href="#specific-paths" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
 
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="c1"># Automated daily ingest script</span>
-</span></span><span class="line"><span class="cl">srake ingest --auto --yes --quiet</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">~/.config/srake/
+</span></span><span class="line"><span class="cl">└── config.yaml              <span class="c1"># User configuration</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">~/.local/share/srake/
+</span></span><span class="line"><span class="cl">├── srake.db                 <span class="c1"># Primary SQLite database</span>
+</span></span><span class="line"><span class="cl">└── models/                  <span class="c1"># ML models (persistent)</span>
+</span></span><span class="line"><span class="cl">    └── Xenova/              <span class="c1"># HuggingFace models</span>
+</span></span><span class="line"><span class="cl">        └── SapBERT-from-PubMedBERT-fulltext/
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">~/.cache/srake/
+</span></span><span class="line"><span class="cl">├── downloads/               <span class="c1"># Downloaded NCBI archives</span>
+</span></span><span class="line"><span class="cl">│   ├── NCBI_SRA_Metadata_20250915.tar.gz
+</span></span><span class="line"><span class="cl">│   └── checksums.sha256
+</span></span><span class="line"><span class="cl">├── index/                   <span class="c1"># Search indices (can be rebuilt)</span>
+</span></span><span class="line"><span class="cl">│   └── srake.bleve/         <span class="c1"># Bleve search index</span>
+</span></span><span class="line"><span class="cl">├── embeddings/              <span class="c1"># Computed embeddings cache</span>
+</span></span><span class="line"><span class="cl">└── search/                  <span class="c1"># Search result cache</span>
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl">~/.local/state/srake/
+</span></span><span class="line"><span class="cl">├── resume/                  <span class="c1"># Resume/checkpoint files</span>
+</span></span><span class="line"><span class="cl">│   └── checkpoint-*.json
+</span></span><span class="line"><span class="cl">└── history.log              <span class="c1"># Operation history</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
   <button
     class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
     title="Copy code"
@@ -686,322 +776,90 @@ Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the -
   </button>
 </div>
 </div>
-<h2>Pipeline Composition with stdin<span class="hx:absolute hx:-mt-20" id="pipeline-composition-with-stdin"></span>
-    <a href="#pipeline-composition-with-stdin" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>srake commands support stdin input, making them perfect for Unix pipelines:</p>
-<h3>Chaining Commands<span class="hx:absolute hx:-mt-20" id="chaining-commands"></span>
-    <a href="#chaining-commands" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Find all RNA-Seq experiments and download them</span>
-</span></span><span class="line"><span class="cl">srake search <span class="s2">&#34;RNA-Seq&#34;</span> --format tsv <span class="p">|</span> <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  cut -f1 <span class="p">|</span> <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  srake download --type fastq --parallel <span class="m">4</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Convert a list of accessions</span>
-</span></span><span class="line"><span class="cl">cat accessions.txt <span class="p">|</span> srake convert --to GSE --format json &gt; converted.json
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Process search results through multiple tools</span>
-</span></span><span class="line"><span class="cl">srake search <span class="s2">&#34;homo sapiens&#34;</span> --limit <span class="m">1000</span> <span class="p">|</span> <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  grep <span class="s2">&#34;ILLUMINA&#34;</span> <span class="p">|</span> <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  cut -f1 <span class="p">|</span> <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  srake metadata --format json</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h3>Batch Processing<span class="hx:absolute hx:-mt-20" id="batch-processing"></span>
-    <a href="#batch-processing" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Process accessions from a file</span>
-</span></span><span class="line"><span class="cl"><span class="k">while</span> <span class="nv">IFS</span><span class="o">=</span> <span class="nb">read</span> -r accession<span class="p">;</span> <span class="k">do</span>
-</span></span><span class="line"><span class="cl">  srake convert <span class="s2">&#34;</span><span class="nv">$accession</span><span class="s2">&#34;</span> --to GSE --quiet
-</span></span><span class="line"><span class="cl"><span class="k">done</span> &lt; accessions.txt
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Or use stdin directly</span>
-</span></span><span class="line"><span class="cl">cat accessions.txt <span class="p">|</span> srake convert --to GSE --output results.json</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>Dry Run Mode<span class="hx:absolute hx:-mt-20" id="dry-run-mode"></span>
-    <a href="#dry-run-mode" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Test your commands without making changes using <code>--dry-run</code>:</p>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Preview what would be downloaded</span>
-</span></span><span class="line"><span class="cl">srake download SRP123456 --dry-run
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Check conversions before executing</span>
-</span></span><span class="line"><span class="cl"><span class="nb">echo</span> -e <span class="s2">&#34;SRP001\nSRP002\nSRP003&#34;</span> <span class="p">|</span> srake convert --to GSE --dry-run</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>Debugging Scripts<span class="hx:absolute hx:-mt-20" id="debugging-scripts"></span>
-    <a href="#debugging-scripts" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Use the <code>--debug</code> flag to troubleshoot issues:</p>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Enable debug output for detailed logging</span>
-</span></span><span class="line"><span class="cl">srake download SRR123456 --debug 2&gt; debug.log
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Combine with verbose for maximum information</span>
-</span></span><span class="line"><span class="cl">srake convert SRP123456 --to GSE --debug --verbose</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>Error Handling<span class="hx:absolute hx:-mt-20" id="error-handling"></span>
-    <a href="#error-handling" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>srake follows Unix conventions for exit codes:</p>
-<ul>
-<li><code>0</code>: Success</li>
-<li><code>1</code>: General error</li>
-<li><code>2</code>: Command line usage error</li>
-</ul>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="cp">#!/bin/bash
-</span></span></span><span class="line"><span class="cl"><span class="cp"></span><span class="nb">set</span> -e  <span class="c1"># Exit on any error</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Check if download succeeded</span>
-</span></span><span class="line"><span class="cl"><span class="k">if</span> srake download SRR123456 --yes --quiet<span class="p">;</span> <span class="k">then</span>
-</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;Download successful&#34;</span>
-</span></span><span class="line"><span class="cl"><span class="k">else</span>
-</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;Download failed with exit code </span><span class="nv">$?</span><span class="s2">&#34;</span>
-</span></span><span class="line"><span class="cl">  <span class="nb">exit</span> <span class="m">1</span>
-</span></span><span class="line"><span class="cl"><span class="k">fi</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>Output Formats for Scripts<span class="hx:absolute hx:-mt-20" id="output-formats-for-scripts"></span>
-    <a href="#output-formats-for-scripts" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Use structured output formats for easier parsing:</p>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># JSON for complex processing</span>
-</span></span><span class="line"><span class="cl">srake search <span class="s2">&#34;mouse&#34;</span> --format json <span class="p">|</span> jq <span class="s1">&#39;.[] | .accession&#39;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># TSV for simple column extraction</span>
-</span></span><span class="line"><span class="cl">srake search <span class="s2">&#34;human&#34;</span> --format tsv --no-header <span class="p">|</span> awk <span class="s1">&#39;{print $1}&#39;</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># CSV for spreadsheet tools</span>
-</span></span><span class="line"><span class="cl">srake convert SRP123456 --to GSE --format csv &gt; results.csv</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>Parallel Processing<span class="hx:absolute hx:-mt-20" id="parallel-processing"></span>
-    <a href="#parallel-processing" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Leverage GNU parallel for large-scale processing:</p>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Download multiple accessions in parallel</span>
-</span></span><span class="line"><span class="cl">cat accessions.txt <span class="p">|</span> parallel -j <span class="m">4</span> srake download <span class="o">{}</span> --yes --quiet
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Convert accessions in parallel</span>
-</span></span><span class="line"><span class="cl">parallel -j <span class="m">8</span> srake convert <span class="o">{}</span> --to GSE ::: SRP001 SRP002 SRP003</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>Cron Jobs<span class="hx:absolute hx:-mt-20" id="cron-jobs"></span>
-    <a href="#cron-jobs" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Example cron job for automated daily ingestion:</p>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Daily SRA metadata update at 2 AM</span>
-</span></span><span class="line"><span class="cl"><span class="m">0</span> <span class="m">2</span> * * * /usr/local/bin/srake ingest --daily --yes --quiet &gt;&gt; /var/log/srake.log 2&gt;<span class="p">&amp;</span><span class="m">1</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Weekly full ingest on Sundays</span>
-</span></span><span class="line"><span class="cl"><span class="m">0</span> <span class="m">3</span> * * <span class="m">0</span> /usr/local/bin/srake ingest --auto --yes --force &gt;&gt; /var/log/srake.log 2&gt;<span class="p">&amp;</span><span class="m">1</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>Docker Integration<span class="hx:absolute hx:-mt-20" id="docker-integration"></span>
-    <a href="#docker-integration" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Run srake in containerized environments:</p>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Non-interactive Docker execution</span>
-</span></span><span class="line"><span class="cl">docker run -v <span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/data:/data <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  srake-image <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  srake ingest --auto --yes --db /data/metadata.db
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Pipe data into containerized srake</span>
-</span></span><span class="line"><span class="cl">cat accessions.txt <span class="p">|</span> docker run -i srake-image <span class="se">\
-</span></span></span><span class="line"><span class="cl"><span class="se"></span>  srake convert --to GSE --format json</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>CI/CD Integration<span class="hx:absolute hx:-mt-20" id="cicd-integration"></span>
-    <a href="#cicd-integration" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><h3>GitHub Actions Example<span class="hx:absolute hx:-mt-20" id="github-actions-example"></span>
-    <a href="#github-actions-example" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Update SRA Metadata</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">on</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">schedule</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="nt">cron</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;0 0 * * *&#39;</span><span class="w">  </span><span class="c"># Daily at midnight</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">workflow_dispatch</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">jobs</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">update</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l">ubuntu-latest</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">steps</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/checkout@v3</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Setup Go</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/setup-go@v4</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">go-version</span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;1.21&#39;</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Install srake</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l">go install github.com/nishad/srake/cmd/srake@latest</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Update metadata</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p">|</span><span class="sd">
-</span></span></span><span class="line"><span class="cl"><span class="sd">          srake ingest --auto --yes --quiet
-</span></span></span><span class="line"><span class="cl"><span class="sd">          srake db info</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">Upload database</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l">actions/upload-artifact@v3</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l">sra-metadata</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">./data/metadata.db</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h3>GitLab CI Example<span class="hx:absolute hx:-mt-20" id="gitlab-ci-example"></span>
-    <a href="#gitlab-ci-example" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="nt">update-sra-metadata</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">stage</span><span class="p">:</span><span class="w"> </span><span class="l">data</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">script</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">srake ingest --auto --yes --quiet</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">srake search &#34;homo sapiens&#34; --limit 100 --format json &gt; latest_human.json</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">artifacts</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span><span class="nt">paths</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">./data/metadata.db</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">      </span>- <span class="l">latest_human.json</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">only</span><span class="p">:</span><span class="w">
-</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">schedules</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>Shell Functions<span class="hx:absolute hx:-mt-20" id="shell-functions"></span>
-    <a href="#shell-functions" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Create helpful shell functions for common tasks:</p>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
-
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Add to ~/.bashrc or ~/.zshrc</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Quick SRA to GEO conversion</span>
-</span></span><span class="line"><span class="cl">sra2geo<span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">  <span class="nb">echo</span> <span class="s2">&#34;</span><span class="nv">$1</span><span class="s2">&#34;</span> <span class="p">|</span> srake convert --to GSE --quiet <span class="p">|</span> tail -1
-</span></span><span class="line"><span class="cl"><span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Download helper with defaults</span>
-</span></span><span class="line"><span class="cl">sra_download<span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">  srake download <span class="s2">&#34;</span><span class="nv">$@</span><span class="s2">&#34;</span> --type fastq --parallel <span class="m">4</span> --yes
-</span></span><span class="line"><span class="cl"><span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Search and count results</span>
-</span></span><span class="line"><span class="cl">sra_count<span class="o">()</span> <span class="o">{</span>
-</span></span><span class="line"><span class="cl">  srake search <span class="s2">&#34;</span><span class="nv">$1</span><span class="s2">&#34;</span> --format tsv --no-header <span class="p">|</span> wc -l
-</span></span><span class="line"><span class="cl"><span class="o">}</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Usage</span>
-</span></span><span class="line"><span class="cl">$ sra2geo SRP123456
-</span></span><span class="line"><span class="cl">GSE98765
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">$ sra_download SRR123456 SRR123457
-</span></span><span class="line"><span class="cl"><span class="c1"># Downloads with optimized settings</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl">$ sra_count <span class="s2">&#34;homo sapiens RNA-Seq&#34;</span>
-</span></span><span class="line"><span class="cl"><span class="m">1234</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
-  <button
-    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
-    title="Copy code"
-  >
-    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
-<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
-  </button>
-</div>
-</div>
-<h2>Best Practices<span class="hx:absolute hx:-mt-20" id="best-practices"></span>
-    <a href="#best-practices" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><ol>
-<li><strong>Always use <code>--yes</code> in scripts</strong> to avoid hanging on prompts</li>
-<li><strong>Use <code>--quiet</code> to suppress non-essential output</strong> in production scripts</li>
-<li><strong>Enable <code>--debug</code> when developing</strong> to understand command behavior</li>
-<li><strong>Test with <code>--dry-run</code> first</strong> before running destructive operations</li>
-<li><strong>Check exit codes</strong> for proper error handling</li>
-<li><strong>Use structured output formats</strong> (JSON/TSV) for reliable parsing</li>
-<li><strong>Leverage stdin</strong> for composability with other Unix tools</li>
-<li><strong>Set appropriate timeouts</strong> for network operations in CI/CD</li>
-</ol>
 <h2>Environment Variables<span class="hx:absolute hx:-mt-20" id="environment-variables"></span>
-    <a href="#environment-variables" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>srake respects standard environment variables:</p>
-<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+    <a href="#environment-variables" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>SRake respects environment variables for customizing paths. These follow a clear precedence order:</p>
+<h3>Precedence Order (highest to lowest)<span class="hx:absolute hx:-mt-20" id="precedence-order-highest-to-lowest"></span>
+    <a href="#precedence-order-highest-to-lowest" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><ol>
+<li>Command-line flags (<code>--db</code>, <code>--cache</code>, etc.)</li>
+<li>Environment variables</li>
+<li>Config file (<code>~/.config/srake/config.yaml</code>)</li>
+<li>Built-in defaults</li>
+</ol>
+<h3>Available Environment Variables<span class="hx:absolute hx:-mt-20" id="available-environment-variables"></span>
+    <a href="#available-environment-variables" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><table>
+  <thead>
+      <tr>
+          <th>Variable</th>
+          <th>Description</th>
+          <th>Default</th>
+      </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td><code>SRAKE_CONFIG_HOME</code></td>
+          <td>Override config directory</td>
+          <td><code>$XDG_CONFIG_HOME/srake</code> or <code>~/.config/srake</code></td>
+      </tr>
+      <tr>
+          <td><code>SRAKE_DATA_HOME</code></td>
+          <td>Override data directory</td>
+          <td><code>$XDG_DATA_HOME/srake</code> or <code>~/.local/share/srake</code></td>
+      </tr>
+      <tr>
+          <td><code>SRAKE_CACHE_HOME</code></td>
+          <td>Override cache directory</td>
+          <td><code>$XDG_CACHE_HOME/srake</code> or <code>~/.cache/srake</code></td>
+      </tr>
+      <tr>
+          <td><code>SRAKE_STATE_HOME</code></td>
+          <td>Override state directory</td>
+          <td><code>$XDG_STATE_HOME/srake</code> or <code>~/.local/state/srake</code></td>
+      </tr>
+      <tr>
+          <td><code>SRAKE_DB_PATH</code></td>
+          <td>Override database location</td>
+          <td><code>$SRAKE_DATA_HOME/srake.db</code></td>
+      </tr>
+      <tr>
+          <td><code>SRAKE_INDEX_PATH</code></td>
+          <td>Override index location</td>
+          <td><code>$SRAKE_CACHE_HOME/index/srake.bleve</code></td>
+      </tr>
+      <tr>
+          <td><code>SRAKE_MODELS_PATH</code></td>
+          <td>Override models location</td>
+          <td><code>$SRAKE_DATA_HOME/models</code></td>
+      </tr>
+      <tr>
+          <td><code>SRAKE_NO_COLOR</code></td>
+          <td>Disable colored output</td>
+          <td>Also respects <code>NO_COLOR</code></td>
+      </tr>
+      <tr>
+          <td><code>SRAKE_DEBUG</code></td>
+          <td>Enable debug logging</td>
+          <td></td>
+      </tr>
+      <tr>
+          <td><code>SRAKE_VERBOSE</code></td>
+          <td>Enable verbose output</td>
+          <td></td>
+      </tr>
+  </tbody>
+</table>
+<h3>Examples<span class="hx:absolute hx:-mt-20" id="examples"></span>
+    <a href="#examples" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
 
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Disable colored output</span>
-</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">NO_COLOR</span><span class="o">=</span><span class="m">1</span>
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Use a different database location</span>
+</span></span><span class="line"><span class="cl"><span class="nv">SRAKE_DB_PATH</span><span class="o">=</span>/mnt/ssd/srake.db srake search <span class="s2">&#34;RNA-Seq&#34;</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Custom database location</span>
-</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">SRAKE_DB</span><span class="o">=</span>/custom/path/metadata.db
+</span></span><span class="line"><span class="cl"><span class="c1"># Use temporary cache for testing</span>
+</span></span><span class="line"><span class="cl"><span class="nv">SRAKE_CACHE_HOME</span><span class="o">=</span>/tmp/srake-cache srake ingest --daily
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Run with environment overrides</span>
-</span></span><span class="line"><span class="cl"><span class="nv">NO_COLOR</span><span class="o">=</span><span class="m">1</span> srake search <span class="s2">&#34;mouse&#34;</span> --format table</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+</span></span><span class="line"><span class="cl"><span class="c1"># Override all base directories</span>
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">SRAKE_DATA_HOME</span><span class="o">=</span>/data/srake
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">SRAKE_CACHE_HOME</span><span class="o">=</span>/cache/srake
+</span></span><span class="line"><span class="cl">srake ingest --auto</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
   <button
     class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
     title="Copy code"
@@ -1011,21 +869,12 @@ Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the -
   </button>
 </div>
 </div>
-<h2>Logging<span class="hx:absolute hx:-mt-20" id="logging"></span>
-    <a href="#logging" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>Redirect output streams for logging:</p>
+<h2>Configuration Management<span class="hx:absolute hx:-mt-20" id="configuration-management"></span>
+    <a href="#configuration-management" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><h3>View Current Paths<span class="hx:absolute hx:-mt-20" id="view-current-paths"></span>
+    <a href="#view-current-paths" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Display all active paths and any environment variable overrides:</p>
 <div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
 
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Log errors only</span>
-</span></span><span class="line"><span class="cl">srake ingest --auto 2&gt; errors.log
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Log everything</span>
-</span></span><span class="line"><span class="cl">srake ingest --auto --verbose &gt; output.log 2&gt;<span class="p">&amp;</span><span class="m">1</span>
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Separate stdout and stderr</span>
-</span></span><span class="line"><span class="cl">srake search <span class="s2">&#34;human&#34;</span> &gt; results.txt 2&gt; errors.log
-</span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Tee for both console and file</span>
-</span></span><span class="line"><span class="cl">srake ingest --auto 2&gt;<span class="p">&amp;</span><span class="m">1</span> <span class="p">|</span> tee -a srake.log</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">srake config paths</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
   <button
     class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
     title="Copy code"
@@ -1035,19 +884,398 @@ Non-Interactive Mode When running srake in scripts or CI/CD pipelines, use the -
   </button>
 </div>
 </div>
-<p>This guide ensures your srake automation is robust, maintainable, and follows Unix philosophy for maximum interoperability.</p>
+<p>Output:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><pre><code>SRake Paths
+────────────────────────────────────────
+Base Directories:
+  Config:   /Users/alice/.config/srake
+  Data:     /Users/alice/.local/share/srake
+  Cache:    /Users/alice/.cache/srake
+  State:    /Users/alice/.local/state/srake
+
+Specific Paths:
+  Database:  /Users/alice/.local/share/srake/srake.db
+  Index:     /Users/alice/.cache/srake/index/srake.bleve
+  Models:    /Users/alice/.local/share/srake/models
+  Downloads: /Users/alice/.cache/srake/downloads
+
+Environment Variables:
+  SRAKE_DB_PATH = /mnt/fast/srake.db
+
+Path Status:
+  Config Dir:  ✓ exists
+  Data Dir:    ✓ exists
+  Database:    ✓ exists
+  Index:       ✗ not found</code></pre></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h3>Initialize Configuration<span class="hx:absolute hx:-mt-20" id="initialize-configuration"></span>
+    <a href="#initialize-configuration" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Create a default configuration file:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Create default config</span>
+</span></span><span class="line"><span class="cl">srake config init
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Force overwrite existing config</span>
+</span></span><span class="line"><span class="cl">srake config init --force</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h3>View Configuration<span class="hx:absolute hx:-mt-20" id="view-configuration"></span>
+    <a href="#view-configuration" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Display the current configuration settings:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">srake config show</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h3>Edit Configuration<span class="hx:absolute hx:-mt-20" id="edit-configuration"></span>
+    <a href="#edit-configuration" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Open the configuration file in your default editor:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">srake config edit</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<p>This uses the <code>$EDITOR</code> environment variable, falling back to <code>vi</code> if not set.</p>
+<h2>Configuration File<span class="hx:absolute hx:-mt-20" id="configuration-file"></span>
+    <a href="#configuration-file" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>The configuration file is located at <code>~/.config/srake/config.yaml</code> and uses YAML format:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-yaml" data-lang="yaml"><span class="line"><span class="cl"><span class="c"># Data directory for persistent files</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">data_directory</span><span class="p">:</span><span class="w"> </span><span class="l">/home/alice/.local/share/srake</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Database configuration</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">database</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l">/home/alice/.local/share/srake/srake.db</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">cache_size</span><span class="p">:</span><span class="w"> </span><span class="m">10000</span><span class="w">      </span><span class="c"># in KB (40MB)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">mmap_size</span><span class="p">:</span><span class="w"> </span><span class="m">268435456</span><span class="w">   </span><span class="c"># in bytes (256MB)</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">journal_mode</span><span class="p">:</span><span class="w"> </span><span class="l">WAL</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Search configuration</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">search</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">backend</span><span class="p">:</span><span class="w"> </span><span class="l">bleve</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">index_path</span><span class="p">:</span><span class="w"> </span><span class="l">/home/alice/.cache/srake/index/srake.bleve</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">rebuild_on_start</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">auto_sync</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">sync_interval</span><span class="p">:</span><span class="w"> </span><span class="m">300</span><span class="w">     </span><span class="c"># seconds</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">default_limit</span><span class="p">:</span><span class="w"> </span><span class="m">100</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="m">1000</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">use_cache</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">cache_ttl</span><span class="p">:</span><span class="w"> </span><span class="m">3600</span><span class="w">        </span><span class="c"># seconds</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Vector search configuration</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">vectors</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">requires_search</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">similarity_metric</span><span class="p">:</span><span class="w"> </span><span class="l">cosine</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">use_quantized</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">dimensions</span><span class="p">:</span><span class="w"> </span><span class="m">768</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">optimization</span><span class="p">:</span><span class="w"> </span><span class="l">memory_efficient</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="c"># Embedding configuration</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w"></span><span class="nt">embeddings</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">models_directory</span><span class="p">:</span><span class="w"> </span><span class="l">/home/alice/.local/share/srake/models</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">default_model</span><span class="p">:</span><span class="w"> </span><span class="l">Xenova/SapBERT-from-PubMedBERT-fulltext</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">default_variant</span><span class="p">:</span><span class="w"> </span><span class="l">quantized</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="m">32</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">num_threads</span><span class="p">:</span><span class="w"> </span><span class="m">4</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">max_text_length</span><span class="p">:</span><span class="w"> </span><span class="m">512</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">cache_embeddings</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">  </span><span class="nt">combine_fields</span><span class="p">:</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">organism</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">library_strategy</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">title</span><span class="w">
+</span></span></span><span class="line"><span class="cl"><span class="w">    </span>- <span class="l">abstract</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h2>Cache Management<span class="hx:absolute hx:-mt-20" id="cache-management"></span>
+    <a href="#cache-management" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>SRake provides comprehensive cache management commands to control disk usage:</p>
+<h3>View Cache Information<span class="hx:absolute hx:-mt-20" id="view-cache-information"></span>
+    <a href="#view-cache-information" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl">srake cache info</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<p>Shows cache directories, sizes, and file counts:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><pre><code>Cache Directories
+────────────────────────────────────────
+Cache Subdirectories:
+  Downloads:      /Users/alice/.cache/srake/downloads (1.2 GB, 5 files)
+  Search Index:   /Users/alice/.cache/srake/index (450 MB, 1 files)
+  Embeddings:     /Users/alice/.cache/srake/embeddings (120 MB, 1523 files)
+  Search Cache:   /Users/alice/.cache/srake/search (15 MB, 203 files)
+
+Total cache size: 1785.00 MB</code></pre></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h3>Clean Cache<span class="hx:absolute hx:-mt-20" id="clean-cache"></span>
+    <a href="#clean-cache" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Remove cache files to free up disk space:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Remove downloads older than 30 days</span>
+</span></span><span class="line"><span class="cl">srake cache clean --older 30d
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Remove all downloads</span>
+</span></span><span class="line"><span class="cl">srake cache clean --downloads
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Remove search result cache</span>
+</span></span><span class="line"><span class="cl">srake cache clean --search
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Remove search index (will need rebuild)</span>
+</span></span><span class="line"><span class="cl">srake cache clean --index
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Remove everything (requires confirmation)</span>
+</span></span><span class="line"><span class="cl">srake cache clean --all</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<p>Options:</p>
+<ul>
+<li><code>--all</code>: Remove all cache including indices</li>
+<li><code>--older &lt;duration&gt;</code>: Remove files older than specified duration (e.g., 30d, 24h)</li>
+<li><code>--search</code>: Remove cached search results</li>
+<li><code>--downloads</code>: Remove downloaded files</li>
+<li><code>--index</code>: Remove search index (requires rebuild with <code>srake search index --build</code>)</li>
+</ul>
+<h2>Best Practices<span class="hx:absolute hx:-mt-20" id="best-practices"></span>
+    <a href="#best-practices" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><h3>Backup<span class="hx:absolute hx:-mt-20" id="backup"></span>
+    <a href="#backup" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>Important data to backup:</p>
+<ul>
+<li><code>~/.local/share/srake/srake.db</code> - Your database</li>
+<li><code>~/.config/srake/config.yaml</code> - Your configuration</li>
+<li><code>~/.local/share/srake/models/</code> - Downloaded models (optional, can be re-downloaded)</li>
+</ul>
+<h3>Performance Optimization<span class="hx:absolute hx:-mt-20" id="performance-optimization"></span>
+    <a href="#performance-optimization" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><ol>
+<li>
+<p><strong>Fast SSD for Database</strong>: Place the database on fast storage</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nv">SRAKE_DB_PATH</span><span class="o">=</span>/mnt/nvme/srake.db srake ingest --auto</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+</li>
+<li>
+<p><strong>Separate Cache Drive</strong>: Use a different drive for cache</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nv">SRAKE_CACHE_HOME</span><span class="o">=</span>/mnt/scratch/srake-cache srake search <span class="s2">&#34;human&#34;</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+</li>
+<li>
+<p><strong>RAM Disk for Temporary Work</strong>: Use tmpfs for intensive operations</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nv">SRAKE_CACHE_HOME</span><span class="o">=</span>/dev/shm/srake srake search index --rebuild</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+</li>
+</ol>
+<h3>Multi-User Setup<span class="hx:absolute hx:-mt-20" id="multi-user-setup"></span>
+    <a href="#multi-user-setup" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>For shared systems, each user automatically gets their own paths:</p>
+<ul>
+<li>Alice: <code>~alice/.local/share/srake/</code></li>
+<li>Bob: <code>~bob/.local/share/srake/</code></li>
+</ul>
+<p>For a shared database, set:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">SRAKE_DB_PATH</span><span class="o">=</span>/shared/data/srake.db
+</span></span><span class="line"><span class="cl"><span class="nb">export</span> <span class="nv">SRAKE_INDEX_PATH</span><span class="o">=</span>/shared/cache/srake.bleve</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h3>Docker/Container Usage<span class="hx:absolute hx:-mt-20" id="dockercontainer-usage"></span>
+    <a href="#dockercontainer-usage" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>When using SRake in containers, mount volumes for persistence:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-dockerfile" data-lang="dockerfile"><span class="line"><span class="cl"><span class="c"># Dockerfile example</span><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">ENV</span> <span class="nv">SRAKE_DATA_HOME</span><span class="o">=</span>/data<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">ENV</span> <span class="nv">SRAKE_CACHE_HOME</span><span class="o">=</span>/cache<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">ENV</span> <span class="nv">SRAKE_CONFIG_HOME</span><span class="o">=</span>/config<span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err">
+</span></span></span><span class="line"><span class="cl"><span class="err"></span><span class="k">VOLUME</span> <span class="p">[</span><span class="s2">&#34;/data&#34;</span><span class="p">,</span> <span class="s2">&#34;/cache&#34;</span><span class="p">,</span> <span class="s2">&#34;/config&#34;</span><span class="p">]</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Docker run example</span>
+</span></span><span class="line"><span class="cl">docker run -v /host/data:/data <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>           -v /host/cache:/cache <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>           -v /host/config:/config <span class="se">\
+</span></span></span><span class="line"><span class="cl"><span class="se"></span>           srake:latest search <span class="s2">&#34;RNA-Seq&#34;</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h2>Troubleshooting<span class="hx:absolute hx:-mt-20" id="troubleshooting"></span>
+    <a href="#troubleshooting" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><h3>Permission Issues<span class="hx:absolute hx:-mt-20" id="permission-issues"></span>
+    <a href="#permission-issues" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>If you encounter permission errors:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Check directory permissions</span>
+</span></span><span class="line"><span class="cl">ls -la ~/.local/share/srake/
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Fix permissions</span>
+</span></span><span class="line"><span class="cl">chmod -R u+rwX ~/.local/share/srake/
+</span></span><span class="line"><span class="cl">chmod -R u+rwX ~/.cache/srake/</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h3>Path Not Found<span class="hx:absolute hx:-mt-20" id="path-not-found"></span>
+    <a href="#path-not-found" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>If paths don&rsquo;t exist, SRake creates them automatically on startup. To manually create:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># SRake will create all necessary directories</span>
+</span></span><span class="line"><span class="cl">srake config paths</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
+<h3>Reset to Defaults<span class="hx:absolute hx:-mt-20" id="reset-to-defaults"></span>
+    <a href="#reset-to-defaults" class="subheading-anchor" aria-label="Permalink for this section"></a></h3><p>To completely reset SRake:</p>
+<div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
+
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Remove all SRake data (careful!)</span>
+</span></span><span class="line"><span class="cl">rm -rf ~/.config/srake
+</span></span><span class="line"><span class="cl">rm -rf ~/.local/share/srake
+</span></span><span class="line"><span class="cl">rm -rf ~/.cache/srake
+</span></span><span class="line"><span class="cl">rm -rf ~/.local/state/srake
+</span></span><span class="line"><span class="cl">
+</span></span><span class="line"><span class="cl"><span class="c1"># Start fresh</span>
+</span></span><span class="line"><span class="cl">srake config init
+</span></span><span class="line"><span class="cl">srake ingest --auto</span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
+  <button
+    class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
+    title="Copy code"
+  >
+    <div class="hextra-copy-icon hx:group-[.copied]/copybtn:hidden hx:pointer-events-none hx:h-4 hx:w-4"></div>
+<div class="hextra-success-icon hx:hidden hx:group-[.copied]/copybtn:block hx:pointer-events-none hx:h-4 hx:w-4"></div>
+  </button>
+</div>
+</div>
 
         </div>
         <div class="hx:mt-16"></div>
         <div class="hx:mb-8 hx:flex hx:items-center hx:border-t hx:pt-8 hx:border-gray-200 hx:dark:border-neutral-800 hx:contrast-more:border-neutral-400 hx:dark:contrast-more:border-neutral-400 hx:print:hidden"><a
-        href="/nishad/srake/docs/examples/"
-        title="Examples"
+        href="/nishad/srake/docs/reference/cli/"
+        title="CLI Reference"
         class="hx:flex hx:max-w-[50%] hx:items-center hx:gap-1 hx:py-4 hx:text-base hx:font-medium hx:text-gray-600 hx:transition-colors [word-break:break-word] hx:hover:text-primary-600 hx:dark:text-gray-300 hx:md:text-lg hx:ltr:pr-4 hx:rtl:pl-4"
-      ><svg class="hx:inline hx:h-5 hx:shrink-0 hx:ltr:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>Examples</a><a
-        href="/nishad/srake/docs/compatibility/"
-        title="Tool Compatibility"
+      ><svg class="hx:inline hx:h-5 hx:shrink-0 hx:ltr:rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>CLI Reference</a><a
+        href="/nishad/srake/docs/automation/"
+        title="Automation &amp; Scripting"
         class="hx:flex hx:max-w-[50%] hx:items-center hx:gap-1 hx:py-4 hx:text-base hx:font-medium hx:text-gray-600 hx:transition-colors [word-break:break-word] hx:hover:text-primary-600 hx:dark:text-gray-300 hx:md:text-lg hx:ltr:ml-auto hx:ltr:pl-4 hx:ltr:text-right hx:rtl:mr-auto hx:rtl:pr-4 hx:rtl:text-left"
-      >Tool Compatibility<svg class="hx:inline hx:h-5 hx:shrink-0 hx:rtl:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
+      >Automation &amp; Scripting<svg class="hx:inline hx:h-5 hx:shrink-0 hx:rtl:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg></a></div>
         
       </main>
     </article>

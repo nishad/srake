@@ -32,8 +32,9 @@ srake provides multiple installation methods to suit your needs:
   # Pull the image
   docker pull ghcr.io/nishad/srake:latest
 
-  # Run with volume mount
-  docker run -v $(pwd)/data:/data \
+  # Run with volume mounts for persistence
+  docker run -v ~/.local/share/srake:/data \
+    -v ~/.cache/srake:/cache \
     ghcr.io/nishad/srake:latest \
     ingest --auto
   ```
@@ -72,6 +73,24 @@ srake provides multiple installation methods to suit your needs:
 
 {{< steps >}}
 
+### Check Installation
+
+Verify srake is installed and check default paths:
+
+```bash
+# Check version
+srake --version
+
+# View configured paths
+srake config paths
+```
+
+This will show where srake stores its data:
+- **Database**: `~/.local/share/srake/srake.db`
+- **Index**: `~/.cache/srake/index/srake.bleve`
+- **Downloads**: `~/.cache/srake/downloads/`
+- **Config**: `~/.config/srake/config.yaml`
+
 ### Ingest SRA Metadata
 
 Let srake automatically select and download the appropriate archive:
@@ -81,7 +100,8 @@ srake ingest --auto
 ```
 
 {{< callout type="tip" >}}
-The `--auto` flag intelligently selects between daily updates or full datasets based on your database state
+The `--auto` flag intelligently selects between daily updates or full datasets based on your database state.
+Data is stored in `~/.local/share/srake/srake.db` by default. Use `SRAKE_DB_PATH` to override.
 {{< /callout >}}
 
 Alternative ingestion methods:
@@ -236,6 +256,33 @@ srake server --port 3000
 
 {{< callout type="info" >}}
 **API Access**: Query via `curl "http://localhost:8080/api/search?q=human&limit=10"`
+{{< /callout >}}
+
+### Manage Cache & Configuration
+
+Control disk usage and customize settings:
+
+```bash
+# View cache usage
+srake cache info
+
+# Clean old downloads (free up space)
+srake cache clean --older 30d
+
+# Initialize configuration
+srake config init
+
+# Edit configuration
+srake config edit
+
+# Check all paths and environment variables
+srake config paths
+```
+
+{{< callout type="tip" >}}
+Use environment variables for custom paths:
+- `SRAKE_DB_PATH=/fast/ssd/srake.db` - Use fast storage for database
+- `SRAKE_CACHE_HOME=/tmp/srake` - Use temporary storage for cache
 {{< /callout >}}
 
 {{< /steps >}}

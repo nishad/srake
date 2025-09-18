@@ -36,7 +36,7 @@ srake ingest [flags]
 - `--monthly` - Ingest the latest monthly dataset
 - `--file <path>` - Ingest specific file (local or NCBI)
 - `--list` - List available files without ingesting
-- `--db <path>` - Database path (default: "./data/metadata.db")
+- `--db <path>` - Database path (default: "~/.local/share/srake/srake.db")
 - `--force` - Force ingestion even if data exists
 - `--no-progress` - Disable progress bar
 
@@ -394,6 +394,72 @@ srake db <subcommand> [flags]
 srake db info
 ```
 
+### `srake config`
+
+Configuration and path management commands.
+
+```bash
+srake config <subcommand> [flags]
+```
+
+#### Subcommands
+- `paths` - Show all active paths and environment variables
+- `show` - Display current configuration
+- `init` - Initialize default configuration file
+- `edit` - Open configuration in editor
+
+#### Flags (init)
+- `--force` - Overwrite existing configuration
+
+#### Examples
+```bash
+# View all paths
+srake config paths
+
+# Initialize configuration
+srake config init
+
+# Edit configuration
+srake config edit
+
+# Show current config
+srake config show
+```
+
+### `srake cache`
+
+Cache management commands for controlling disk usage.
+
+```bash
+srake cache <subcommand> [flags]
+```
+
+#### Subcommands
+- `info` - Show cache information and sizes
+- `clean` - Remove cache files
+
+#### Flags (clean)
+- `--all` - Remove all cache including indices
+- `--older <duration>` - Remove files older than duration (e.g., 30d, 24h)
+- `--search` - Remove search result cache
+- `--downloads` - Remove downloaded files
+- `--index` - Remove search index (requires rebuild)
+
+#### Examples
+```bash
+# View cache usage
+srake cache info
+
+# Clean downloads older than 30 days
+srake cache clean --older 30d
+
+# Remove all downloads
+srake cache clean --downloads
+
+# Clean everything (with confirmation)
+srake cache clean --all
+```
+
 ---
 
 ## Output Formats
@@ -409,8 +475,22 @@ Most commands support multiple output formats:
 
 ## Environment Variables
 
+### Path Configuration
+- `SRAKE_CONFIG_HOME` - Override config directory (default: `~/.config/srake`)
+- `SRAKE_DATA_HOME` - Override data directory (default: `~/.local/share/srake`)
+- `SRAKE_CACHE_HOME` - Override cache directory (default: `~/.cache/srake`)
+- `SRAKE_STATE_HOME` - Override state directory (default: `~/.local/state/srake`)
+- `SRAKE_DB_PATH` - Override database path (default: `~/.local/share/srake/srake.db`)
+- `SRAKE_INDEX_PATH` - Override search index path
+- `SRAKE_MODELS_PATH` - Override models directory
+
+### Output Control
 - `NO_COLOR` - Disable colored output globally
-- `SRAKE_DB` - Default database path
+- `SRAKE_NO_COLOR` - Disable colored output for srake
+- `SRAKE_DEBUG` - Enable debug output
+- `SRAKE_VERBOSE` - Enable verbose output
+
+### Cloud Configuration
 - `AWS_REGION` - Affects download source auto-selection
 - `GCP_PROJECT` - Affects download source auto-selection
 
