@@ -376,14 +376,21 @@ func (b *IndexBuilder) createCheckpoint() error {
 
 // createIndexSnapshot creates a snapshot of the current index
 func (b *IndexBuilder) createIndexSnapshot(checkpointID string) (string, error) {
-	// Implementation would create a compressed archive of the index
-	// For now, return a placeholder
-	return fmt.Sprintf("%s/%s.tar.gz", b.options.CheckpointDir, checkpointID), nil
+	manager := NewCheckpointManager(b)
+	checkpoint, err := manager.CreateCheckpoint(checkpointID)
+	if err != nil {
+		return "", err
+	}
+	return checkpoint.IndexSnapshot, nil
 }
 
 // restoreFromCheckpoint restores the index from a checkpoint
 func (b *IndexBuilder) restoreFromCheckpoint(checkpoint *Checkpoint) error {
-	// Implementation would restore the index from the checkpoint archive
+	manager := NewCheckpointManager(b)
+	if err := manager.RestoreCheckpoint(checkpoint); err != nil {
+		return err
+	}
+
 	// Update progress to match checkpoint state
 	b.progress.ProcessedDocs = checkpoint.DocOffset
 	b.progress.CurrentBatch = checkpoint.BatchNumber
