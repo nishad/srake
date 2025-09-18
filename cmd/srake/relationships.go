@@ -83,6 +83,17 @@ var (
 	relFields   string
 )
 
+// RunInfo contains information about a run
+type RunInfo struct {
+	RunAccession string `json:"run_accession" yaml:"run_accession"`
+	Experiment   string `json:"experiment_accession" yaml:"experiment_accession"`
+	TotalSpots   int64  `json:"total_spots" yaml:"total_spots"`
+	TotalBases   int64  `json:"total_bases" yaml:"total_bases"`
+	Published    string `json:"published" yaml:"published"`
+	Platform     string `json:"platform,omitempty" yaml:"platform,omitempty"`
+	Strategy     string `json:"library_strategy,omitempty" yaml:"library_strategy,omitempty"`
+}
+
 func init() {
 	// Add common flags to all relationship commands
 	for _, cmd := range []*cobra.Command{runsCmd, samplesCmd, experimentsCmd, studiesCmd} {
@@ -112,7 +123,7 @@ func runGetRuns(cmd *cobra.Command, args []string) error {
 		// Get runs for a study
 		query = `
 			SELECT r.run_accession, r.experiment_accession, r.total_spots,
-			       r.total_bases, r.published, e.platform_name, e.library_strategy
+			       r.total_bases, r.published, e.platform, e.library_strategy
 			FROM runs r
 			JOIN experiments e ON r.experiment_accession = e.experiment_accession
 			WHERE e.study_accession = ?`
@@ -121,7 +132,7 @@ func runGetRuns(cmd *cobra.Command, args []string) error {
 		// Get runs for an experiment
 		query = `
 			SELECT r.run_accession, r.experiment_accession, r.total_spots,
-			       r.total_bases, r.published, e.platform_name, e.library_strategy
+			       r.total_bases, r.published, e.platform, e.library_strategy
 			FROM runs r
 			JOIN experiments e ON r.experiment_accession = e.experiment_accession
 			WHERE r.experiment_accession = ?`
@@ -130,7 +141,7 @@ func runGetRuns(cmd *cobra.Command, args []string) error {
 		// Get runs for a sample
 		query = `
 			SELECT r.run_accession, r.experiment_accession, r.total_spots,
-			       r.total_bases, r.published, e.platform_name, e.library_strategy
+			       r.total_bases, r.published, e.platform, e.library_strategy
 			FROM runs r
 			JOIN experiments e ON r.experiment_accession = e.experiment_accession
 			JOIN experiment_samples es ON e.experiment_accession = es.experiment_accession
@@ -153,16 +164,6 @@ func runGetRuns(cmd *cobra.Command, args []string) error {
 	defer rows.Close()
 
 	// Collect results
-	type RunInfo struct {
-		RunAccession string `json:"run_accession" yaml:"run_accession"`
-		Experiment   string `json:"experiment_accession" yaml:"experiment_accession"`
-		TotalSpots   int64  `json:"total_spots" yaml:"total_spots"`
-		TotalBases   int64  `json:"total_bases" yaml:"total_bases"`
-		Published    string `json:"published" yaml:"published"`
-		Platform     string `json:"platform,omitempty" yaml:"platform,omitempty"`
-		Strategy     string `json:"library_strategy,omitempty" yaml:"library_strategy,omitempty"`
-	}
-
 	runs := []RunInfo{}
 	for rows.Next() {
 		var run RunInfo
@@ -514,15 +515,7 @@ func outputRelationshipTable(data interface{}, dataType string, detailed bool) e
 
 	switch dataType {
 	case "runs":
-		runs := data.([]struct {
-			RunAccession string `json:"run_accession" yaml:"run_accession"`
-			Experiment   string `json:"experiment_accession" yaml:"experiment_accession"`
-			TotalSpots   int64  `json:"total_spots" yaml:"total_spots"`
-			TotalBases   int64  `json:"total_bases" yaml:"total_bases"`
-			Published    string `json:"published" yaml:"published"`
-			Platform     string `json:"platform,omitempty" yaml:"platform,omitempty"`
-			Strategy     string `json:"library_strategy,omitempty" yaml:"library_strategy,omitempty"`
-		})
+		runs := data.([]RunInfo)
 
 		if len(runs) == 0 {
 			fmt.Println("No runs found")
