@@ -119,4 +119,4 @@ sample_data/
 # Development/private docs that should stay local
 RELEASE_CHECKLIST.md
 RELEASE_READY.md
-CLI_COMPLIANCE_REPORT.md
+CLI_COMPLIANCE_REPORT.md.srake/
