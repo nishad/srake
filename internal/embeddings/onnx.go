@@ -10,13 +10,14 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/daulet/tokenizers"
 	ort "github.com/yalue/onnxruntime_go"
 )
 
 // ONNXEmbedder generates embeddings using ONNX Runtime
 type ONNXEmbedder struct {
 	session   *ort.DynamicAdvancedSession
-	tokenizer *BertTokenizer
+	tokenizer *tokenizers.Tokenizer
 	modelPath string
 	enabled   bool
 }
@@ -49,19 +50,22 @@ func NewONNXEmbedder(modelPath string, cacheDir string) (*ONNXEmbedder, error) {
 	}
 	embedder.session = session
 
-	// Load tokenizer
+	// Load HuggingFace tokenizer
 	tokenizerPath := filepath.Join(filepath.Dir(localModelPath), "tokenizer.json")
-	tokenizer, err := NewBertTokenizer(tokenizerPath)
-	if err != nil {
-		// Try to download tokenizer if not found
+
+	// Check if tokenizer exists, if not download it
+	if _, err := os.Stat(tokenizerPath); os.IsNotExist(err) {
 		tokenizerURL := fmt.Sprintf("https://huggingface.co/%s/resolve/main/tokenizer.json", modelPath)
+		fmt.Printf("Downloading tokenizer from %s...\n", tokenizerURL)
 		if err := embedder.downloadFile(tokenizerURL, tokenizerPath); err != nil {
 			return nil, fmt.Errorf("failed to download tokenizer: %w", err)
 		}
-		tokenizer, err = NewBertTokenizer(tokenizerPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to load tokenizer: %w", err)
-		}
+	}
+
+	// Load tokenizer using HuggingFace tokenizers library
+	tokenizer, err := tokenizers.FromFile(tokenizerPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load tokenizer: %w", err)
 	}
 	embedder.tokenizer = tokenizer
 	embedder.enabled = true
@@ -136,26 +140,33 @@ func (e *ONNXEmbedder) Embed(text string) ([]float32, error) {
 		return nil, fmt.Errorf("embedder is not enabled")
 	}
 
-	// Tokenize the text
-	tokens := e.tokenizer.Encode(text, 512) // Max sequence length
+	// Tokenize the text using HuggingFace tokenizer
+	// Add special tokens ([CLS] and [SEP] for BERT)
+	encoding := e.tokenizer.EncodeWithOptions(text, true,
+		tokenizers.WithReturnTypeIDs(),
+		tokenizers.WithReturnAttentionMask())
 
-	// Prepare inputs
-	inputIDs := make([]int64, len(tokens))
-	attentionMask := make([]int64, len(tokens))
-	for i, token := range tokens {
-		inputIDs[i] = int64(token)
-		attentionMask[i] = 1
+	// Get token IDs and attention mask
+	tokenIDs := encoding.IDs
+	attentionMask := encoding.AttentionMask
+
+	// Convert to int64 for ONNX
+	inputIDs := make([]int64, len(tokenIDs))
+	maskIDs := make([]int64, len(attentionMask))
+	for i := range tokenIDs {
+		inputIDs[i] = int64(tokenIDs[i])
+		maskIDs[i] = int64(attentionMask[i])
 	}
 
 	// Create tensors
-	inputShape := ort.NewShape(1, int64(len(tokens)))
+	inputShape := ort.NewShape(1, int64(len(tokenIDs)))
 	inputIDsTensor, err := ort.NewTensor[int64](inputShape, inputIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create input tensor: %w", err)
 	}
 	defer inputIDsTensor.Destroy()
 
-	maskTensor, err := ort.NewTensor[int64](inputShape, attentionMask)
+	maskTensor, err := ort.NewTensor[int64](inputShape, maskIDs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create mask tensor: %w", err)
 	}
@@ -183,17 +194,18 @@ func (e *ONNXEmbedder) Embed(text string) ([]float32, error) {
 	// Extract embeddings (mean pooling)
 	embeddings := outputTensor.GetData()
 
-	// Mean pooling over sequence length
-	seqLen := len(tokens)
-	embDim := len(embeddings) / seqLen
-	result := make([]float32, embDim)
+	// For BERT models, we typically use the [CLS] token representation
+	// which is the first token's embedding
+	// The output shape is [batch_size, sequence_length, hidden_size]
+	// We want the [CLS] token (index 0) from the sequence
 
+	seqLen := len(tokenIDs)
+	embDim := len(embeddings) / seqLen
+
+	// Extract [CLS] token embedding (first token)
+	result := make([]float32, embDim)
 	for i := 0; i < embDim; i++ {
-		sum := float32(0)
-		for j := 0; j < seqLen; j++ {
-			sum += embeddings[j*embDim+i]
-		}
-		result[i] = sum / float32(seqLen)
+		result[i] = embeddings[i]
 	}
 
 	return result, nil
@@ -223,6 +235,9 @@ func (e *ONNXEmbedder) IsEnabled() bool {
 func (e *ONNXEmbedder) Close() error {
 	if e.session != nil {
 		e.session.Destroy()
+	}
+	if e.tokenizer != nil {
+		e.tokenizer.Close()
 	}
 	return nil
 }
