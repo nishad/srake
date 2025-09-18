@@ -296,7 +296,7 @@ func (b *IndexBuilder) processExperimentsBatch(ctx context.Context, offset int64
 // processSamplesBatch processes a batch of samples
 func (b *IndexBuilder) processSamplesBatch(ctx context.Context, offset int64, limit int) (int, error) {
 	query := `
-		SELECT sample_accession, title, organism, sample_attributes
+		SELECT sample_accession, description, organism, scientific_name
 		FROM samples
 		LIMIT ? OFFSET ?
 	`
@@ -313,31 +313,31 @@ func (b *IndexBuilder) processSamplesBatch(ctx context.Context, offset int64, li
 
 	for rows.Next() {
 		var sample struct {
-			Accession  string
-			Title      sql.NullString
-			Organism   sql.NullString
-			Attributes sql.NullString
+			Accession      string
+			Description    sql.NullString
+			Organism       sql.NullString
+			ScientificName sql.NullString
 		}
 
-		if err := rows.Scan(&sample.Accession, &sample.Title,
-			&sample.Organism, &sample.Attributes); err != nil {
+		if err := rows.Scan(&sample.Accession, &sample.Description,
+			&sample.Organism, &sample.ScientificName); err != nil {
 			return count, fmt.Errorf("failed to scan sample: %w", err)
 		}
 
 		doc := map[string]interface{}{
-			"id":       sample.Accession,
-			"type":     "sample",
-			"title":    sample.Title.String,
-			"organism": sample.Organism.String,
+			"id":          sample.Accession,
+			"type":        "sample",
+			"description": sample.Description.String,
+			"organism":    sample.Organism.String,
 		}
 
-		if sample.Attributes.Valid {
-			doc["attributes"] = sample.Attributes.String
+		if sample.ScientificName.Valid {
+			doc["scientific_name"] = sample.ScientificName.String
 		}
 
 		// Prepare text for embedding if enabled
 		if b.isEmbeddingEnabled() {
-			text := prepareSampleText(sample.Title.String, sample.Organism.String, sample.Attributes.String)
+			text := prepareSampleText(sample.Description.String, sample.Organism.String, sample.ScientificName.String)
 			texts = append(texts, text)
 		}
 
@@ -378,7 +378,7 @@ func (b *IndexBuilder) processSamplesBatch(ctx context.Context, offset int64, li
 // processRunsBatch processes a batch of runs
 func (b *IndexBuilder) processRunsBatch(ctx context.Context, offset int64, limit int) (int, error) {
 	query := `
-		SELECT run_accession, published_date, total_spots, total_bases
+		SELECT run_accession, published, total_spots, total_bases
 		FROM runs
 		LIMIT ? OFFSET ?
 	`
@@ -394,13 +394,13 @@ func (b *IndexBuilder) processRunsBatch(ctx context.Context, offset int64, limit
 
 	for rows.Next() {
 		var run struct {
-			Accession     string
-			PublishedDate sql.NullTime
-			TotalSpots    sql.NullInt64
-			TotalBases    sql.NullInt64
+			Accession  string
+			Published  sql.NullString
+			TotalSpots sql.NullInt64
+			TotalBases sql.NullInt64
 		}
 
-		if err := rows.Scan(&run.Accession, &run.PublishedDate,
+		if err := rows.Scan(&run.Accession, &run.Published,
 			&run.TotalSpots, &run.TotalBases); err != nil {
 			return count, fmt.Errorf("failed to scan run: %w", err)
 		}
@@ -410,8 +410,8 @@ func (b *IndexBuilder) processRunsBatch(ctx context.Context, offset int64, limit
 			"type": "run",
 		}
 
-		if run.PublishedDate.Valid {
-			doc["published_date"] = run.PublishedDate.Time
+		if run.Published.Valid && run.Published.String != "" {
+			doc["published"] = run.Published.String
 		}
 
 		if run.TotalSpots.Valid {
