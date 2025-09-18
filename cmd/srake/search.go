@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"text/tabwriter"
 	"time"
@@ -14,6 +13,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/nishad/srake/internal/config"
 	"github.com/nishad/srake/internal/database"
+	"github.com/nishad/srake/internal/paths"
 	"github.com/nishad/srake/internal/search"
 	"github.com/spf13/cobra"
 )
@@ -180,17 +180,14 @@ func performSearch(query string, filters map[string]string) error {
 	cfg := config.DefaultConfig()
 
 	// Find data directory
-	dataDir := os.Getenv("SRAKE_DATA_DIR")
-	if dataDir == "" {
-		dataDir = "./data"
-	}
+	dataDir := paths.GetPaths().DataDir
 	cfg.DataDirectory = dataDir
 
 	// Override index path if specified
 	if searchIndexPath != "" {
 		cfg.Search.IndexPath = searchIndexPath
 	} else {
-		cfg.Search.IndexPath = filepath.Join(dataDir, "search.blv")
+		cfg.Search.IndexPath = paths.GetIndexPath()
 	}
 
 	// Check if index exists
@@ -528,13 +525,10 @@ func outputAccessions(result *search.BleveSearchResult) error {
 // showSearchStats displays search index statistics
 func showSearchStats() error {
 	cfg := config.DefaultConfig()
-	dataDir := os.Getenv("SRAKE_DATA_DIR")
-	if dataDir == "" {
-		dataDir = "./data"
-	}
+	dataDir := paths.GetPaths().DataDir
 
 	// Open database for stats
-	dbPath := filepath.Join(dataDir, "SRAmetadb.sqlite")
+	dbPath := paths.GetDatabasePath()
 	sqlDB, err := sql.Open("sqlite3", dbPath+"?mode=ro")
 	if err != nil {
 		return fmt.Errorf("failed to open database: %v", err)

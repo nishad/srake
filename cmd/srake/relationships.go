@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/nishad/srake/internal/database"
+	"github.com/nishad/srake/internal/paths"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -109,8 +110,14 @@ func init() {
 func runGetRuns(cmd *cobra.Command, args []string) error {
 	accession := strings.ToUpper(args[0])
 
+	// Resolve database path
+	dbPath := serverDBPath
+	if dbPath == "" {
+		dbPath = paths.GetDatabasePath()
+	}
+
 	// Initialize database
-	db, err := database.Initialize(serverDBPath)
+	db, err := database.Initialize(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
@@ -196,8 +203,14 @@ func runGetRuns(cmd *cobra.Command, args []string) error {
 func runGetSamples(cmd *cobra.Command, args []string) error {
 	accession := strings.ToUpper(args[0])
 
+	// Resolve database path
+	dbPath := serverDBPath
+	if dbPath == "" {
+		dbPath = paths.GetDatabasePath()
+	}
+
 	// Initialize database
-	db, err := database.Initialize(serverDBPath)
+	db, err := database.Initialize(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
@@ -285,8 +298,14 @@ func runGetSamples(cmd *cobra.Command, args []string) error {
 func runGetExperiments(cmd *cobra.Command, args []string) error {
 	accession := strings.ToUpper(args[0])
 
+	// Resolve database path
+	dbPath := serverDBPath
+	if dbPath == "" {
+		dbPath = paths.GetDatabasePath()
+	}
+
 	// Initialize database
-	db, err := database.Initialize(serverDBPath)
+	db, err := database.Initialize(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
@@ -375,8 +394,14 @@ func runGetExperiments(cmd *cobra.Command, args []string) error {
 func runGetStudies(cmd *cobra.Command, args []string) error {
 	accession := strings.ToUpper(args[0])
 
+	// Resolve database path
+	dbPath := serverDBPath
+	if dbPath == "" {
+		dbPath = paths.GetDatabasePath()
+	}
+
 	// Initialize database
-	db, err := database.Initialize(serverDBPath)
+	db, err := database.Initialize(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}

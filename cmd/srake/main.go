@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/nishad/srake/internal/cli"
+	"github.com/nishad/srake/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -58,7 +59,7 @@ func init() {
 	// Server command flags
 	serverCmd.Flags().IntVarP(&serverPort, "port", "p", 8080, "Port to listen on")
 	serverCmd.Flags().StringVar(&serverHost, "host", "localhost", "Host to bind to")
-	serverCmd.Flags().StringVar(&serverDBPath, "db", "./data/SRAmetadb.sqlite", "Database path")
+	serverCmd.Flags().StringVar(&serverDBPath, "db", "", "Database path (defaults to ~/.local/share/srake/srake.db)")
 	serverCmd.Flags().StringVar(&serverLogLevel, "log-level", "info", "Log level (debug|info|warn|error)")
 	serverCmd.Flags().BoolVar(&serverDev, "dev", false, "Enable development mode")
 
@@ -129,6 +130,8 @@ func init() {
 	rootCmd.AddCommand(experimentsCmd)
 	rootCmd.AddCommand(studiesCmd)
 	rootCmd.AddCommand(downloadCmd)
+	rootCmd.AddCommand(cacheCmd)
+	rootCmd.AddCommand(configCmd)
 
 	// Add subcommands to db
 	dbCmd.AddCommand(dbInfoCmd)
@@ -140,6 +143,11 @@ func init() {
 }
 
 func main() {
+	// Ensure directories exist
+	if err := paths.EnsureDirectories(); err != nil {
+		fmt.Fprintf(os.Stderr, "Warning: failed to create directories: %v\n", err)
+	}
+
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/nishad/srake/internal/database"
 	"github.com/nishad/srake/internal/downloader"
+	"github.com/nishad/srake/internal/paths"
 	"github.com/nishad/srake/internal/processor"
 	"github.com/spf13/cobra"
 )
@@ -82,7 +83,7 @@ Examples:
 	cmd.Flags().BoolVar(&ingestMonthly, "monthly", false, "Ingest the latest monthly full dataset from NCBI")
 	cmd.Flags().StringVar(&ingestFile, "file", "", "Ingest a specific file (local path or NCBI filename)")
 	cmd.Flags().BoolVar(&ingestList, "list", false, "List available files on NCBI without ingesting")
-	cmd.Flags().StringVar(&ingestDBPath, "db", "./data/metadata.db", "Database path")
+	cmd.Flags().StringVar(&ingestDBPath, "db", "", "Database path (defaults to ~/.local/share/srake/srake.db)")
 	cmd.Flags().BoolVar(&ingestForce, "force", false, "Force ingestion even if data exists")
 	cmd.Flags().BoolVar(&ingestNoProgress, "no-progress", false, "Disable progress bar")
 
@@ -114,6 +115,11 @@ func runIngest(cmd *cobra.Command, args []string) error {
 
 	// Get global flags
 	yes, _ := cmd.Flags().GetBool("yes")
+
+	// Resolve database path
+	if ingestDBPath == "" {
+		ingestDBPath = paths.GetDatabasePath()
+	}
 
 	// Handle interrupt signals
 	sigChan := make(chan os.Signal, 1)

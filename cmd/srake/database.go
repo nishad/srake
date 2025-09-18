@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/nishad/srake/internal/database"
+	"github.com/nishad/srake/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +30,7 @@ var dbInfoCmd = &cobra.Command{
 func runDBInfo(cmd *cobra.Command, args []string) error {
 	dbPath := serverDBPath
 	if dbPath == "" {
-		dbPath = "./data/SRAmetadb.sqlite"
+		dbPath = paths.GetDatabasePath()
 	}
 
 	// Check if database exists

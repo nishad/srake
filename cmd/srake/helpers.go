@@ -57,6 +57,12 @@ func printInfo(format string, args ...interface{}) {
 	}
 }
 
+// Print warning message
+func printWarning(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	fmt.Fprintf(os.Stderr, "%s %s\n", colorize(colorYellow, "⚠"), msg)
+}
+
 // Print debug message
 func printDebug(format string, args ...interface{}) {
 	if debug {

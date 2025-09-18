@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/nishad/srake/internal/paths"
 	"gopkg.in/yaml.v3"
 )
 
@@ -64,14 +65,12 @@ type EmbeddingConfig struct {
 
 // DefaultConfig returns the default configuration
 func DefaultConfig() *Config {
-	homeDir, _ := os.UserHomeDir()
-	dataDir := filepath.Join(homeDir, ".srake", "data")
-	modelsDir := filepath.Join(homeDir, ".srake", "models")
+	p := paths.GetPaths()
 
 	return &Config{
-		DataDirectory: dataDir,
+		DataDirectory: p.DataDir,
 		Database: DatabaseConfig{
-			Path:        filepath.Join(dataDir, "srake.db"),
+			Path:        paths.GetDatabasePath(),
 			CacheSize:   10000,     // 40MB
 			MMapSize:    268435456, // 256MB
 			JournalMode: "WAL",
@@ -79,7 +78,7 @@ func DefaultConfig() *Config {
 		Search: SearchConfig{
 			Enabled:        true,
 			Backend:        "bleve",
-			IndexPath:      filepath.Join(dataDir, "search.blv"),
+			IndexPath:      paths.GetIndexPath(),
 			RebuildOnStart: false,
 			AutoSync:       true,
 			SyncInterval:   300, // 5 minutes
@@ -98,7 +97,7 @@ func DefaultConfig() *Config {
 		},
 		Embeddings: EmbeddingConfig{
 			Enabled:         true,
-			ModelsDirectory: modelsDir,
+			ModelsDirectory: paths.GetModelsPath(),
 			DefaultModel:    "Xenova/SapBERT-from-PubMedBERT-fulltext",
 			DefaultVariant:  "quantized",
 			BatchSize:       32,
@@ -187,12 +186,18 @@ func GetConfigPath() string {
 	}
 
 	// Use default location
-	homeDir, _ := os.UserHomeDir()
-	return filepath.Join(homeDir, ".srake", "config.yaml")
+	p := paths.GetPaths()
+	return filepath.Join(p.ConfigDir, "config.yaml")
 }
 
 // EnsureDirectories creates necessary directories
 func (c *Config) EnsureDirectories() error {
+	// First ensure base directories using paths package
+	if err := paths.EnsureDirectories(); err != nil {
+		return err
+	}
+
+	// Then ensure any custom directories from config
 	dirs := []string{
 		c.DataDirectory,
 		filepath.Dir(c.Database.Path),

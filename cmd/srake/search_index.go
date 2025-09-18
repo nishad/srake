@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/nishad/srake/internal/config"
 	"github.com/nishad/srake/internal/database"
+	"github.com/nishad/srake/internal/paths"
 	"github.com/nishad/srake/internal/search"
 	"github.com/spf13/cobra"
 )
@@ -72,23 +72,19 @@ func runSearchIndex(cmd *cobra.Command, args []string) error {
 
 	// Setup configuration
 	cfg := config.DefaultConfig()
-	dataDir := os.Getenv("SRAKE_DATA_DIR")
-	if dataDir == "" {
-		dataDir = "./data"
-	}
-	cfg.DataDirectory = dataDir
+	cfg.DataDirectory = paths.GetPaths().DataDir
 
 	if indexPath != "" {
 		cfg.Search.IndexPath = indexPath
 	} else {
-		cfg.Search.IndexPath = filepath.Join(dataDir, "search.blv")
+		cfg.Search.IndexPath = paths.GetIndexPath()
 	}
 
 	cfg.Search.Enabled = true
 	cfg.Search.BatchSize = indexBatchSize
 
 	// Open database
-	dbPath := filepath.Join(dataDir, "SRAmetadb.sqlite")
+	dbPath := paths.GetDatabasePath()
 	if _, err := os.Stat(dbPath); os.IsNotExist(err) {
 		return fmt.Errorf("database not found at %s\nPlease run 'srake ingest' first", dbPath)
 	}
