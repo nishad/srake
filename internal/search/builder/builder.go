@@ -276,22 +276,8 @@ func (b *IndexBuilder) executeBuild(ctx context.Context) error {
 
 // indexDocumentType indexes all documents of a specific type
 func (b *IndexBuilder) indexDocumentType(ctx context.Context, docType string) error {
-	// This will be implemented to use batch processing
-	// with checkpointing and progress tracking
-
-	// For now, delegate to syncer's existing methods
-	switch docType {
-	case "studies":
-		return b.syncer.IndexStudies(ctx)
-	case "experiments":
-		return b.syncer.IndexExperiments(ctx)
-	case "samples":
-		return b.syncer.IndexSamples(ctx)
-	case "runs":
-		return b.syncer.IndexRuns(ctx)
-	default:
-		return fmt.Errorf("unknown document type: %s", docType)
-	}
+	// Use the new batch processing with progress tracking
+	return b.ProcessDocumentType(ctx, docType)
 }
 
 // getTotalDocumentCount returns the total number of documents to index

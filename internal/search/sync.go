@@ -119,22 +119,22 @@ func (s *Syncer) FullSync(ctx context.Context) error {
 	}
 
 	// Index all studies
-	if err := s.indexStudies(ctx); err != nil {
+	if err := s.IndexStudies(ctx); err != nil {
 		return fmt.Errorf("failed to index studies: %w", err)
 	}
 
 	// Index all experiments
-	if err := s.indexExperiments(ctx); err != nil {
+	if err := s.IndexExperiments(ctx); err != nil {
 		return fmt.Errorf("failed to index experiments: %w", err)
 	}
 
 	// Index all samples
-	if err := s.indexSamples(ctx); err != nil {
+	if err := s.IndexSamples(ctx); err != nil {
 		return fmt.Errorf("failed to index samples: %w", err)
 	}
 
 	// Index all runs
-	if err := s.indexRuns(ctx); err != nil {
+	if err := s.IndexRuns(ctx); err != nil {
 		return fmt.Errorf("failed to index runs: %w", err)
 	}
 
@@ -160,8 +160,8 @@ func (s *Syncer) IncrementalSync(ctx context.Context) error {
 	return nil
 }
 
-// indexStudies indexes all studies from the database
-func (s *Syncer) indexStudies(ctx context.Context) error {
+// IndexStudies indexes all studies from the database
+func (s *Syncer) IndexStudies(ctx context.Context) error {
 	query := `
 		SELECT study_accession, study_title, study_abstract, study_type,
 		       organism, submission_date
@@ -272,8 +272,8 @@ func (s *Syncer) indexStudies(ctx context.Context) error {
 	return nil
 }
 
-// indexExperiments indexes all experiments from the database
-func (s *Syncer) indexExperiments(ctx context.Context) error {
+// IndexExperiments indexes all experiments from the database
+func (s *Syncer) IndexExperiments(ctx context.Context) error {
 	query := `
 		SELECT experiment_accession, title, library_strategy,
 		       platform, instrument_model
@@ -376,8 +376,8 @@ func (s *Syncer) indexExperiments(ctx context.Context) error {
 	return nil
 }
 
-// indexSamples indexes all samples from the database
-func (s *Syncer) indexSamples(ctx context.Context) error {
+// IndexSamples indexes all samples from the database
+func (s *Syncer) IndexSamples(ctx context.Context) error {
 	query := `
 		SELECT sample_accession, organism, scientific_name,
 		       tissue, cell_type, description
@@ -482,8 +482,8 @@ func (s *Syncer) indexSamples(ctx context.Context) error {
 	return nil
 }
 
-// indexRuns indexes all runs from the database
-func (s *Syncer) indexRuns(ctx context.Context) error {
+// IndexRuns indexes all runs from the database
+func (s *Syncer) IndexRuns(ctx context.Context) error {
 	query := `
 		SELECT run_accession, total_spots, total_bases
 		FROM runs
