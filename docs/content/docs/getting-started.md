@@ -134,6 +134,51 @@ srake search "RNA-Seq" \
   --output results.json
 ```
 
+### Convert Accessions
+
+Convert between SRA, GEO, and BioProject identifiers:
+
+```bash
+# SRA to GEO
+srake convert SRP123456 --to GSE
+
+# GEO to SRA
+srake convert GSM123456 --to SRX
+
+# Batch conversion
+srake convert SRP001 SRP002 --to GSE --format json
+```
+
+### Query Relationships
+
+Navigate the relationships between SRA entities:
+
+```bash
+# Get all runs for a study
+srake runs SRP123456
+
+# Get samples for an experiment
+srake samples SRX123456 --detailed
+
+# Get parent study from any accession
+srake studies SRR123456
+```
+
+### Download Data
+
+Download SRA files from multiple sources:
+
+```bash
+# Basic download
+srake download SRR123456
+
+# Download from AWS
+srake download SRR123456 --source aws --threads 4
+
+# Download all runs for a study
+srake download SRP123456 --type fastq --parallel 4
+```
+
 ### Start API Server
 
 Launch the REST API server for programmatic access:

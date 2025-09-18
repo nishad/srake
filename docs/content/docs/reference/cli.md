@@ -1,0 +1,393 @@
+---
+title: CLI Reference
+weight: 10
+prev: /docs/getting-started
+next: /docs/reference/api
+---
+
+# CLI Reference
+
+Complete reference for all srake commands and options.
+
+## Global Flags
+
+These flags are available for all commands:
+
+- `--no-color` - Disable colored output
+- `-v, --verbose` - Enable verbose output
+- `-q, --quiet` - Suppress non-error output
+- `--help` - Show help for any command
+
+## Commands
+
+### `srake ingest`
+
+Ingest SRA metadata from NCBI or local archives.
+
+```bash
+srake ingest [flags]
+```
+
+#### Flags
+- `--auto` - Auto-select the best file from NCBI
+- `--daily` - Ingest the latest daily update
+- `--monthly` - Ingest the latest monthly dataset
+- `--file <path>` - Ingest specific file (local or NCBI)
+- `--list` - List available files without ingesting
+- `--db <path>` - Database path (default: "./data/metadata.db")
+- `--force` - Force ingestion even if data exists
+- `--no-progress` - Disable progress bar
+
+#### Filtering Flags
+- `--taxon-ids <ids>` - Filter by taxonomy IDs (comma-separated)
+- `--exclude-taxon-ids <ids>` - Exclude taxonomy IDs
+- `--date-from <YYYY-MM-DD>` - Start date for filtering
+- `--date-to <YYYY-MM-DD>` - End date for filtering
+- `--organisms <names>` - Filter by organism names
+- `--platforms <names>` - Filter by platforms (ILLUMINA, OXFORD_NANOPORE, etc.)
+- `--strategies <names>` - Filter by library strategies (RNA-Seq, WGS, etc.)
+- `--min-reads <n>` - Minimum read count filter
+- `--max-reads <n>` - Maximum read count filter
+- `--stats-only` - Only show statistics without inserting data
+
+#### Examples
+```bash
+# Auto-ingest best file
+srake ingest --auto
+
+# Ingest with filters
+srake ingest --auto --taxon-ids 9606 --platforms ILLUMINA --strategies RNA-Seq
+
+# List available files
+srake ingest --list
+```
+
+---
+
+### `srake search`
+
+Search SRA metadata for experiments matching your query.
+
+```bash
+srake search <query> [flags]
+```
+
+#### Flags
+- `-o, --organism <name>` - Filter by organism
+- `--platform <name>` - Filter by platform
+- `--strategy <name>` - Filter by library strategy
+- `-l, --limit <n>` - Maximum results (default: 100)
+- `-f, --format <type>` - Output format (table|json|csv|tsv)
+- `--output <file>` - Save results to file
+- `--no-header` - Omit header in output
+
+#### Examples
+```bash
+# Basic search
+srake search "homo sapiens"
+
+# Search with filters
+srake search mouse --platform ILLUMINA --limit 10
+
+# Export results
+srake search human --format json --output results.json
+```
+
+---
+
+### `srake convert`
+
+Convert between different accession types (SRA, GEO, BioProject, BioSample).
+
+```bash
+srake convert <accession> [accessions...] [flags]
+```
+
+#### Flags
+- `--to <type>` - Target accession type (required)
+  - Options: GSE, SRP, SRX, GSM, SRR, SRS, PRJNA, BIOSAMPLE
+- `-f, --format <type>` - Output format (table|json|yaml|csv|tsv)
+- `-o, --output <file>` - Save results to file
+- `--batch <file>` - Read accessions from file
+
+#### Examples
+```bash
+# Convert SRA Project to GEO Series
+srake convert SRP123456 --to GSE
+
+# Convert multiple accessions
+srake convert SRP001 SRP002 SRP003 --to GSE
+
+# Batch conversion
+srake convert --batch accessions.txt --to SRX --output results.json
+```
+
+#### Supported Conversions
+
+| From | To | Description |
+|------|-----|-------------|
+| SRP | GSE, SRX, SRR, SRS, PRJNA | Study to related accessions |
+| SRX | GSM, SRP, SRR, SRS | Experiment to related accessions |
+| SRR | SRX, SRP, GSM | Run to parent accessions |
+| SRS | SRX, GSM, BIOSAMPLE | Sample to related accessions |
+| GSE | SRP, GSM | GEO Series to SRA/samples |
+| GSM | SRX, SRR, GSE | GEO Sample to SRA/series |
+| PRJNA | SRP | BioProject to SRA Project |
+| SAMN | SRS | BioSample to SRA Sample |
+
+---
+
+### `srake runs`
+
+Get all runs for a study, experiment, or sample.
+
+```bash
+srake runs <accession> [flags]
+```
+
+#### Flags
+- `-d, --detailed` - Include detailed information
+- `-f, --format <type>` - Output format (table|json|yaml|csv|tsv)
+- `-o, --output <file>` - Save results to file
+- `-l, --limit <n>` - Limit number of results
+- `--fields <list>` - Comma-separated list of fields
+
+#### Examples
+```bash
+# Get runs for a study
+srake runs SRP123456
+
+# Get detailed run information
+srake runs SRX123456 --detailed
+
+# Export as JSON
+srake runs SRP123456 --format json --output runs.json
+```
+
+---
+
+### `srake samples`
+
+Get all samples for a study or experiment.
+
+```bash
+srake samples <accession> [flags]
+```
+
+#### Flags
+- `-d, --detailed` - Include organism and taxonomy information
+- `-f, --format <type>` - Output format (table|json|yaml|csv|tsv)
+- `-o, --output <file>` - Save results to file
+- `-l, --limit <n>` - Limit number of results
+
+#### Examples
+```bash
+# Get samples for a study
+srake samples SRP123456
+
+# Get detailed sample information
+srake samples SRP123456 --detailed
+
+# Export as CSV
+srake samples SRX123456 --format csv --output samples.csv
+```
+
+---
+
+### `srake experiments`
+
+Get all experiments for a study or sample.
+
+```bash
+srake experiments <accession> [flags]
+```
+
+#### Flags
+- `-d, --detailed` - Include platform and library information
+- `-f, --format <type>` - Output format (table|json|yaml|csv|tsv)
+- `-o, --output <file>` - Save results to file
+- `-l, --limit <n>` - Limit number of results
+
+#### Examples
+```bash
+# Get experiments for a study
+srake experiments SRP123456
+
+# Get experiments for a sample
+srake experiments SRS123456 --detailed
+```
+
+---
+
+### `srake studies`
+
+Get study information for any SRA accession.
+
+```bash
+srake studies <accession> [flags]
+```
+
+#### Flags
+- `-d, --detailed` - Include abstract and full metadata
+- `-f, --format <type>` - Output format (table|json|yaml|csv|tsv)
+- `-o, --output <file>` - Save results to file
+
+#### Examples
+```bash
+# Get study from an experiment
+srake studies SRX123456
+
+# Get study from a run with details
+srake studies SRR123456 --detailed
+```
+
+---
+
+### `srake download`
+
+Download SRA data files from multiple sources.
+
+```bash
+srake download <accession> [accessions...] [flags]
+```
+
+#### Flags
+- `-s, --source <type>` - Download source (auto|ftp|aws|gcp|ncbi)
+- `-t, --type <type>` - File type (sra|fastq|fasta)
+- `-o, --output <dir>` - Output directory (default: "./")
+- `--threads <n>` - Download threads per file (default: 1)
+- `-p, --parallel <n>` - Parallel downloads (default: 1)
+- `--aspera` - Use Aspera for high-speed transfer
+- `-l, --list <file>` - File containing accessions
+- `--retry <n>` - Number of retry attempts (default: 3)
+- `--validate` - Validate downloaded files (default: true)
+- `--dry-run` - Show what would be downloaded
+
+#### Examples
+```bash
+# Basic download
+srake download SRR123456
+
+# Download from AWS with parallel transfers
+srake download SRR123456 --source aws --threads 4
+
+# Download all runs for a study
+srake download SRP123456 --type fastq --output ./data/
+
+# Batch download with parallelism
+srake download --list runs.txt --parallel 4
+
+# High-speed Aspera transfer
+srake download SRR123456 --aspera
+
+# Dry run to preview
+srake download SRP123456 --dry-run
+```
+
+#### Automatic Expansion
+The download command automatically expands:
+- SRP → all runs in the study
+- SRX → all runs in the experiment
+- SRS → all runs for the sample
+
+---
+
+### `srake metadata`
+
+Get detailed metadata for specific accessions.
+
+```bash
+srake metadata <accession> [accessions...] [flags]
+```
+
+#### Flags
+- `-f, --format <type>` - Output format (table|json|yaml)
+- `--fields <list>` - Comma-separated list of fields
+- `--expand` - Expand nested structures
+
+#### Examples
+```bash
+# Get metadata for an experiment
+srake metadata SRX123456
+
+# Get multiple accessions as JSON
+srake metadata SRX123456 SRX123457 --format json
+
+# Select specific fields
+srake metadata SRR999999 --fields title,platform,strategy
+```
+
+---
+
+### `srake server`
+
+Start the API server for programmatic access.
+
+```bash
+srake server [flags]
+```
+
+#### Flags
+- `-p, --port <n>` - Port to listen on (default: 8080)
+- `--host <addr>` - Host to bind to (default: localhost)
+- `--db <path>` - Database path
+- `--log-level <level>` - Log level (debug|info|warn|error)
+- `--dev` - Enable development mode
+
+#### Examples
+```bash
+# Start server on default port
+srake server
+
+# Custom port and host
+srake server --port 9090 --host 0.0.0.0
+
+# Development mode with debug logging
+srake server --dev --log-level debug
+```
+
+---
+
+### `srake db`
+
+Database management commands.
+
+```bash
+srake db <subcommand> [flags]
+```
+
+#### Subcommands
+- `info` - Show database statistics and information
+
+#### Examples
+```bash
+# Show database statistics
+srake db info
+```
+
+---
+
+## Output Formats
+
+Most commands support multiple output formats:
+
+- **table** (default) - Human-readable table with colors
+- **json** - JSON format for programmatic use
+- **yaml** - YAML format
+- **csv** - Comma-separated values
+- **tsv** - Tab-separated values
+- **xml** - XML format (convert command only)
+
+## Environment Variables
+
+- `NO_COLOR` - Disable colored output globally
+- `SRAKE_DB` - Default database path
+- `AWS_REGION` - Affects download source auto-selection
+- `GCP_PROJECT` - Affects download source auto-selection
+
+## Exit Codes
+
+- `0` - Success
+- `1` - General error
+- `2` - Command line usage error
+- `130` - Interrupted (Ctrl+C)

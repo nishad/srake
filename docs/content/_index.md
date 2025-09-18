@@ -31,48 +31,48 @@ layout: hextra-home
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
-    title="Fast Processing"
-    subtitle="Concurrent processing with optimized SQLite backend"
+    title="Accession Conversion"
+    subtitle="Convert between SRA, GEO, BioProject, and BioSample identifiers seamlessly"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
     image="images/hextra-doc.webp"
     imageClass="hx-top-[40%] hx-left-[24px] hx-w-[180%] sm:hx-w-[110%] dark:hx-opacity-80"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(194,97,254,0.15),hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Memory Efficient"
-    subtitle="Streaming architecture for processing large files"
+    title="Multi-Source Downloads"
+    subtitle="Download from FTP, AWS, GCP with parallel transfers and Aspera support"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
     image="images/hextra-markdown.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[180%] sm:hx-w-[110%] dark:hx-opacity-80"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(142,53,74,0.15),hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Smart Filtering"
-    subtitle="Filter by taxonomy, organism, platform, date ranges, and quality metrics during ingestion"
+    title="Relationship Queries"
+    subtitle="Navigate between studies, experiments, samples, and runs effortlessly"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
     image="images/hextra-search.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(221,210,59,0.15),hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Resume Support"
-    subtitle="Intelligent resume from interruption with checkpoint system and progress tracking"
+    title="Smart Filtering"
+    subtitle="Filter by taxonomy, platform, strategy, date ranges, and quality metrics"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
     image="images/hextra-theme.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(120,119,198,0.15),hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Full-Text Search"
-    subtitle="Query your database with optimized SQLite full-text search and smart indexing"
+    title="Streaming Architecture"
+    subtitle="Process 14GB+ archives with minimal memory using zero-copy streaming"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
     image="images/hextra-theme.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
     style="background: radial-gradient(ellipse at 50% 80%,rgba(24,188,156,0.15),hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="REST API"
-    subtitle="Built-in API server for programmatic access to your SRA metadata"
+    title="Resume & Recovery"
+    subtitle="Intelligent checkpoint system for resuming interrupted operations"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
     image="images/hextra-theme.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
