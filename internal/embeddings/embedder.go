@@ -149,17 +149,11 @@ func (e *Embedder) findModelDirectly(modelID string) string {
 		modelFiles = []string{"model_quantized.onnx", "model.onnx"}
 	}
 
-	// Convert modelID to underscore format as alternative
-	modelIDUnderscore := strings.Replace(modelID, "/", "_", -1)
-
-	// Search paths to check (include both slash and underscore formats)
+	// Search paths to check - only use proper HF path structure
 	paths := []string{
 		filepath.Join(os.Getenv("HOME"), ".local/share/srake/models", modelID, "onnx"),
-		filepath.Join(os.Getenv("HOME"), ".local/share/srake/models", modelIDUnderscore, "onnx"),
 		filepath.Join(os.Getenv("HOME"), ".srake/models", modelID, "onnx"),
-		filepath.Join(os.Getenv("HOME"), ".srake/models", modelIDUnderscore, "onnx"),
 		filepath.Join(e.config.ModelsDir, modelID, "onnx"),
-		filepath.Join(e.config.ModelsDir, modelIDUnderscore, "onnx"),
 	}
 
 	// Check each combination
@@ -177,16 +171,11 @@ func (e *Embedder) findModelDirectly(modelID string) string {
 
 // findTokenizerPath searches for tokenizer files in standard locations
 func (e *Embedder) findTokenizerPath(modelID string) string {
-	// Convert modelID to underscore format as alternative
-	modelIDUnderscore := strings.Replace(modelID, "/", "_", -1)
-
+	// Search paths to check - only use proper HF path structure
 	paths := []string{
 		filepath.Join(os.Getenv("HOME"), ".local/share/srake/models", modelID, "tokenizer.json"),
-		filepath.Join(os.Getenv("HOME"), ".local/share/srake/models", modelIDUnderscore, "tokenizer.json"),
 		filepath.Join(os.Getenv("HOME"), ".srake/models", modelID, "tokenizer.json"),
-		filepath.Join(os.Getenv("HOME"), ".srake/models", modelIDUnderscore, "tokenizer.json"),
 		filepath.Join(e.config.ModelsDir, modelID, "tokenizer.json"),
-		filepath.Join(e.config.ModelsDir, modelIDUnderscore, "tokenizer.json"),
 	}
 
 	for _, path := range paths {
