@@ -11,10 +11,12 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/nishad/srake/internal/cli"
 	"github.com/nishad/srake/internal/config"
 	"github.com/nishad/srake/internal/database"
 	"github.com/nishad/srake/internal/paths"
 	"github.com/nishad/srake/internal/search"
+	"github.com/nishad/srake/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -118,21 +120,60 @@ var (
 )
 
 func init() {
-	// Search command flags
+	// Filter flags
 	searchCmd.Flags().StringVarP(&searchOrganism, "organism", "o", "", "Filter by organism")
 	searchCmd.Flags().StringVar(&searchPlatform, "platform", "", "Filter by platform")
 	searchCmd.Flags().StringVar(&searchLibraryStrategy, "library-strategy", "", "Filter by library strategy")
+	searchCmd.Flags().StringVar(&searchLibrarySource, "library-source", "", "Filter by library source")
+	searchCmd.Flags().StringVar(&searchLibrarySelection, "library-selection", "", "Filter by library selection")
+	searchCmd.Flags().StringVar(&searchLibraryLayout, "library-layout", "", "Filter by library layout")
+	searchCmd.Flags().StringVar(&searchStudyType, "study-type", "", "Filter by study type")
+	searchCmd.Flags().StringVar(&searchInstrumentModel, "instrument-model", "", "Filter by instrument model")
+	searchCmd.Flags().StringVar(&searchDateFrom, "date-from", "", "Filter by submission date from (YYYY-MM-DD)")
+	searchCmd.Flags().StringVar(&searchDateTo, "date-to", "", "Filter by submission date to (YYYY-MM-DD)")
+	searchCmd.Flags().Int64Var(&searchSpotsMin, "spots-min", 0, "Filter by minimum number of spots")
+	searchCmd.Flags().Int64Var(&searchSpotsMax, "spots-max", 0, "Filter by maximum number of spots")
+	searchCmd.Flags().Int64Var(&searchBasesMin, "bases-min", 0, "Filter by minimum number of bases")
+	searchCmd.Flags().Int64Var(&searchBasesMax, "bases-max", 0, "Filter by maximum number of bases")
+
+	// Quality control flags with short aliases
+	searchCmd.Flags().Float32VarP(&searchSimilarityThreshold, "similarity-threshold", "s", 0.5, "Minimum cosine similarity for vector search (0-1, where 1=exact match)")
+	searchCmd.Flags().Float32VarP(&searchMinScore, "min-score", "m", 0.0, "Minimum BM25 score for text search results")
+	searchCmd.Flags().IntVarP(&searchTopPercentile, "top-percentile", "t", 0, "Only show top N percentile of results (0=disabled)")
+	searchCmd.Flags().BoolVarP(&searchShowConfidence, "show-confidence", "c", false, "Display confidence levels for results")
+	searchCmd.Flags().Float32VarP(&searchHybridWeight, "hybrid-weight", "w", 0.7, "Weight for vector scores in hybrid search (0=text only, 1=vector only)")
+
+	// Output flags
 	searchCmd.Flags().IntVarP(&searchLimit, "limit", "l", 100, "Maximum results to return")
+	searchCmd.Flags().IntVar(&searchOffset, "offset", 0, "Number of results to skip")
 	searchCmd.Flags().StringVarP(&searchFormat, "format", "f", "table", "Output format (table|json|csv|tsv)")
 	searchCmd.Flags().StringVar(&searchOutput, "output", "", "Save results to file")
 	searchCmd.Flags().BoolVar(&searchNoHeader, "no-header", false, "Omit header in output")
+	searchCmd.Flags().StringVar(&searchFields, "fields", "", "Comma-separated list of fields to display")
 
-	// Quality control flags
-	searchCmd.Flags().Float32Var(&searchSimilarityThreshold, "similarity-threshold", 0.5, "Minimum cosine similarity for vector search (0-1)")
-	searchCmd.Flags().Float32Var(&searchMinScore, "min-score", 0.0, "Minimum BM25 score for text search results")
-	searchCmd.Flags().IntVar(&searchTopPercentile, "top-percentile", 0, "Only show top N percentile of results (0=disabled)")
-	searchCmd.Flags().BoolVar(&searchShowConfidence, "show-confidence", false, "Display confidence levels for results")
-	searchCmd.Flags().Float32Var(&searchHybridWeight, "hybrid-weight", 0.7, "Weight for vector scores in hybrid search (0=text only, 1=vector only)")
+	// Search mode flags
+	searchCmd.Flags().BoolVar(&searchFuzzy, "fuzzy", false, "Enable fuzzy search for typo tolerance")
+	searchCmd.Flags().BoolVar(&searchExact, "exact", false, "Enable exact match search")
+	searchCmd.Flags().BoolVar(&searchStats, "stats", false, "Show search statistics only")
+	searchCmd.Flags().BoolVar(&searchFacets, "facets", false, "Show search facets")
+	searchCmd.Flags().BoolVar(&searchHighlight, "highlight", false, "Highlight search terms in results")
+	searchCmd.Flags().BoolVar(&searchAdvanced, "advanced", false, "Enable advanced search syntax")
+	searchCmd.Flags().StringVar(&searchMode, "search-mode", "auto", "Search mode (auto|text|vector|hybrid|database)")
+	searchCmd.Flags().BoolVar(&searchNoFTS, "no-fts", false, "Disable full-text search")
+	searchCmd.Flags().BoolVar(&searchNoVectors, "no-vectors", false, "Disable vector search")
+
+	// Advanced flags
+	searchCmd.Flags().StringVar(&searchIndexPath, "index-path", "", "Path to search index")
+	searchCmd.Flags().BoolVar(&searchNoCache, "no-cache", false, "Disable search cache")
+	searchCmd.Flags().IntVar(&searchTimeout, "timeout", 30, "Search timeout in seconds")
+
+	// Hide some advanced flags by default
+	searchCmd.Flags().MarkHidden("no-cache")
+	searchCmd.Flags().MarkHidden("timeout")
+	searchCmd.Flags().MarkHidden("advanced")
+
+	// Setup grouped help
+	cli.SetupGroupedHelp(searchCmd)
 }
 
 func runSearch(cmd *cobra.Command, args []string) error {
@@ -191,19 +232,36 @@ func runSearch(cmd *cobra.Command, args []string) error {
 		filters["bases_max"] = fmt.Sprintf("%d", searchBasesMax)
 	}
 
-	// Show search progress
+	// Start spinner for immediate feedback (within 100ms)
+	var spinner *ui.Spinner
 	if !quiet && isTerminal() {
+		var message string
 		if query != "" {
-			printInfo("Searching for \"%s\"...", query)
+			message = fmt.Sprintf("Searching for \"%s\"", query)
 		} else if len(filters) > 0 {
-			printInfo("Searching with filters...")
+			message = "Searching with filters"
 		} else {
-			printInfo("Fetching all records...")
+			message = "Fetching all records"
 		}
+		spinner = ui.NewSpinner(message)
+		spinner.Start()
+		defer func() {
+			if spinner != nil {
+				spinner.Stop("")
+			}
+		}()
 	}
 
 	// Always use local search - CLI should work independently
-	return performSearch(query, filters)
+	err := performSearch(query, filters)
+	if spinner != nil {
+		if err != nil {
+			spinner.Stop(fmt.Sprintf("✗ Search failed: %v", err))
+		} else {
+			spinner.Stop("✓ Search completed")
+		}
+	}
+	return err
 }
 
 // performSearch performs search using local Bleve index and database

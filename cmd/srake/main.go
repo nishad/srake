@@ -30,11 +30,24 @@ var rootCmd = &cobra.Command{
 	Long: colorize(colorBold, "srake") + ` - A fast, user-friendly tool for SRA metadata
 
 Srake provides a unified interface for searching, downloading, and serving
-SRA (Sequence Read Archive) metadata from NCBI.`,
+SRA (Sequence Read Archive) metadata from NCBI.
+
+ENVIRONMENT VARIABLES:
+  SRAKE_DB_PATH          Path to the SRA metadata database
+  SRAKE_INDEX_PATH       Path to the search index directory
+  SRAKE_CONFIG_DIR       Configuration directory (default: ~/.config/srake)
+  SRAKE_DATA_DIR         Data directory (default: ~/.local/share/srake)
+  SRAKE_CACHE_DIR        Cache directory (default: ~/.cache/srake)
+  SRAKE_MODEL_VARIANT    Model variant for embeddings (full|quantized)
+  NO_COLOR               Disable colored output
+
+The tool follows XDG Base Directory Specification and respects standard
+environment variables like XDG_CONFIG_HOME, XDG_DATA_HOME, and XDG_CACHE_HOME.`,
 	Version: fmt.Sprintf("%s (commit: %s, built: %s)", version, commit, date),
 	Example: `  srake search "homo sapiens"
   srake server --port 8080
-  srake db info`,
+  srake db info
+  srake ingest --file metadata.tar.gz`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Check NO_COLOR environment variable
 		if os.Getenv("NO_COLOR") != "" {
