@@ -41,6 +41,12 @@ type SearchOptions struct {
 	KNN             int     // Number of nearest neighbors
 	MinScore        float64 // Minimum score threshold
 
+	// Quality control options
+	SimilarityThreshold float32 // Minimum cosine similarity for vector results (0-1)
+	TopPercentile      int     // Only return top N percentile of results
+	ShowConfidence     bool    // Include confidence levels in results
+	HybridWeight       float32 // Weight for hybrid scoring (0=text only, 1=vector only)
+
 	// Performance options
 	TimeoutMs int  // Query timeout in milliseconds
 	NoCache   bool // Bypass cache
@@ -60,6 +66,8 @@ type SearchResult struct {
 type Hit struct {
 	ID         string                 `json:"id"`
 	Score      float64                `json:"score,omitempty"`
+	Similarity float32                `json:"similarity,omitempty"` // Cosine similarity for vector search
+	Confidence string                 `json:"confidence,omitempty"`  // "high", "medium", "low"
 	Fields     map[string]interface{} `json:"fields"`
 	Highlights map[string][]string    `json:"highlights,omitempty"`
 	Type       string                 `json:"type"` // study, experiment, sample, run

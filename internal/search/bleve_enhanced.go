@@ -255,7 +255,7 @@ func (b *BleveBackend) Search(queryStr string, opts SearchOptions) (*SearchResul
 	}
 
 	// Convert to our result format
-	result := b.convertSearchResult(searchResult, queryStr, start)
+	result := b.convertSearchResultWithFiltering(searchResult, queryStr, start, opts)
 	result.Mode = "text"
 
 	return result, nil
@@ -308,7 +308,7 @@ func (b *BleveBackend) SearchWithVector(queryStr string, vector []float32, opts 
 	}
 
 	// Convert to our result format
-	result := b.convertSearchResult(searchResult, queryStr, start)
+	result := b.convertSearchResultWithFiltering(searchResult, queryStr, start, opts)
 	if queryStr != "" {
 		result.Mode = "hybrid"
 	} else {
@@ -365,8 +365,13 @@ func (b *BleveBackend) FindSimilar(id string, opts SearchOptions) (*SearchResult
 	return b.SearchWithVector("", embedding, opts)
 }
 
-// convertSearchResult converts Bleve results to our format
+// convertSearchResult converts Bleve results to our format (legacy, no filtering)
 func (b *BleveBackend) convertSearchResult(sr *bleve.SearchResult, query string, start time.Time) *SearchResult {
+	return b.convertSearchResultWithFiltering(sr, query, start, SearchOptions{})
+}
+
+// convertSearchResultWithFiltering converts Bleve results with quality filtering
+func (b *BleveBackend) convertSearchResultWithFiltering(sr *bleve.SearchResult, query string, start time.Time, opts SearchOptions) *SearchResult {
 	result := &SearchResult{
 		Query:     query,
 		TotalHits: int(sr.Total),
@@ -374,8 +379,14 @@ func (b *BleveBackend) convertSearchResult(sr *bleve.SearchResult, query string,
 		TimeMs:    time.Since(start).Milliseconds(),
 	}
 
-	// Convert hits
+	// Convert hits with filtering
+	filteredHits := make([]Hit, 0, len(sr.Hits))
 	for _, hit := range sr.Hits {
+		// Apply minimum score filter for text search
+		if opts.MinScore > 0 && hit.Score < opts.MinScore {
+			continue
+		}
+
 		h := Hit{
 			ID:     hit.ID,
 			Score:  hit.Score,
@@ -387,13 +398,38 @@ func (b *BleveBackend) convertSearchResult(sr *bleve.SearchResult, query string,
 			h.Type = typeField
 		}
 
+		// Extract similarity from fields if available (for vector search)
+		if embeddingField, ok := hit.Fields["_similarity"]; ok {
+			if similarity, ok := embeddingField.(float32); ok {
+				h.Similarity = similarity
+				// Apply similarity threshold filter
+				if opts.SimilarityThreshold > 0 && similarity < opts.SimilarityThreshold {
+					continue
+				}
+			}
+		}
+
+		// Calculate confidence level if requested
+		if opts.ShowConfidence {
+			h.Confidence = b.calculateConfidence(h.Score, h.Similarity)
+		}
+
 		// Add highlights if available
 		if len(hit.Fragments) > 0 {
 			h.Highlights = hit.Fragments
 		}
 
-		result.Hits = append(result.Hits, h)
+		filteredHits = append(filteredHits, h)
 	}
+
+	// Apply percentile filtering if requested
+	if opts.TopPercentile > 0 && len(filteredHits) > 0 {
+		filteredHits = b.applyPercentileFilter(filteredHits, opts.TopPercentile)
+	}
+
+	result.Hits = filteredHits
+	// Update total hits to reflect filtering
+	result.TotalHits = len(filteredHits)
 
 	// Convert facets
 	if len(sr.Facets) > 0 {
@@ -411,6 +447,49 @@ func (b *BleveBackend) convertSearchResult(sr *bleve.SearchResult, query string,
 	}
 
 	return result
+}
+
+// calculateConfidence determines confidence level based on scores
+func (b *BleveBackend) calculateConfidence(score float64, similarity float32) string {
+	// For vector search, use similarity score
+	if similarity > 0 {
+		if similarity > 0.8 {
+			return "high"
+		} else if similarity > 0.5 {
+			return "medium"
+		} else {
+			return "low"
+		}
+	}
+
+	// For text search, use BM25 score
+	if score > 5.0 {
+		return "high"
+	} else if score > 2.0 {
+		return "medium"
+	} else {
+		return "low"
+	}
+}
+
+// applyPercentileFilter keeps only the top N percentile of results
+func (b *BleveBackend) applyPercentileFilter(hits []Hit, percentile int) []Hit {
+	if percentile >= 100 || len(hits) == 0 {
+		return hits
+	}
+
+	// Calculate how many hits to keep
+	keepCount := (len(hits) * percentile) / 100
+	if keepCount < 1 {
+		keepCount = 1
+	}
+
+	// Results are already sorted by score, so just take the top N
+	if keepCount < len(hits) {
+		return hits[:keepCount]
+	}
+
+	return hits
 }
 
 // Close closes the Bleve index

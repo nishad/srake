@@ -108,6 +108,13 @@ var (
 	searchNoVectors   bool
 	searchVectorWeight float64
 	searchKNN         int
+
+	// Quality control flags
+	searchSimilarityThreshold float32
+	searchMinScore           float32
+	searchTopPercentile      int
+	searchShowConfidence     bool
+	searchHybridWeight       float32
 )
 
 func init() {
@@ -119,6 +126,13 @@ func init() {
 	searchCmd.Flags().StringVarP(&searchFormat, "format", "f", "table", "Output format (table|json|csv|tsv)")
 	searchCmd.Flags().StringVar(&searchOutput, "output", "", "Save results to file")
 	searchCmd.Flags().BoolVar(&searchNoHeader, "no-header", false, "Omit header in output")
+
+	// Quality control flags
+	searchCmd.Flags().Float32Var(&searchSimilarityThreshold, "similarity-threshold", 0.5, "Minimum cosine similarity for vector search (0-1)")
+	searchCmd.Flags().Float32Var(&searchMinScore, "min-score", 0.0, "Minimum BM25 score for text search results")
+	searchCmd.Flags().IntVar(&searchTopPercentile, "top-percentile", 0, "Only show top N percentile of results (0=disabled)")
+	searchCmd.Flags().BoolVar(&searchShowConfidence, "show-confidence", false, "Display confidence levels for results")
+	searchCmd.Flags().Float32Var(&searchHybridWeight, "hybrid-weight", 0.7, "Weight for vector scores in hybrid search (0=text only, 1=vector only)")
 }
 
 func runSearch(cmd *cobra.Command, args []string) error {
