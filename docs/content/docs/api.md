@@ -5,345 +5,355 @@ weight: 5
 
 # REST API Reference
 
-The srake REST API provides programmatic access to all search and metadata functionality.
+SRAKE provides a comprehensive RESTful API with OpenAPI 3.0 specification for programmatic access to all search and metadata functionality.
 
-## Starting the Server
+## Quick Start
 
 ```bash
-# Start with default settings
-srake server
+# Start the API server
+srake server --port 8082 --enable-cors --enable-mcp
 
-# Custom port and host
-srake server --port 8080 --host 0.0.0.0
+# Test the API
+curl "http://localhost:8082/api/v1/search?query=RNA-Seq&limit=5"
 
-# With custom database path
-srake server --db /path/to/SRAmetadb.sqlite
-
-# Development mode with verbose logging
-srake server --dev --log-level debug
+# Check API health
+curl "http://localhost:8082/api/v1/health"
 ```
+
+## OpenAPI Specification
+
+The complete API specification is available in `openapi.yaml` which can be imported into:
+- **Swagger UI** for interactive documentation
+- **Postman** for testing
+- **OpenAPI Generator** for client SDK generation
 
 ## Base URL
 
 ```
-http://localhost:8080/api
+http://localhost:8082/api/v1
+```
+
+## Server Configuration
+
+```bash
+# Basic server start
+srake server
+
+# With custom configuration
+srake server \
+  --port 8082 \
+  --host 0.0.0.0 \
+  --enable-cors \
+  --enable-mcp
+
+# Using environment variables
+SRAKE_DB_PATH=/path/to/db.sqlite \
+SRAKE_INDEX_PATH=/path/to/index \
+srake server
 ```
 
 ## Authentication
 
-The API currently does not require authentication for read operations.
+The API currently does not require authentication. For production deployments, authentication can be added via reverse proxy.
 
-## Endpoints
+## Core Endpoints
 
-### Search Endpoints
+### Search Operations
 
-#### `GET /api/search`
+#### `GET /api/v1/search`
 
-Perform full-text search with advanced filtering capabilities.
+Perform advanced searches with quality control and multiple search modes.
 
 **Query Parameters:**
 
-| Parameter | Type | Description | Default |
-|-----------|------|-------------|---------|
-| `q` | string | Search query (supports advanced syntax) | - |
-| `advanced` | boolean | Enable advanced query parsing | false |
-| `limit` | integer | Maximum results to return | 100 |
-| `offset` | integer | Pagination offset | 0 |
-| `organism` | string | Filter by organism | - |
-| `platform` | string | Filter by platform | - |
-| `library_strategy` | string | Filter by library strategy | - |
-| `library_source` | string | Filter by library source | - |
-| `library_selection` | string | Filter by library selection | - |
-| `library_layout` | string | Filter by library layout | - |
-| `instrument` | string | Filter by instrument model | - |
-| `date_from` | string | Filter by date from (YYYY-MM-DD) | - |
-| `date_to` | string | Filter by date to (YYYY-MM-DD) | - |
-| `spots_min` | integer | Minimum number of spots | - |
-| `spots_max` | integer | Maximum number of spots | - |
-| `bases_min` | integer | Minimum number of bases | - |
-| `bases_max` | integer | Maximum number of bases | - |
-| `format` | string | Output format (json, csv, tsv, accession) | json |
-| `fields` | string | Comma-separated list of fields to return | all |
-| `aggregate_by` | string | Field to aggregate results by | - |
-| `count_only` | boolean | Return only count | false |
-| `facets` | boolean | Include facets in response | false |
+| Parameter | Type | Description | Default | Example |
+|-----------|------|-------------|---------|---------|
+| `query` | string | Search query text | - | `RNA-Seq` |
+| `limit` | integer | Maximum results (1-1000) | 20 | `10` |
+| `offset` | integer | Pagination offset | 0 | `0` |
+| `organism` | string | Filter by organism | - | `homo sapiens` |
+| `library_strategy` | string | Filter by strategy | - | `RNA-Seq` |
+| `platform` | string | Filter by platform | - | `ILLUMINA` |
+| `search_mode` | string | Search mode: `database`, `fts`, `hybrid`, `vector` | `hybrid` | `hybrid` |
+| `similarity_threshold` | float | Min similarity (0-1) | - | `0.7` |
+| `min_score` | float | Minimum score | - | `2.0` |
+| `top_percentile` | integer | Top N% of results | - | `10` |
+| `show_confidence` | boolean | Include confidence level | false | `true` |
 
-**Example Request:**
+**Example Requests:**
 
 ```bash
-# Basic search
-curl "http://localhost:8080/api/search?q=homo+sapiens&limit=10"
+# Simple search
+curl "http://localhost:8082/api/v1/search?query=breast%20cancer"
 
-# Advanced search with filters
-curl "http://localhost:8080/api/search?q=cancer&organism=homo+sapiens&platform=ILLUMINA&library_strategy=RNA-Seq"
+# Advanced search with quality control
+curl "http://localhost:8082/api/v1/search?query=RNA-Seq&\
+similarity_threshold=0.7&\
+show_confidence=true&\
+organism=homo%20sapiens"
 
-# Boolean query
-curl "http://localhost:8080/api/search?q=organism:human+AND+library_strategy:RNA-Seq&advanced=true"
-
-# Aggregation
-curl "http://localhost:8080/api/search?q=RNA-Seq&aggregate_by=organism"
-
-# Count only
-curl "http://localhost:8080/api/search?q=cancer&count_only=true"
+# Vector semantic search
+curl "http://localhost:8082/api/v1/search?query=tumor%20gene%20expression&\
+search_mode=vector&\
+similarity_threshold=0.8"
 ```
 
-**Response Format (JSON):**
+**Response Example:**
 
 ```json
 {
-  "total": 42156,
-  "limit": 10,
-  "offset": 0,
-  "hits": [
+  "results": [
     {
-      "id": "SRR123456",
-      "score": 1.5432,
-      "fields": {
-        "type": "run",
-        "run_accession": "SRR123456",
-        "experiment_accession": "SRX123456",
-        "study_accession": "SRP123456",
-        "organism": "Homo sapiens",
-        "platform": "ILLUMINA",
-        "library_strategy": "RNA-Seq",
-        "spots": 25000000,
-        "bases": 2500000000
-      }
+      "id": "SRX22037872",
+      "type": "experiment",
+      "title": "RNA-Seq of breast cancer cells",
+      "organism": "Homo sapiens",
+      "platform": "ILLUMINA",
+      "library_strategy": "RNA-Seq",
+      "score": 8.5,
+      "similarity": 0.92,
+      "confidence": "high"
     }
   ],
-  "facets": {
-    "organism": {
-      "Homo sapiens": 15234,
-      "Mus musculus": 8921
-    },
-    "platform": {
-      "ILLUMINA": 35678,
-      "OXFORD_NANOPORE": 4521
-    }
-  },
-  "aggregations": {
-    "organism": [
-      {"value": "Homo sapiens", "count": 15234},
-      {"value": "Mus musculus", "count": 8921}
-    ]
-  }
+  "total_results": 150,
+  "query": "breast cancer",
+  "time_taken_ms": 125,
+  "search_mode": "hybrid"
 }
 ```
 
-#### `POST /api/search/index`
+#### `POST /api/v1/search`
 
-Manage the search index.
+Advanced search with complex filters in request body.
 
 **Request Body:**
 
 ```json
 {
-  "action": "build|rebuild|verify|stats",
-  "batch_size": 1000,
-  "workers": 4
+  "query": "breast cancer transcriptome",
+  "filters": {
+    "organism": "homo sapiens",
+    "library_strategy": "RNA-Seq",
+    "platform": "ILLUMINA"
+  },
+  "limit": 10,
+  "search_mode": "hybrid",
+  "similarity_threshold": 0.8,
+  "show_confidence": true
 }
-```
-
-**Example Request:**
-
-```bash
-# Build index
-curl -X POST "http://localhost:8080/api/search/index" \
-  -H "Content-Type: application/json" \
-  -d '{"action": "build"}'
-
-# Get index stats
-curl -X POST "http://localhost:8080/api/search/index" \
-  -H "Content-Type: application/json" \
-  -d '{"action": "stats"}'
 ```
 
 ### Metadata Endpoints
 
-#### `GET /api/metadata/{accession}`
+#### `GET /api/v1/studies`
 
-Get metadata for a specific SRA accession.
-
-**Path Parameters:**
-- `accession`: SRA accession (SRP, SRX, SRR, SRS, etc.)
-
-**Query Parameters:**
-- `format`: Output format (json, yaml, xml)
-- `expand`: Include related entities (true/false)
-
-**Example Request:**
+List all studies with pagination.
 
 ```bash
-# Get run metadata
-curl "http://localhost:8080/api/metadata/SRR123456"
-
-# Get study with expanded relations
-curl "http://localhost:8080/api/metadata/SRP123456?expand=true"
+curl "http://localhost:8082/api/v1/studies?limit=10&offset=0"
 ```
 
-**Response Format:**
+#### `GET /api/v1/studies/{accession}`
 
-```json
-{
-  "accession": "SRR123456",
-  "type": "run",
-  "metadata": {
-    "run_accession": "SRR123456",
-    "experiment_accession": "SRX123456",
-    "study_accession": "SRP123456",
-    "sample_accession": "SRS123456",
-    "spots": 25000000,
-    "bases": 2500000000,
-    "published_date": "2024-01-15"
-  },
-  "relations": {
-    "experiment": {...},
-    "study": {...},
-    "sample": {...}
-  }
-}
-```
-
-### Conversion Endpoints
-
-#### `GET /api/convert/{accession}`
-
-Convert between different accession types.
-
-**Path Parameters:**
-- `accession`: Source accession
-
-**Query Parameters:**
-- `to`: Target type (GSE, GSM, SRP, SRX, SRR, PRJNA, etc.)
-
-**Example Request:**
+Get detailed study information.
 
 ```bash
-# Convert SRA to GEO
-curl "http://localhost:8080/api/convert/SRP123456?to=GSE"
-
-# Convert GEO to SRA
-curl "http://localhost:8080/api/convert/GSM123456?to=SRX"
+curl "http://localhost:8082/api/v1/studies/SRP259537"
 ```
 
-**Response Format:**
-
-```json
-{
-  "source": "SRP123456",
-  "source_type": "SRP",
-  "target": "GSE98765",
-  "target_type": "GSE",
-  "status": "success"
-}
-```
-
-### Relationship Endpoints
-
-#### `GET /api/runs/{accession}`
-
-Get all runs for a study, experiment, or sample.
-
-**Example Request:**
-
-```bash
-# Get runs for a study
-curl "http://localhost:8080/api/runs/SRP123456"
-
-# Get runs for an experiment
-curl "http://localhost:8080/api/runs/SRX123456"
-```
-
-#### `GET /api/samples/{accession}`
-
-Get all samples for a study or experiment.
-
-```bash
-# Get samples for a study
-curl "http://localhost:8080/api/samples/SRP123456"
-```
-
-#### `GET /api/experiments/{accession}`
+#### `GET /api/v1/studies/{accession}/experiments`
 
 Get all experiments for a study.
 
 ```bash
-# Get experiments for a study
-curl "http://localhost:8080/api/experiments/SRP123456"
+curl "http://localhost:8082/api/v1/studies/SRP259537/experiments"
 ```
 
-#### `GET /api/studies/{accession}`
+#### `GET /api/v1/studies/{accession}/samples`
 
-Get study information from any related accession.
+Get all samples for a study.
 
 ```bash
-# Get study from run
-curl "http://localhost:8080/api/studies/SRR123456"
-
-# Get study from sample
-curl "http://localhost:8080/api/studies/SRS123456"
+curl "http://localhost:8082/api/v1/studies/SRP259537/samples"
 ```
 
-### Statistics Endpoints
+#### `GET /api/v1/studies/{accession}/runs`
 
-#### `GET /api/stats`
-
-Get database statistics.
-
-**Example Request:**
+Get all runs for a study.
 
 ```bash
-curl "http://localhost:8080/api/stats"
+curl "http://localhost:8082/api/v1/studies/SRP259537/runs?limit=100"
 ```
 
-**Response Format:**
+#### `GET /api/v1/experiments/{accession}`
+
+Get experiment details.
+
+```bash
+curl "http://localhost:8082/api/v1/experiments/SRX22037872"
+```
+
+#### `GET /api/v1/samples/{accession}`
+
+Get sample details.
+
+```bash
+curl "http://localhost:8082/api/v1/samples/SRS19840123"
+```
+
+#### `GET /api/v1/runs/{accession}`
+
+Get run details.
+
+```bash
+curl "http://localhost:8082/api/v1/runs/SRR25889421"
+```
+
+### Statistics
+
+#### `GET /api/v1/stats`
+
+Get comprehensive database statistics.
+
+```bash
+curl "http://localhost:8082/api/v1/stats"
+```
+
+**Response Example:**
 
 ```json
 {
-  "database": {
-    "size": 4567890123,
-    "path": "/data/SRAmetadb.sqlite"
-  },
-  "tables": {
-    "study": 456789,
-    "experiment": 2345678,
-    "sample": 3456789,
-    "run": 12345678
-  },
-  "index": {
-    "documents": 18625590,
-    "size": 1234567890,
-    "last_updated": "2024-01-15T10:30:00Z"
+  "total_documents": 1234567,
+  "indexed_documents": 1234000,
+  "index_size": 2147483648,
+  "last_indexed": "2024-12-19T10:30:00Z",
+  "top_organisms": [
+    {"name": "Homo sapiens", "count": 450000, "percentage": 36.5},
+    {"name": "Mus musculus", "count": 280000, "percentage": 22.7}
+  ],
+  "top_platforms": [
+    {"name": "ILLUMINA", "count": 950000, "percentage": 77.0}
+  ],
+  "top_strategies": [
+    {"name": "RNA-Seq", "count": 400000, "percentage": 32.4}
+  ]
+}
+```
+
+### Export
+
+#### `POST /api/v1/export`
+
+Export search results in various formats.
+
+**Supported Formats:**
+- `json` - Standard JSON
+- `csv` - Comma-separated values
+- `tsv` - Tab-separated values
+- `xml` - XML format
+- `jsonl` - Newline-delimited JSON
+
+**Request Body:**
+
+```json
+{
+  "query": "RNA-Seq human",
+  "format": "csv",
+  "limit": 100,
+  "filters": {
+    "organism": "homo sapiens"
   }
 }
 ```
 
-## Error Handling
+**Example:**
 
-All endpoints return appropriate HTTP status codes:
+```bash
+# Export as CSV
+curl -X POST http://localhost:8082/api/v1/export \
+  -H "Content-Type: application/json" \
+  -d '{"query":"RNA-Seq","format":"csv","limit":100}' \
+  -o results.csv
+```
 
-- `200 OK`: Successful request
-- `400 Bad Request`: Invalid parameters
-- `404 Not Found`: Resource not found
-- `500 Internal Server Error`: Server error
+### Health Monitoring
 
-Error responses include a JSON body:
+#### `GET /api/v1/health`
+
+Check service health status.
+
+```bash
+curl "http://localhost:8082/api/v1/health"
+```
+
+**Response:**
 
 ```json
 {
-  "error": "Invalid query syntax",
-  "message": "Unmatched quotes in query string",
-  "code": "INVALID_QUERY"
+  "status": "healthy",
+  "timestamp": "2024-12-19T10:30:00Z",
+  "search_service": "healthy",
+  "metadata_service": "healthy"
 }
 ```
 
-## Rate Limiting
+## MCP (Model Context Protocol)
 
-The API currently does not implement rate limiting. For production deployments, consider adding a reverse proxy with rate limiting capabilities.
+SRAKE supports MCP for AI assistant integration using JSON-RPC 2.0.
 
-## CORS
+### MCP Capabilities
 
-CORS headers are enabled by default in development mode. For production, configure appropriate CORS policies based on your deployment needs.
+```bash
+curl "http://localhost:8082/mcp/capabilities"
+```
+
+### MCP Tools
+
+Available tools for AI assistants:
+- `search_sra` - Search with quality control
+- `get_metadata` - Get detailed metadata
+- `find_similar` - Vector similarity search
+- `export_results` - Export in various formats
+
+**Example MCP Request:**
+
+```bash
+curl -X POST http://localhost:8082/mcp \
+  -H "Content-Type: application/json" \
+  -d '{
+    "jsonrpc": "2.0",
+    "method": "tools/call",
+    "params": {
+      "name": "search_sra",
+      "arguments": {
+        "query": "breast cancer RNA-Seq",
+        "limit": 5,
+        "similarity_threshold": 0.7
+      }
+    },
+    "id": 1
+  }'
+```
+
+## Search Modes
+
+SRAKE supports multiple search modes for different use cases:
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `database` | Direct SQL queries | Exact matching, filters only |
+| `fts` | Full-text search with Bleve | Text search with highlights |
+| `hybrid` | Combines database and FTS | Best of both worlds (default) |
+| `vector` | Semantic search with embeddings | Conceptual similarity |
+
+## Quality Control
+
+Control search quality with these parameters:
+
+- **Similarity Threshold** (0-1): Minimum similarity score for results
+- **Min Score**: Minimum absolute score requirement
+- **Top Percentile**: Return only top N% of results
+- **Confidence Levels**: `high` (>0.8), `medium` (0.5-0.8), `low` (<0.5)
 
 ## Client Libraries
 
@@ -351,36 +361,43 @@ CORS headers are enabled by default in development mode. For production, configu
 
 ```python
 import requests
+import pandas as pd
 
 # Search API
-response = requests.get('http://localhost:8080/api/search', params={
-    'q': 'homo sapiens',
-    'platform': 'ILLUMINA',
+response = requests.get('http://localhost:8082/api/v1/search', params={
+    'query': 'breast cancer',
+    'organism': 'homo sapiens',
     'library_strategy': 'RNA-Seq',
+    'similarity_threshold': 0.7,
+    'show_confidence': True,
     'limit': 100
 })
 
-results = response.json()
-for hit in results['hits']:
-    print(f"{hit['fields']['run_accession']}: {hit['fields']['organism']}")
+data = response.json()
+df = pd.DataFrame(data['results'])
+print(f"Found {data['total_results']} results")
+print(f"Top result confidence: {df.iloc[0]['confidence']}")
 ```
 
-### JavaScript/Node.js
+### JavaScript/TypeScript
 
 ```javascript
 // Using fetch API
 const params = new URLSearchParams({
-    q: 'cancer',
+    query: 'cancer',
     organism: 'homo sapiens',
-    platform: 'ILLUMINA'
+    search_mode: 'hybrid',
+    similarity_threshold: '0.8',
+    limit: '50'
 });
 
-fetch(`http://localhost:8080/api/search?${params}`)
+fetch(`http://localhost:8082/api/v1/search?${params}`)
     .then(res => res.json())
     .then(data => {
-        console.log(`Found ${data.total} results`);
-        data.hits.forEach(hit => {
-            console.log(hit.fields.run_accession);
+        console.log(`Found ${data.total_results} results`);
+        console.log(`Search took ${data.time_taken_ms}ms`);
+        data.results.forEach(result => {
+            console.log(`${result.id}: ${result.title} (${result.confidence})`);
         });
     });
 ```
@@ -391,16 +408,22 @@ fetch(`http://localhost:8080/api/search?${params}`)
 library(httr)
 library(jsonlite)
 
-# Search for RNA-Seq data
-response <- GET("http://localhost:8080/api/search",
+# Search with quality control
+response <- GET("http://localhost:8082/api/v1/search",
                 query = list(
-                    q = "RNA-Seq",
+                    query = "RNA-Seq",
                     organism = "homo sapiens",
+                    similarity_threshold = 0.7,
+                    show_confidence = TRUE,
                     limit = 100
                 ))
 
 data <- fromJSON(content(response, "text"))
-print(paste("Total results:", data$total))
+print(paste("Total results:", data$total_results))
+print(paste("Search mode:", data$search_mode))
+
+# Convert to dataframe
+df <- as.data.frame(data$results)
 ```
 
 ### curl/bash
@@ -408,77 +431,146 @@ print(paste("Total results:", data$total))
 ```bash
 #!/bin/bash
 
-# Search and save results
-curl -s "http://localhost:8080/api/search?q=cancer&format=json" \
-  | jq '.hits[].fields.run_accession' \
-  > accessions.txt
-
-# Batch download using results
-while read -r acc; do
-    echo "Processing $acc"
-    srake download "$acc"
-done < accessions.txt
+# Search and process results
+curl -s "http://localhost:8082/api/v1/search?\
+query=cancer&\
+similarity_threshold=0.8&\
+show_confidence=true&\
+format=json" | \
+jq -r '.results[] |
+  select(.confidence == "high") |
+  "\(.id)\t\(.organism)\t\(.library_strategy)\t\(.confidence)"' | \
+while IFS=$'\t' read -r acc org strat conf; do
+    echo "Processing $acc ($org, $strat) with $conf confidence"
+    # Further processing...
+done
 ```
 
-## Webhooks
+## Error Handling
 
-Webhooks are not currently supported but are planned for future releases.
+All endpoints return appropriate HTTP status codes:
 
-## WebSocket Support
+| Status Code | Description |
+|-------------|-------------|
+| `200 OK` | Successful request |
+| `400 Bad Request` | Invalid parameters |
+| `404 Not Found` | Resource not found |
+| `500 Internal Server Error` | Server error |
+| `503 Service Unavailable` | Service unhealthy |
 
-Real-time updates via WebSocket are planned for future releases.
+Error responses include detailed information:
 
-## GraphQL API
-
-A GraphQL endpoint is under consideration for complex relationship queries.
+```json
+{
+  "error": true,
+  "message": "Invalid search parameters",
+  "status": 400
+}
+```
 
 ## Performance Tips
 
-1. **Use specific filters**: Narrow down results with filters to reduce response size
-2. **Pagination**: Use `limit` and `offset` for large result sets
-3. **Field selection**: Use `fields` parameter to return only needed data
-4. **Aggregations**: Use `aggregate_by` for analytics instead of fetching all data
-5. **Caching**: Implement client-side caching for frequently accessed data
+1. **Use specific filters** to reduce result set size
+2. **Enable pagination** with `limit` and `offset` for large results
+3. **Set quality thresholds** to get only high-confidence results
+4. **Use appropriate search mode** for your use case
+5. **Cache frequently accessed data** on the client side
 
-## Migration from Other Tools
+## CORS Configuration
+
+CORS is enabled with the `--enable-cors` flag:
+
+```bash
+srake server --enable-cors
+```
+
+For production, configure specific allowed origins via reverse proxy.
+
+## Rate Limiting
+
+Rate limiting is not implemented in the core API. For production:
+- Use a reverse proxy (nginx, Caddy)
+- Implement API key authentication
+- Add per-client rate limits
+
+## Migration Guide
 
 ### From pysradb
 
 ```python
-# pysradb
+# pysradb (old)
 from pysradb import SRAdb
 db = SRAdb()
 df = db.search("cancer", detailed=True)
 
-# srake API equivalent
-import pandas as pd
+# SRAKE API (new)
 import requests
+import pandas as pd
 
-response = requests.get('http://localhost:8080/api/search',
-                        params={'q': 'cancer', 'format': 'json'})
-df = pd.DataFrame([hit['fields'] for hit in response.json()['hits']])
+response = requests.get('http://localhost:8082/api/v1/search',
+                        params={'query': 'cancer', 'limit': 1000})
+df = pd.DataFrame(response.json()['results'])
 ```
 
 ### From SRAdb (R)
 
 ```r
-# SRAdb
+# SRAdb (old)
 library(SRAdb)
 sqlfile <- getSRAdbFile()
 con <- dbConnect(SQLite(), sqlfile)
 rs <- dbGetQuery(con, "SELECT * FROM sra WHERE organism = 'Homo sapiens'")
 
-# srake API equivalent
+# SRAKE API (new)
 library(httr)
 library(jsonlite)
 
-response <- GET("http://localhost:8080/api/search",
+response <- GET("http://localhost:8082/api/v1/search",
                 query = list(organism = "homo sapiens"))
-rs <- fromJSON(content(response, "text"))$hits
+rs <- fromJSON(content(response, "text"))$results
+```
+
+## Advanced Features
+
+### Hybrid Search Weighting
+
+Control the balance between database and FTS results:
+
+```bash
+curl "http://localhost:8082/api/v1/search?\
+query=cancer&\
+search_mode=hybrid&\
+hybrid_weight=0.7"  # 70% FTS, 30% database
+```
+
+### Field-Specific Export
+
+Export only specific fields:
+
+```json
+{
+  "query": "RNA-Seq",
+  "format": "csv",
+  "fields": ["id", "title", "organism", "platform"],
+  "limit": 100
+}
+```
+
+### Batch Processing
+
+Process multiple queries efficiently:
+
+```bash
+#!/bin/bash
+queries=("cancer" "diabetes" "alzheimer")
+for q in "${queries[@]}"; do
+  curl -s "http://localhost:8082/api/v1/search?query=$q&limit=10" \
+    > "${q}_results.json"
+done
 ```
 
 ## Support
 
-For API issues or feature requests, please visit:
 - [GitHub Issues](https://github.com/nishad/srake/issues)
-- [API Documentation](https://nishad.github.io/srake/api)
+- [OpenAPI Specification](./openapi.yaml)
+- [API Testing Guide](./TESTING_GUIDE.md)

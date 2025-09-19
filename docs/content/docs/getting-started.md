@@ -135,14 +135,20 @@ Alternative ingestion methods:
 
 ### Build Search Index
 
-Before searching, build the search index:
+Before searching, build the search index using the root-level `index` command:
 
 ```bash
 # Build initial index
-srake search index --build
+srake index --build
+
+# Build with progress display
+srake index --build --progress
+
+# Build with vector embeddings for semantic search
+srake index --build --with-embeddings
 
 # Verify index
-srake search index --stats
+srake index --stats
 ```
 
 ### Search Your Data
@@ -152,16 +158,16 @@ srake search index --stats
 srake search "homo sapiens"
 ```
 
-**Advanced Query Syntax**:
+**Quality-Controlled Search**:
 ```bash
-# Boolean operators
-srake search "organism:human AND library_strategy:RNA-Seq" --advanced
+# Search with similarity threshold
+srake search "breast cancer" --similarity-threshold 0.7 --show-confidence
 
-# Field-specific search
-srake search "platform:ILLUMINA OR platform:PACBIO" --advanced
+# Return only top results
+srake search "RNA-Seq" --top-percentile 10
 
-# Wildcards and ranges
-srake search "RNA* AND spots:[1000000 TO *]" --advanced
+# Vector semantic search for related concepts
+srake search "tumor gene expression" --search-mode vector
 ```
 
 **Filtered Search**:
@@ -170,19 +176,22 @@ srake search "cancer" \
   --organism "homo sapiens" \
   --platform ILLUMINA \
   --library-strategy RNA-Seq \
-  --spots-min 10000000
+  --limit 100
 ```
 
-**Aggregation & Analytics**:
+**Search Modes**:
 ```bash
-# Count by organism
-srake search "RNA-Seq" --aggregate-by organism
+# Database search (exact matching)
+srake search "SRP123456" --search-mode database
 
-# Get total count
-srake search "cancer" --count-only
+# Full-text search (text matching)
+srake search "breast cancer" --search-mode fts
 
-# Show facets
-srake search "human" --facets
+# Hybrid search (best of both - default)
+srake search "RNA-Seq human" --search-mode hybrid
+
+# Vector search (semantic similarity)
+srake search "metabolic pathway analysis" --search-mode vector
 ```
 
 **Export Results**:
@@ -193,8 +202,8 @@ srake search "RNA-Seq" --format json --output results.json
 # CSV with specific fields
 srake search "cancer" --format csv --fields "accession,organism,platform"
 
-# Accession list for batch download
-srake search "single cell" --format accession | xargs srake download
+# XML format
+srake search "transcriptome" --format xml --output results.xml
 ```
 
 ### Convert Accessions
@@ -244,18 +253,27 @@ srake download SRP123456 --type fastq --parallel 4
 
 ### Start API Server
 
-Launch the REST API server for programmatic access:
+Launch the REST API server with AI integration support:
 
 ```bash
-# Start server on default port 8080
-srake server
+# Start server with all features
+srake server --port 8082 --enable-cors --enable-mcp
 
-# Custom port
-srake server --port 3000
+# Custom configuration
+srake server --port 3000 --host 0.0.0.0 --enable-cors
+
+# With specific database and index
+SRAKE_DB_PATH=test.db SRAKE_INDEX_PATH=/tmp/index srake server
 ```
 
 {{< callout type="info" >}}
-**API Access**: Query via `curl "http://localhost:8080/api/search?q=human&limit=10"`
+**API Features**:
+- RESTful API: `/api/v1/search`, `/api/v1/stats`, `/api/v1/export`
+- MCP for AI assistants: `/mcp`, `/mcp/capabilities`
+- Quality control: similarity thresholds, confidence scoring
+- Multiple formats: JSON, CSV, TSV, XML
+
+Example: `curl "http://localhost:8082/api/v1/search?query=cancer&similarity_threshold=0.7"`
 {{< /callout >}}
 
 ### Manage Cache & Configuration

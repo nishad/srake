@@ -19,11 +19,12 @@ A blazing-fast, memory-efficient tool for processing and querying NCBI SRA (Sequ
 - ✅ **XSD Compliant**: 95%+ compliance with official NCBI SRA schemas
 - 🔄 **Zero-Copy Pipeline**: Direct HTTP → Gzip → Tar → XML → Database streaming
 - 📊 **Progress Tracking**: Real-time progress with ETA, checkpoints, and statistics
-- 🔍 **Smart Search**: Query by organism, platform, strategy, accession, and more
-- 📊 **Multiple Output Formats**: Table, JSON, CSV, TSV for easy integration
-- 🛠️ **API Server**: Built-in REST API for programmatic access
+- 🔍 **Quality-Controlled Search**: Multiple search modes with similarity thresholds and confidence scoring
+- 🧬 **Vector Embeddings**: Semantic search using SapBERT for biomedical concepts
+- 📊 **Multiple Output Formats**: Table, JSON, CSV, TSV, XML for easy integration
+- 🌐 **RESTful API**: Complete HTTP API with OpenAPI 3.0 specification
+- 🤖 **MCP Integration**: Model Context Protocol for AI assistant integration
 - 🔁 **Automatic Retry**: Network failure recovery with exponential backoff
-- 🤖 **ML-Ready**: Embedding support for semantic search (experimental)
 
 ## 📦 Installation
 
@@ -102,14 +103,33 @@ srake ingest --status
 srake ingest --list
 ```
 
-### 2. Search SRA Metadata
+### 2. Build Search Index
+
+```bash
+# Build search index (required before searching)
+srake index --build --progress
+
+# Build with vector embeddings for semantic search
+srake index --build --with-embeddings
+
+# Verify index
+srake index --stats
+```
+
+### 3. Search SRA Metadata
 
 ```bash
 # Simple organism search
 srake search "homo sapiens" --limit 10
 
+# Quality-controlled search
+srake search "breast cancer" --similarity-threshold 0.7 --show-confidence
+
+# Vector semantic search
+srake search "tumor gene expression" --search-mode vector
+
 # Search with multiple filters
-srake search "mouse" --platform ILLUMINA --strategy RNA-Seq
+srake search "mouse" --platform ILLUMINA --library-strategy RNA-Seq
 
 # Export results to JSON
 srake search "covid" --format json --output results.json
@@ -118,22 +138,65 @@ srake search "covid" --format json --output results.json
 srake metadata SRR12345678 SRR12345679 --format yaml
 ```
 
-### 3. Start API Server
+### 4. Start API Server
 
 ```bash
-# Start the REST API server
-srake server --port 8080
+# Start the REST API server with all features
+srake server --port 8082 --enable-cors --enable-mcp
 
 # In another terminal, query the API
-curl "http://localhost:8080/api/search?q=human&limit=10"
-curl "http://localhost:8080/api/metadata/SRR12345678"
+curl "http://localhost:8082/api/v1/search?query=human&limit=10"
+curl "http://localhost:8082/api/v1/studies/SRP123456"
+curl "http://localhost:8082/api/v1/health"
+
+# Test MCP integration
+curl "http://localhost:8082/mcp/capabilities"
 ```
 
-### 4. Database Information
+### 5. Database Management
 
 ```bash
 # View database statistics
 srake db info
+
+# Export to SRAmetadb format for compatibility
+srake db export -o SRAmetadb.sqlite --fts-version 3
+```
+
+## 🔍 Advanced Search & Quality Control
+
+srake provides multiple search modes and quality control features:
+
+### Search Modes
+- **Database**: Direct SQL queries for exact matching
+- **FTS (Full-Text Search)**: Bleve-powered text search with highlights
+- **Hybrid**: Combines database and FTS for best results (default)
+- **Vector**: Semantic search using biomedical embeddings
+
+### Quality Control
+- **Similarity Threshold**: Set minimum similarity score (0-1)
+- **Min Score**: Define minimum absolute score requirement
+- **Top Percentile**: Return only top N% of results
+- **Confidence Levels**: High (>0.8), Medium (0.5-0.8), Low (<0.5)
+
+### Example Commands
+```bash
+# Search with quality control
+srake search "breast cancer" \
+  --similarity-threshold 0.7 \
+  --min-score 2.0 \
+  --show-confidence
+
+# Vector semantic search
+srake search "metabolic pathway analysis" \
+  --search-mode vector \
+  --top-percentile 10
+
+# Hybrid search with filters
+srake search "RNA-Seq" \
+  --organism "homo sapiens" \
+  --platform ILLUMINA \
+  --search-mode hybrid
 ```
 
 ## 🔍 Filtering Capability
@@ -302,20 +365,52 @@ Optimized indexes on:
 
 ## 📚 API Documentation
 
-### REST API Endpoints
+### RESTful API (v1)
+
+Base URL: `http://localhost:8082/api/v1`
 
 ```bash
-# Search experiments
-GET /api/search?q=<query>&limit=<n>&offset=<n>
+# Search with quality control
+GET /api/v1/search?query=<query>&similarity_threshold=<float>&limit=<n>
 
-# Get metadata
-GET /api/metadata/<accession>
+# Get study metadata
+GET /api/v1/studies/{accession}
+
+# Get experiments for a study
+GET /api/v1/studies/{accession}/experiments
+
+# Export results
+POST /api/v1/export
+Content-Type: application/json
+{
+  "query": "RNA-Seq",
+  "format": "csv",
+  "filters": {"organism": "homo sapiens"}
+}
 
 # Database statistics
-GET /api/stats
+GET /api/v1/stats
 
 # Health check
-GET /api/health
+GET /api/v1/health
+```
+
+### Model Context Protocol (MCP)
+
+JSON-RPC 2.0 endpoint for AI assistant integration:
+
+```bash
+# MCP endpoint
+POST /mcp
+
+# Get capabilities
+GET /mcp/capabilities
+
+# Available tools:
+- search_sra: Search with quality control
+- get_metadata: Get detailed metadata
+- find_similar: Vector similarity search
+- export_results: Export in various formats
 ```
 
 ### Go Library Usage
@@ -494,20 +589,42 @@ Flags:
   --no-progress       Disable progress bar
 ```
 
+### Index Command
+
+```bash
+srake index [flags]
+
+Flags:
+  --build              Build search index from database
+  --rebuild            Rebuild index from scratch
+  --verify             Verify index integrity
+  --stats              Show index statistics
+  --resume             Resume interrupted index building
+  --batch-size int     Documents per batch (default 1000)
+  --path string        Index directory path
+  --with-embeddings    Build vector embeddings for semantic search
+  --progress           Show progress bar
+```
+
 ### Search Command
 
 ```bash
 srake search <query> [flags]
 
 Flags:
-  --organism string    Filter by organism name
-  --platform string    Filter by sequencing platform
-  --strategy string    Filter by library strategy
-  --limit int         Maximum results (default 100)
-  --offset int        Skip first N results
-  --format string     Output format: table|json|csv|tsv (default "table")
-  --output string     Save results to file
-  --no-header         Omit header in output
+  --organism string           Filter by organism name
+  --platform string           Filter by sequencing platform
+  --library-strategy string   Filter by library strategy
+  --search-mode string        Search mode: database|fts|hybrid|vector (default "hybrid")
+  --similarity-threshold float Minimum similarity score (0-1)
+  --min-score float           Minimum absolute score
+  --top-percentile int        Return only top N% of results
+  --show-confidence           Include confidence level in results
+  --limit int                 Maximum results (default 100)
+  --offset int                Skip first N results
+  --format string             Output format: table|json|csv|tsv|xml (default "table")
+  --output string             Save results to file
+  --no-header                 Omit header in output
 ```
 
 ### Server Command
@@ -516,28 +633,37 @@ Flags:
 srake server [flags]
 
 Flags:
-  --port int       Port to listen on (default 8080)
-  --host string    Host to bind to (default "localhost")
-  --db string      Database path (default "./data/SRAmetadb.sqlite")
-  --log-level      Log level: debug|info|warn|error (default "info")
-  --dev            Enable development mode
+  --port int          Port to listen on (default 8080)
+  --host string       Host to bind to (default "localhost")
+  --enable-cors       Enable CORS for web access
+  --enable-mcp        Enable Model Context Protocol for AI assistants
+  --db string         Database path (default "./data/SRAmetadb.sqlite")
+  --index-path string Search index path
+  --log-level         Log level: debug|info|warn|error (default "info")
 ```
 
 ## 🗺️ Roadmap
 
-### Completed (v0.0.2-alpha)
+### Completed (v0.0.3-alpha)
 - ✅ **Resume Capability** - Intelligent resume from interruption point
 - ✅ **Progress Tracking** - Real-time progress with checkpoints
 - ✅ **Command Refactoring** - Renamed download to ingest for clarity
 - ✅ **Code Modularization** - Split large files into maintainable modules
 - ✅ **Filtering System** - Comprehensive filtering by taxonomy, date, platform, and more
+- ✅ **RESTful API v1** - Complete HTTP API with OpenAPI specification
+- ✅ **MCP Integration** - Model Context Protocol for AI assistants
+- ✅ **Quality Control** - Similarity thresholds and confidence scoring
+- ✅ **Vector Search** - Semantic search with biomedical embeddings
+- ✅ **Root-level Index** - Improved CLI with index as root command
+- ✅ **Service Layer** - Unified business logic for all interfaces
 
 ### Upcoming Releases
 - [ ] **v0.1.0** - Production-ready with comprehensive testing
-- [ ] **v0.2.0** - Vector embeddings for semantic search
+- [ ] **v0.2.0** - Advanced vector search with custom models
 - [ ] **v0.3.0** - GraphQL API endpoint
 - [ ] **v0.4.0** - Web UI for browsing
 - [ ] **v0.5.0** - Cloud storage backend support (S3, GCS)
+- [ ] **v0.6.0** - Distributed processing with worker pools
 
 ### Future Features
 

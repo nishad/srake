@@ -74,31 +74,52 @@ srake ingest --auto --debug
 
 ### `srake search`
 
-Search SRA metadata for experiments matching your query.
+Search SRA metadata with quality control and multiple search modes.
 
 ```bash
 srake search <query> [flags]
 ```
 
-#### Flags
+#### Search Flags
 - `-o, --organism <name>` - Filter by organism
 - `--platform <name>` - Filter by platform
-- `--strategy <name>` - Filter by library strategy
+- `--library-strategy <name>` - Filter by library strategy
 - `-l, --limit <n>` - Maximum results (default: 100)
-- `-f, --format <type>` - Output format (table|json|csv|tsv)
+- `--offset <n>` - Pagination offset
+- `--search-mode <mode>` - Search mode: database|fts|hybrid|vector (default: hybrid)
+
+#### Quality Control Flags
+- `--similarity-threshold <float>` - Minimum similarity score (0-1)
+- `--min-score <float>` - Minimum absolute score
+- `--top-percentile <int>` - Return only top N% of results
+- `--show-confidence` - Include confidence level in results
+
+#### Output Flags
+- `-f, --format <type>` - Output format (table|json|csv|tsv|xml)
 - `--output <file>` - Save results to file
 - `--no-header` - Omit header in output
+- `--fields <list>` - Comma-separated list of fields to include
 
 #### Examples
 ```bash
 # Basic search
-srake search "homo sapiens"
+srake search "breast cancer"
 
-# Search with filters
-srake search mouse --platform ILLUMINA --limit 10
+# Search with quality control
+srake search "RNA-Seq" --similarity-threshold 0.7 --show-confidence
 
-# Export results
-srake search human --format json --output results.json
+# Vector semantic search
+srake search "tumor gene expression" --search-mode vector
+
+# Advanced filtering
+srake search "transcriptome" \
+  --organism "homo sapiens" \
+  --library-strategy RNA-Seq \
+  --platform ILLUMINA \
+  --top-percentile 10
+
+# Export filtered results
+srake search "cancer" --format csv --output results.csv
 ```
 
 ---
@@ -348,9 +369,63 @@ srake metadata SRR999999 --fields title,platform,strategy
 
 ---
 
+### `srake index`
+
+Manage search index for fast full-text and vector search.
+
+```bash
+srake index [flags]
+```
+
+#### Index Operations
+- `--build` - Build search index from database
+- `--rebuild` - Rebuild index from scratch (removes existing)
+- `--verify` - Verify index integrity
+- `--stats` - Show index statistics
+- `--resume` - Resume interrupted index building
+
+#### Index Options
+- `--batch-size <n>` - Documents per batch (default: 1000)
+- `--workers <n>` - Number of parallel workers
+- `--path <dir>` - Index directory path
+- `--with-embeddings` - Build vector embeddings for semantic search
+- `--embedding-model <name>` - Model for embeddings (default: SapBERT)
+- `--progress` - Show progress bar
+- `--progress-file <file>` - Save progress to file
+- `--checkpoint-dir <dir>` - Directory for checkpoints
+
+#### Examples
+```bash
+# Build search index with progress
+srake index --build --progress
+
+# Build with vector embeddings for semantic search
+srake index --build --with-embeddings
+
+# Build with custom batch size and path
+srake index --build --batch-size 5000 --path /custom/index
+
+# Build embeddings with quantized model (faster, less memory)
+SRAKE_MODEL_VARIANT=quantized srake index --build --with-embeddings
+
+# Resume interrupted build
+srake index --resume
+
+# Rebuild from scratch
+srake index --rebuild
+
+# Verify index integrity
+srake index --verify
+
+# Show index statistics
+srake index --stats
+```
+
+---
+
 ### `srake server`
 
-Start the API server for programmatic access.
+Start the API server for programmatic access and AI integration.
 
 ```bash
 srake server [flags]
@@ -359,21 +434,35 @@ srake server [flags]
 #### Flags
 - `-p, --port <n>` - Port to listen on (default: 8080)
 - `--host <addr>` - Host to bind to (default: localhost)
+- `--enable-cors` - Enable CORS for web access
+- `--enable-mcp` - Enable Model Context Protocol for AI assistants
 - `--db <path>` - Database path
+- `--index-path <path>` - Search index path
 - `--log-level <level>` - Log level (debug|info|warn|error)
-- `--dev` - Enable development mode
 
 #### Examples
 ```bash
-# Start server on default port
-srake server
+# Start server with all features
+srake server --port 8082 --enable-cors --enable-mcp
 
-# Custom port and host
-srake server --port 9090 --host 0.0.0.0
+# Custom database and index
+srake server --db /path/to/db --index-path /path/to/index
 
-# Development mode with debug logging
-srake server --dev --log-level debug
+# Production deployment
+srake server --host 0.0.0.0 --port 80 --enable-cors
+
+# With environment variables
+SRAKE_DB_PATH=test.db SRAKE_INDEX_PATH=/tmp/index srake server
 ```
+
+#### API Endpoints
+- `/api/v1/search` - Search with quality control
+- `/api/v1/stats` - Database statistics
+- `/api/v1/studies/{id}` - Study metadata
+- `/api/v1/export` - Export search results
+- `/api/v1/health` - Service health check
+- `/mcp` - MCP JSON-RPC endpoint
+- `/mcp/capabilities` - MCP server capabilities
 
 ---
 
@@ -537,8 +626,13 @@ Most commands support multiple output formats:
 - `SRAKE_CACHE_HOME` - Override cache directory (default: `~/.cache/srake`)
 - `SRAKE_STATE_HOME` - Override state directory (default: `~/.local/state/srake`)
 - `SRAKE_DB_PATH` - Override database path (default: `~/.local/share/srake/srake.db`)
-- `SRAKE_INDEX_PATH` - Override search index path
-- `SRAKE_MODELS_PATH` - Override models directory
+- `SRAKE_INDEX_PATH` - Override search index path (default: `~/.cache/srake/index`)
+- `SRAKE_MODELS_PATH` - Override models directory for embeddings
+
+### Search Configuration
+- `SRAKE_MODEL_VARIANT` - Model variant for embeddings: full|quantized (default: full)
+- `SRAKE_DEFAULT_LIMIT` - Default search result limit
+- `SRAKE_SEARCH_MODE` - Default search mode: database|fts|hybrid|vector
 
 ### Output Control
 - `NO_COLOR` - Disable colored output globally

@@ -31,8 +31,8 @@ layout: hextra-home
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
-    title="Advanced Full-Text Search"
-    subtitle="Bleve-powered search with boolean operators, wildcards, and field-specific queries"
+    title="Quality-Controlled Search"
+    subtitle="Multiple search modes with similarity thresholds, confidence scoring, and vector embeddings"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
     image="images/hextra-search.webp"
     imageClass="hx-top-[40%] hx-left-[24px] hx-w-[180%] sm:hx-w-[110%] dark:hx-opacity-80"
@@ -55,8 +55,8 @@ layout: hextra-home
     style="background: radial-gradient(ellipse at 50% 80%,rgba(221,210,59,0.15),hsla(0,0%,100%,0));"
   >}}
   {{< hextra/feature-card
-    title="Multi-Format Export"
-    subtitle="Export results as JSON, CSV, TSV, or plain accessions for downstream analysis"
+    title="RESTful API & MCP"
+    subtitle="HTTP API with OpenAPI spec and Model Context Protocol for AI assistant integration"
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-lg:hx-min-h-[340px]"
     image="images/hextra-theme.webp"
     imageClass="hx-top-[40%] hx-left-[36px] hx-w-[110%] sm:hx-w-[110%] dark:hx-opacity-80"
@@ -82,7 +82,7 @@ layout: hextra-home
 
 ## Quick Start {.hx-mt-12}
 
-{{< tabs items="Install,Ingest,Search" >}}
+{{< tabs items="Install,Ingest,Index,Search,API" >}}
   {{< tab >}}
   ```bash
   # Using Go
@@ -110,17 +110,41 @@ layout: hextra-home
   {{< /tab >}}
   {{< tab >}}
   ```bash
-  # Basic search
-  srake search "homo sapiens"
+  # Build search index
+  srake index --build --progress
 
-  # Advanced query syntax
-  srake search "organism:human AND library_strategy:RNA-Seq" --advanced
+  # Build with vector embeddings
+  srake index --build --with-embeddings
 
-  # With filters and aggregation
-  srake search --platform ILLUMINA --aggregate-by organism
+  # Verify index
+  srake index --stats
+  ```
+  {{< /tab >}}
+  {{< tab >}}
+  ```bash
+  # Quality-controlled search
+  srake search "breast cancer" \
+    --similarity-threshold 0.7 \
+    --show-confidence
+
+  # Vector semantic search
+  srake search "tumor gene expression" \
+    --search-mode vector
 
   # Export results
-  srake search "cancer" --format json --output results.json
+  srake search "RNA-Seq" --format json
+  ```
+  {{< /tab >}}
+  {{< tab >}}
+  ```bash
+  # Start API server
+  srake server --port 8082 \
+    --enable-cors \
+    --enable-mcp
+
+  # Test API
+  curl "http://localhost:8082/api/v1/search?\
+  query=cancer&similarity_threshold=0.7"
   ```
   {{< /tab >}}
 {{< /tabs >}}

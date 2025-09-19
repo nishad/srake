@@ -1,0 +1,1660 @@
+openapi: 3.0.3
+info:
+  title: SRAKE API
+  description: |
+    SRA Knowledgebase Engine (SRAKE) - A powerful API for searching and analyzing NCBI SRA metadata.
+
+    ## Features
+    - Full-text and semantic search across millions of SRA records
+    - Quality control with similarity thresholds and confidence scoring
+    - Multiple search modes (database, FTS, hybrid, vector)
+    - Export data in various formats (JSON, CSV, TSV, XML)
+    - MCP (Model Context Protocol) support for AI assistants
+
+    ## Quick Start
+    ```bash
+    # Simple search
+    curl http://localhost:8082/api/v1/search?query=RNA-Seq&limit=5
+
+    # Search with filters
+    curl http://localhost:8082/api/v1/search?query=cancer&organism=homo%20sapiens&library_strategy=RNA-Seq
+
+    # Get statistics
+    curl http://localhost:8082/api/v1/stats
+    ```
+  version: 1.0.0
+  contact:
+    name: SRAKE Support
+    url: https://github.com/nishad/srake
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8082
+    description: Local development server
+  - url: http://localhost:{port}
+    description: Custom port
+    variables:
+      port:
+        default: '8082'
+        description: Server port number
+
+tags:
+  - name: Search
+    description: Search operations for SRA metadata
+  - name: Metadata
+    description: Retrieve detailed metadata for specific records
+  - name: Statistics
+    description: Database statistics and analytics
+  - name: Export
+    description: Export search results in various formats
+  - name: Health
+    description: Service health monitoring
+  - name: MCP
+    description: Model Context Protocol for AI assistants
+
+paths:
+  /:
+    get:
+      summary: API Information
+      description: Returns basic API information and available endpoints
+      tags:
+        - Health
+      responses:
+        '200':
+          description: API information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIInfo'
+              example:
+                name: "SRAKE API"
+                version: "1.0.0"
+                description: "SRA Knowledgebase Engine API"
+                endpoints:
+                  search: "/api/v1/search"
+                  studies: "/api/v1/studies"
+                  stats: "/api/v1/stats"
+                  health: "/api/v1/health"
+
+  /api/v1/search:
+    get:
+      summary: Search SRA metadata
+      description: |
+        Perform a search across SRA metadata using various modes and filters.
+
+        ## Search Modes
+        - `database`: Direct SQL search
+        - `fts`: Full-text search using Bleve
+        - `hybrid`: Combines database and FTS
+        - `vector`: Semantic search using embeddings
+
+        ## Examples
+        ```bash
+        # Simple search
+        curl "http://localhost:8082/api/v1/search?query=breast%20cancer"
+
+        # With quality control
+        curl "http://localhost:8082/api/v1/search?query=RNA-Seq&similarity_threshold=0.7&show_confidence=true"
+
+        # With filters
+        curl "http://localhost:8082/api/v1/search?query=transcriptome&organism=homo%20sapiens&platform=ILLUMINA"
+        ```
+      tags:
+        - Search
+      parameters:
+        - name: query
+          in: query
+          description: Search query text
+          required: false
+          schema:
+            type: string
+          examples:
+            simple:
+              value: "RNA-Seq"
+              summary: Simple keyword search
+            complex:
+              value: "breast cancer transcriptome"
+              summary: Multi-term search
+            accession:
+              value: "SRP259537"
+              summary: Search by accession
+
+        - name: limit
+          in: query
+          description: Maximum number of results (1-1000)
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 1000
+          example: 10
+
+        - name: offset
+          in: query
+          description: Number of results to skip for pagination
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          example: 0
+
+        - name: organism
+          in: query
+          description: Filter by organism name
+          schema:
+            type: string
+          examples:
+            human:
+              value: "homo sapiens"
+            mouse:
+              value: "mus musculus"
+
+        - name: library_strategy
+          in: query
+          description: Filter by library strategy
+          schema:
+            type: string
+          examples:
+            rnaseq:
+              value: "RNA-Seq"
+            chipseq:
+              value: "ChIP-Seq"
+            wgs:
+              value: "WGS"
+
+        - name: platform
+          in: query
+          description: Filter by sequencing platform
+          schema:
+            type: string
+          examples:
+            illumina:
+              value: "ILLUMINA"
+            pacbio:
+              value: "PACBIO_SMRT"
+            oxford:
+              value: "OXFORD_NANOPORE"
+
+        - name: search_mode
+          in: query
+          description: Search mode to use
+          schema:
+            type: string
+            enum: [database, fts, hybrid, vector]
+            default: hybrid
+          example: hybrid
+
+        - name: similarity_threshold
+          in: query
+          description: Minimum similarity score (0-1)
+          schema:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 1
+          example: 0.7
+
+        - name: min_score
+          in: query
+          description: Minimum search score
+          schema:
+            type: number
+            format: float
+          example: 2.0
+
+        - name: top_percentile
+          in: query
+          description: Return only top N percentile of results
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          example: 10
+
+        - name: show_confidence
+          in: query
+          description: Include confidence level in results
+          schema:
+            type: boolean
+          example: true
+
+        - name: format
+          in: query
+          description: Response format (for compatibility)
+          schema:
+            type: string
+            enum: [json, table]
+            default: json
+
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+              examples:
+                basic:
+                  value:
+                    results:
+                      - id: "SRX22037872"
+                        type: "experiment"
+                        title: "RNA-Seq of human breast cancer cells"
+                        organism: "Homo sapiens"
+                        platform: "ILLUMINA"
+                        library_strategy: "RNA-Seq"
+                        score: 8.5
+                        similarity: 0.92
+                        confidence: "high"
+                        fields:
+                          study_accession: "SRP259537"
+                          sample_accession: "SRS19840123"
+                          run_count: 2
+                      - id: "SRX22037873"
+                        type: "experiment"
+                        title: "Transcriptome analysis of MCF7 cells"
+                        organism: "Homo sapiens"
+                        platform: "ILLUMINA"
+                        library_strategy: "RNA-Seq"
+                        score: 7.8
+                        similarity: 0.85
+                        confidence: "high"
+                    total_results: 2
+                    query: "breast cancer RNA-Seq"
+                    time_taken_ms: 125
+                    search_mode: "hybrid"
+
+                with_highlights:
+                  value:
+                    results:
+                      - id: "SRX22037872"
+                        type: "experiment"
+                        title: "RNA-Seq analysis"
+                        highlights:
+                          title: ["<em>RNA-Seq</em> analysis"]
+                          description: ["Comprehensive <em>RNA-Seq</em> study"]
+                        score: 9.2
+                    total_results: 1
+                    query: "RNA-Seq"
+                    time_taken_ms: 45
+
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      summary: Advanced search with request body
+      description: |
+        Perform an advanced search with complex filters and options in the request body.
+
+        ## Example Request
+        ```json
+        {
+          "query": "breast cancer",
+          "filters": {
+            "organism": "homo sapiens",
+            "library_strategy": "RNA-Seq",
+            "platform": "ILLUMINA"
+          },
+          "limit": 20,
+          "similarity_threshold": 0.7,
+          "search_mode": "hybrid",
+          "show_confidence": true
+        }
+        ```
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+            examples:
+              advanced_search:
+                value:
+                  query: "breast cancer transcriptome"
+                  filters:
+                    organism: "homo sapiens"
+                    library_strategy: "RNA-Seq"
+                    platform: "ILLUMINA"
+                  limit: 10
+                  search_mode: "hybrid"
+                  similarity_threshold: 0.8
+                  show_confidence: true
+
+              vector_search:
+                value:
+                  query: "study of gene expression in tumor cells"
+                  search_mode: "vector"
+                  limit: 5
+                  similarity_threshold: 0.75
+
+              filtered_only:
+                value:
+                  filters:
+                    organism: "mus musculus"
+                    library_strategy: "ChIP-Seq"
+                  limit: 50
+
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/v1/search/advanced:
+    post:
+      summary: Advanced search endpoint
+      description: Dedicated endpoint for complex search operations
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SearchRequest'
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/studies:
+    get:
+      summary: List studies
+      description: |
+        Retrieve a paginated list of studies.
+
+        ## Example
+        ```bash
+        curl "http://localhost:8082/api/v1/studies?limit=5&offset=0"
+        ```
+      tags:
+        - Metadata
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          example: 5
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+          example: 0
+      responses:
+        '200':
+          description: List of studies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  studies:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Study'
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+              example:
+                studies:
+                  - study_accession: "SRP259537"
+                    study_title: "RNA-Seq of breast cancer cell lines"
+                    study_type: "Transcriptome Analysis"
+                    study_abstract: "Comprehensive transcriptome analysis..."
+                    center_name: "UNIVERSITY OF CALIFORNIA"
+                    created: "2024-08-15T10:30:00Z"
+                  - study_accession: "SRP259538"
+                    study_title: "ChIP-Seq analysis of histone modifications"
+                    study_type: "Epigenetics"
+                    study_abstract: "Genome-wide histone modification mapping..."
+                    center_name: "STANFORD UNIVERSITY"
+                    created: "2024-08-16T14:20:00Z"
+                limit: 5
+                offset: 0
+
+  /api/v1/studies/{accession}:
+    get:
+      summary: Get study by accession
+      description: |
+        Retrieve detailed information about a specific study.
+
+        ## Example
+        ```bash
+        curl "http://localhost:8082/api/v1/studies/SRP259537"
+        ```
+      tags:
+        - Metadata
+      parameters:
+        - name: accession
+          in: path
+          required: true
+          description: Study accession (e.g., SRP259537)
+          schema:
+            type: string
+          example: "SRP259537"
+      responses:
+        '200':
+          description: Study details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Study'
+              example:
+                study_accession: "SRP259537"
+                study_title: "RNA-Seq of breast cancer cell lines"
+                study_type: "Transcriptome Analysis"
+                study_abstract: "This study investigates gene expression patterns in breast cancer cell lines..."
+                center_name: "UNIVERSITY OF CALIFORNIA"
+                center_project_name: "Breast Cancer Genomics"
+                study_description: "Detailed analysis of transcriptional changes..."
+                study_url_link: "https://example.org/study/SRP259537"
+                study_entrez_link: "https://www.ncbi.nlm.nih.gov/sra/SRP259537"
+                study_attribute: "cancer_type:breast|cell_line:MCF7"
+                created: "2024-08-15T10:30:00Z"
+                updated: "2024-08-20T15:45:00Z"
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/studies/{accession}/metadata:
+    get:
+      summary: Get complete study metadata
+      description: Get all metadata associated with a study including related entities
+      tags:
+        - Metadata
+      parameters:
+        - name: accession
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "SRP259537"
+      responses:
+        '200':
+          description: Complete study metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  study:
+                    $ref: '#/components/schemas/Study'
+                  experiments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Experiment'
+                  samples:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sample'
+                  runs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Run'
+
+  /api/v1/studies/{accession}/experiments:
+    get:
+      summary: Get study experiments
+      description: |
+        Retrieve all experiments associated with a study.
+
+        ## Example
+        ```bash
+        curl "http://localhost:8082/api/v1/studies/SRP259537/experiments"
+        ```
+      tags:
+        - Metadata
+      parameters:
+        - name: accession
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "SRP259537"
+      responses:
+        '200':
+          description: List of experiments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  study_accession:
+                    type: string
+                  experiments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Experiment'
+                  total:
+                    type: integer
+              example:
+                study_accession: "SRP259537"
+                experiments:
+                  - experiment_accession: "SRX22037872"
+                    experiment_title: "RNA-Seq of MCF7 cells - replicate 1"
+                    study_accession: "SRP259537"
+                    sample_accession: "SRS19840123"
+                    design_description: "Paired-end RNA sequencing"
+                    library_name: "MCF7_rep1"
+                    library_strategy: "RNA-Seq"
+                    library_source: "TRANSCRIPTOMIC"
+                    library_selection: "cDNA"
+                    library_layout: "PAIRED"
+                    platform: "ILLUMINA"
+                    instrument_model: "Illumina NovaSeq 6000"
+                total: 1
+
+  /api/v1/studies/{accession}/samples:
+    get:
+      summary: Get study samples
+      description: Retrieve all samples associated with a study
+      tags:
+        - Metadata
+      parameters:
+        - name: accession
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "SRP259537"
+      responses:
+        '200':
+          description: List of samples
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  study_accession:
+                    type: string
+                  samples:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Sample'
+                  total:
+                    type: integer
+
+  /api/v1/studies/{accession}/runs:
+    get:
+      summary: Get study runs
+      description: |
+        Retrieve runs associated with a study.
+
+        ## Example
+        ```bash
+        curl "http://localhost:8082/api/v1/studies/SRP259537/runs?limit=10"
+        ```
+      tags:
+        - Metadata
+      parameters:
+        - name: accession
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "SRP259537"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+          example: 10
+      responses:
+        '200':
+          description: List of runs
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  study_accession:
+                    type: string
+                  runs:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Run'
+                  total:
+                    type: integer
+                  limit:
+                    type: integer
+              example:
+                study_accession: "SRP259537"
+                runs:
+                  - run_accession: "SRR25889421"
+                    experiment_accession: "SRX22037872"
+                    run_date: "2024-08-15"
+                    run_center: "UNIVERSITY OF CALIFORNIA"
+                    total_spots: 50000000
+                    total_bases: 10000000000
+                total: 1
+                limit: 10
+
+  /api/v1/experiments/{accession}:
+    get:
+      summary: Get experiment by accession
+      description: Retrieve detailed information about a specific experiment
+      tags:
+        - Metadata
+      parameters:
+        - name: accession
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "SRX22037872"
+      responses:
+        '200':
+          description: Experiment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experiment'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/samples/{accession}:
+    get:
+      summary: Get sample by accession
+      description: Retrieve detailed information about a specific sample
+      tags:
+        - Metadata
+      parameters:
+        - name: accession
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "SRS19840123"
+      responses:
+        '200':
+          description: Sample details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Sample'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/runs/{accession}:
+    get:
+      summary: Get run by accession
+      description: Retrieve detailed information about a specific run
+      tags:
+        - Metadata
+      parameters:
+        - name: accession
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "SRR25889421"
+      responses:
+        '200':
+          description: Run details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Run'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/stats:
+    get:
+      summary: Get database statistics
+      description: |
+        Retrieve comprehensive statistics about the database.
+
+        ## Example
+        ```bash
+        curl "http://localhost:8082/api/v1/stats"
+        ```
+      tags:
+        - Statistics
+      responses:
+        '200':
+          description: Database statistics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchStats'
+              example:
+                total_documents: 1234567
+                indexed_documents: 1234000
+                index_size: 2147483648
+                last_indexed: "2024-12-19T10:30:00Z"
+                last_updated: "2024-12-19T15:45:00Z"
+                top_organisms:
+                  - name: "Homo sapiens"
+                    count: 450000
+                    percentage: 36.5
+                  - name: "Mus musculus"
+                    count: 280000
+                    percentage: 22.7
+                  - name: "Rattus norvegicus"
+                    count: 50000
+                    percentage: 4.0
+                top_platforms:
+                  - name: "ILLUMINA"
+                    count: 950000
+                    percentage: 77.0
+                  - name: "OXFORD_NANOPORE"
+                    count: 150000
+                    percentage: 12.2
+                  - name: "PACBIO_SMRT"
+                    count: 80000
+                    percentage: 6.5
+                top_strategies:
+                  - name: "RNA-Seq"
+                    count: 400000
+                    percentage: 32.4
+                  - name: "WGS"
+                    count: 300000
+                    percentage: 24.3
+                  - name: "ChIP-Seq"
+                    count: 150000
+                    percentage: 12.2
+
+  /api/v1/stats/organisms:
+    get:
+      summary: Get organism statistics
+      description: Get statistics about organisms in the database
+      tags:
+        - Statistics
+      responses:
+        '200':
+          description: Organism statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  organisms:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StatItem'
+                  total:
+                    type: integer
+
+  /api/v1/stats/platforms:
+    get:
+      summary: Get platform statistics
+      description: Get statistics about sequencing platforms
+      tags:
+        - Statistics
+      responses:
+        '200':
+          description: Platform statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  platforms:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StatItem'
+                  total:
+                    type: integer
+
+  /api/v1/stats/strategies:
+    get:
+      summary: Get library strategy statistics
+      description: Get statistics about library strategies
+      tags:
+        - Statistics
+      responses:
+        '200':
+          description: Strategy statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  strategies:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StatItem'
+                  total:
+                    type: integer
+
+  /api/v1/export:
+    post:
+      summary: Export search results
+      description: |
+        Export search results in various formats.
+
+        ## Supported Formats
+        - `json`: Standard JSON
+        - `csv`: Comma-separated values
+        - `tsv`: Tab-separated values
+        - `xml`: XML format
+        - `jsonl`: Newline-delimited JSON
+
+        ## Examples
+        ```bash
+        # Export as CSV
+        curl -X POST http://localhost:8082/api/v1/export \
+          -H "Content-Type: application/json" \
+          -d '{"query":"RNA-Seq","format":"csv","limit":100}' \
+          -o results.csv
+
+        # Export with specific fields
+        curl -X POST http://localhost:8082/api/v1/export \
+          -H "Content-Type: application/json" \
+          -d '{
+            "query":"cancer",
+            "format":"json",
+            "fields":["id","title","organism","platform"],
+            "limit":50
+          }'
+        ```
+      tags:
+        - Export
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportRequest'
+            examples:
+              csv_export:
+                value:
+                  query: "RNA-Seq human"
+                  format: "csv"
+                  limit: 100
+                  filters:
+                    organism: "homo sapiens"
+
+              json_with_fields:
+                value:
+                  query: "breast cancer"
+                  format: "json"
+                  fields: ["id", "title", "organism", "library_strategy"]
+                  limit: 50
+
+              xml_export:
+                value:
+                  query: "ChIP-Seq"
+                  format: "xml"
+                  limit: 20
+      responses:
+        '200':
+          description: Exported data
+          content:
+            application/json:
+              schema:
+                type: object
+            text/csv:
+              schema:
+                type: string
+              example: |
+                id,title,organism,platform,library_strategy
+                SRX22037872,"RNA-Seq of MCF7 cells",Homo sapiens,ILLUMINA,RNA-Seq
+                SRX22037873,"ChIP-Seq H3K27ac",Homo sapiens,ILLUMINA,ChIP-Seq
+            text/tab-separated-values:
+              schema:
+                type: string
+            application/xml:
+              schema:
+                type: string
+              example: |
+                <?xml version="1.0" encoding="UTF-8"?>
+                <results>
+                  <result>
+                    <id>SRX22037872</id>
+                    <title>RNA-Seq of MCF7 cells</title>
+                    <organism>Homo sapiens</organism>
+                  </result>
+                </results>
+            application/x-ndjson:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/health:
+    get:
+      summary: Health check
+      description: |
+        Check the health status of the API and its services.
+
+        ## Example
+        ```bash
+        curl "http://localhost:8082/api/v1/health"
+        ```
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [healthy, unhealthy]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  search_service:
+                    type: string
+                  metadata_service:
+                    type: string
+              example:
+                status: "healthy"
+                timestamp: "2024-12-19T10:30:00Z"
+                search_service: "healthy"
+                metadata_service: "healthy"
+        '503':
+          description: Service unhealthy
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                status: "unhealthy"
+                timestamp: "2024-12-19T10:30:00Z"
+                search_service: "connection failed"
+                metadata_service: "healthy"
+
+  /mcp:
+    post:
+      summary: MCP JSON-RPC endpoint
+      description: |
+        Model Context Protocol endpoint for AI assistants.
+
+        ## Available Methods
+        - `tools/list`: List available tools
+        - `tools/call`: Call a specific tool
+        - `resources/list`: List available resources
+        - `resources/read`: Read a resource
+        - `prompts/list`: List available prompts
+        - `prompts/get`: Get a specific prompt
+
+        ## Example Tool Call
+        ```bash
+        curl -X POST http://localhost:8082/mcp \
+          -H "Content-Type: application/json" \
+          -d '{
+            "jsonrpc": "2.0",
+            "method": "tools/call",
+            "params": {
+              "name": "search_sra",
+              "arguments": {
+                "query": "breast cancer RNA-Seq",
+                "limit": 5,
+                "similarity_threshold": 0.7
+              }
+            },
+            "id": 1
+          }'
+        ```
+      tags:
+        - MCP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MCPRequest'
+            examples:
+              list_tools:
+                value:
+                  jsonrpc: "2.0"
+                  method: "tools/list"
+                  params: {}
+                  id: 1
+
+              search_tool:
+                value:
+                  jsonrpc: "2.0"
+                  method: "tools/call"
+                  params:
+                    name: "search_sra"
+                    arguments:
+                      query: "cancer transcriptome"
+                      limit: 10
+                      organism: "homo sapiens"
+                      similarity_threshold: 0.8
+                  id: 2
+
+              get_metadata_tool:
+                value:
+                  jsonrpc: "2.0"
+                  method: "tools/call"
+                  params:
+                    name: "get_metadata"
+                    arguments:
+                      accession: "SRP259537"
+                  id: 3
+
+              find_similar_tool:
+                value:
+                  jsonrpc: "2.0"
+                  method: "tools/call"
+                  params:
+                    name: "find_similar"
+                    arguments:
+                      query: "study of breast cancer gene expression"
+                      limit: 5
+                  id: 4
+      responses:
+        '200':
+          description: JSON-RPC response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MCPResponse'
+              examples:
+                tools_list:
+                  value:
+                    jsonrpc: "2.0"
+                    result:
+                      tools:
+                        - name: "search_sra"
+                          description: "Search NCBI SRA metadata with quality control"
+                        - name: "get_metadata"
+                          description: "Get detailed metadata for a specific accession"
+                        - name: "find_similar"
+                          description: "Find similar studies using vector search"
+                        - name: "export_results"
+                          description: "Export search results in various formats"
+                    id: 1
+
+                search_result:
+                  value:
+                    jsonrpc: "2.0"
+                    result:
+                      results:
+                        - id: "SRX22037872"
+                          title: "RNA-Seq of breast cancer cells"
+                          score: 9.2
+                          confidence: "high"
+                      total: 1
+                    id: 2
+
+  /mcp/capabilities:
+    get:
+      summary: MCP server capabilities
+      description: |
+        Get the capabilities of the MCP server.
+
+        ## Example
+        ```bash
+        curl "http://localhost:8082/mcp/capabilities"
+        ```
+      tags:
+        - MCP
+      responses:
+        '200':
+          description: MCP capabilities
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  version:
+                    type: string
+                  capabilities:
+                    type: object
+                    properties:
+                      tools:
+                        type: boolean
+                      resources:
+                        type: boolean
+                      prompts:
+                        type: boolean
+              example:
+                name: "SRAKE MCP Server"
+                version: "1.0.0"
+                capabilities:
+                  tools: true
+                  resources: true
+                  prompts: true
+
+components:
+  schemas:
+    SearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+          description: Search query text
+          example: "breast cancer RNA-Seq"
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+          description: Key-value pairs for filtering
+          example:
+            organism: "homo sapiens"
+            library_strategy: "RNA-Seq"
+            platform: "ILLUMINA"
+        limit:
+          type: integer
+          description: Maximum number of results
+          minimum: 1
+          maximum: 1000
+          default: 20
+          example: 10
+        offset:
+          type: integer
+          description: Number of results to skip
+          minimum: 0
+          default: 0
+          example: 0
+        format:
+          type: string
+          description: Output format
+          enum: [json, csv, tsv, xml, jsonl]
+          default: json
+        fields:
+          type: array
+          items:
+            type: string
+          description: Fields to include in response
+          example: ["id", "title", "organism"]
+        fuzzy:
+          type: boolean
+          description: Enable fuzzy matching
+          default: false
+        exact:
+          type: boolean
+          description: Require exact matching
+          default: false
+        use_vectors:
+          type: boolean
+          description: Use vector search
+          default: false
+        search_mode:
+          type: string
+          description: Search mode
+          enum: [database, fts, hybrid, vector]
+          default: hybrid
+          example: "hybrid"
+        similarity_threshold:
+          type: number
+          format: float
+          description: Minimum similarity score (0-1)
+          minimum: 0
+          maximum: 1
+          example: 0.7
+        min_score:
+          type: number
+          format: float
+          description: Minimum search score
+          example: 2.0
+        top_percentile:
+          type: integer
+          description: Return top N percentile
+          minimum: 1
+          maximum: 100
+          example: 10
+        show_confidence:
+          type: boolean
+          description: Include confidence levels
+          default: false
+          example: true
+        hybrid_weight:
+          type: number
+          format: float
+          description: Weight for hybrid search (0-1)
+          minimum: 0
+          maximum: 1
+          default: 0.5
+
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchResult'
+        total_results:
+          type: integer
+          description: Total number of matching results
+          example: 150
+        query:
+          type: string
+          description: The query that was executed
+          example: "RNA-Seq"
+        time_taken_ms:
+          type: integer
+          format: int64
+          description: Time taken in milliseconds
+          example: 125
+        search_mode:
+          type: string
+          description: Search mode used
+          example: "hybrid"
+        facets:
+          type: object
+          description: Faceted search results
+          additionalProperties: true
+
+    SearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Record identifier
+          example: "SRX22037872"
+        type:
+          type: string
+          description: Record type
+          enum: [study, experiment, sample, run]
+          example: "experiment"
+        title:
+          type: string
+          description: Record title
+          example: "RNA-Seq of breast cancer cells"
+        description:
+          type: string
+          description: Record description
+          example: "Comprehensive transcriptome analysis..."
+        organism:
+          type: string
+          description: Organism name
+          example: "Homo sapiens"
+        platform:
+          type: string
+          description: Sequencing platform
+          example: "ILLUMINA"
+        library_strategy:
+          type: string
+          description: Library strategy
+          example: "RNA-Seq"
+        score:
+          type: number
+          format: float
+          description: Search relevance score
+          example: 8.5
+        similarity:
+          type: number
+          format: float
+          description: Similarity score (0-1)
+          example: 0.92
+        confidence:
+          type: string
+          description: Confidence level
+          enum: [high, medium, low]
+          example: "high"
+        fields:
+          type: object
+          additionalProperties: true
+          description: Additional fields
+        highlights:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Search term highlights
+          example:
+            title: ["<em>RNA-Seq</em> of breast cancer cells"]
+
+    Study:
+      type: object
+      properties:
+        study_accession:
+          type: string
+          example: "SRP259537"
+        study_title:
+          type: string
+          example: "RNA-Seq of breast cancer cell lines"
+        study_type:
+          type: string
+          example: "Transcriptome Analysis"
+        study_abstract:
+          type: string
+          example: "Comprehensive analysis of gene expression..."
+        center_name:
+          type: string
+          example: "UNIVERSITY OF CALIFORNIA"
+        center_project_name:
+          type: string
+          example: "Breast Cancer Genomics"
+        study_description:
+          type: string
+        study_url_link:
+          type: string
+          format: uri
+        study_entrez_link:
+          type: string
+          format: uri
+        study_attribute:
+          type: string
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+
+    Experiment:
+      type: object
+      properties:
+        experiment_accession:
+          type: string
+          example: "SRX22037872"
+        experiment_title:
+          type: string
+          example: "RNA-Seq of MCF7 cells"
+        study_accession:
+          type: string
+          example: "SRP259537"
+        sample_accession:
+          type: string
+          example: "SRS19840123"
+        design_description:
+          type: string
+          example: "Paired-end RNA sequencing"
+        library_name:
+          type: string
+          example: "MCF7_rep1"
+        library_strategy:
+          type: string
+          example: "RNA-Seq"
+        library_source:
+          type: string
+          example: "TRANSCRIPTOMIC"
+        library_selection:
+          type: string
+          example: "cDNA"
+        library_layout:
+          type: string
+          example: "PAIRED"
+        platform:
+          type: string
+          example: "ILLUMINA"
+        instrument_model:
+          type: string
+          example: "Illumina NovaSeq 6000"
+        created:
+          type: string
+          format: date-time
+
+    Sample:
+      type: object
+      properties:
+        sample_accession:
+          type: string
+          example: "SRS19840123"
+        sample_title:
+          type: string
+          example: "MCF7 breast cancer cell line"
+        organism:
+          type: string
+          example: "Homo sapiens"
+        sample_attribute:
+          type: string
+          example: "cell_line:MCF7|treatment:control"
+        submission_accession:
+          type: string
+        study_accession:
+          type: string
+        description:
+          type: string
+        created:
+          type: string
+          format: date-time
+
+    Run:
+      type: object
+      properties:
+        run_accession:
+          type: string
+          example: "SRR25889421"
+        experiment_accession:
+          type: string
+          example: "SRX22037872"
+        run_date:
+          type: string
+          format: date
+          example: "2024-08-15"
+        run_center:
+          type: string
+          example: "UNIVERSITY OF CALIFORNIA"
+        total_spots:
+          type: integer
+          format: int64
+          example: 50000000
+        total_bases:
+          type: integer
+          format: int64
+          example: 10000000000
+        size_MB:
+          type: number
+          example: 4500.5
+        created:
+          type: string
+          format: date-time
+
+    ExportRequest:
+      type: object
+      required:
+        - format
+      properties:
+        query:
+          type: string
+          description: Search query
+          example: "RNA-Seq"
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+          description: Filters to apply
+        format:
+          type: string
+          description: Export format
+          enum: [json, csv, tsv, xml, jsonl]
+          example: "csv"
+        limit:
+          type: integer
+          description: Maximum records to export
+          default: 100
+          example: 50
+        fields:
+          type: array
+          items:
+            type: string
+          description: Fields to include
+          example: ["id", "title", "organism", "platform"]
+
+    SearchStats:
+      type: object
+      properties:
+        total_documents:
+          type: integer
+          format: int64
+          example: 1234567
+        indexed_documents:
+          type: integer
+          format: int64
+          example: 1234000
+        index_size:
+          type: integer
+          format: int64
+          example: 2147483648
+        last_indexed:
+          type: string
+          format: date-time
+        last_updated:
+          type: string
+          format: date-time
+        top_organisms:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatItem'
+        top_platforms:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatItem'
+        top_strategies:
+          type: array
+          items:
+            $ref: '#/components/schemas/StatItem'
+
+    StatItem:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Homo sapiens"
+        count:
+          type: integer
+          format: int64
+          example: 450000
+        percentage:
+          type: number
+          format: float
+          example: 36.5
+
+    MCPRequest:
+      type: object
+      required:
+        - jsonrpc
+        - method
+        - id
+      properties:
+        jsonrpc:
+          type: string
+          description: JSON-RPC version
+          example: "2.0"
+        method:
+          type: string
+          description: Method to call
+          example: "tools/call"
+        params:
+          type: object
+          description: Method parameters
+        id:
+          description: Request ID
+          oneOf:
+            - type: string
+            - type: number
+
+    MCPResponse:
+      type: object
+      properties:
+        jsonrpc:
+          type: string
+          example: "2.0"
+        result:
+          description: Method result
+        error:
+          type: object
+          properties:
+            code:
+              type: integer
+              description: Error code
+            message:
+              type: string
+              description: Error message
+            data:
+              description: Additional error data
+        id:
+          description: Request ID
+
+    APIInfo:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "SRAKE API"
+        version:
+          type: string
+          example: "1.0.0"
+        description:
+          type: string
+          example: "SRA Knowledgebase Engine API"
+        endpoints:
+          type: object
+          additionalProperties:
+            type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "An error occurred"
+        status:
+          type: integer
+          example: 400
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            message: "Invalid request parameters"
+            status: 400
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            message: "Resource not found"
+            status: 404
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: true
+            message: "Internal server error"
+            status: 500
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication (future implementation)
+
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication (future implementation)
