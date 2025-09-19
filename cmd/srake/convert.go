@@ -251,4 +251,3 @@ func outputConversionResults(results []converter.ConversionResult) error {
 	fmt.Print(output)
 	return nil
 }
-

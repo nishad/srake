@@ -1,0 +1,31 @@
+run:
+  timeout: 5m
+  skip-dirs:
+    - vendor
+    - test_human.bleve
+
+linters:
+  enable:
+    - gofmt
+    - govet
+    - ineffassign
+    - staticcheck
+    - misspell
+    - unconvert
+    - prealloc
+    - nakedret
+  disable:
+    - errcheck
+
+linters-settings:
+  gofmt:
+    simplify: true
+  govet:
+    enable-all: true
+  staticcheck:
+    checks: ["all"]
+
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0

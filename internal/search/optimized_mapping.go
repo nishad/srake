@@ -124,7 +124,7 @@ func createKeywordField(store bool, includeInAll bool) *mapping.FieldMapping {
 	fieldMapping.Store = store
 	fieldMapping.IncludeInAll = includeInAll
 	fieldMapping.IncludeTermVectors = false // We don't use highlighting
-	fieldMapping.DocValues = true // Enable for faceting/sorting
+	fieldMapping.DocValues = true           // Enable for faceting/sorting
 	return fieldMapping
 }
 
@@ -134,7 +134,7 @@ func createTextField(store bool, includeInAll bool) *mapping.FieldMapping {
 	fieldMapping.Store = store
 	fieldMapping.IncludeInAll = includeInAll
 	fieldMapping.IncludeTermVectors = false // We don't use highlighting
-	fieldMapping.DocValues = false // Text fields don't need DocValues
+	fieldMapping.DocValues = false          // Text fields don't need DocValues
 	return fieldMapping
 }
 
@@ -157,7 +157,7 @@ func EstimateIndexMemory(docCount int, avgFieldsPerDoc int) int64 {
 	// - Keyword fields: ~50 bytes per field per doc
 
 	// With optimized mapping (no numeric fields):
-	textFields := 5 // title, abstract, organism, etc.
+	textFields := 5    // title, abstract, organism, etc.
 	keywordFields := 8 // accessions, platform, etc.
 
 	bytesPerDoc := int64(textFields*100 + keywordFields*50)
@@ -170,9 +170,9 @@ func EstimateIndexMemory(docCount int, avgFieldsPerDoc int) int64 {
 // EstimateQueryMemory estimates memory needed for a query
 func EstimateQueryMemory(queryComplexity int, resultSize int) int64 {
 	// Simple estimation based on query complexity
-	baseMemory := int64(1024 * 1024) // 1MB base
+	baseMemory := int64(1024 * 1024)                   // 1MB base
 	queryMemory := int64(queryComplexity * 100 * 1024) // 100KB per query term
-	resultMemory := int64(resultSize * 10 * 1024) // 10KB per result
+	resultMemory := int64(resultSize * 10 * 1024)      // 10KB per result
 
 	return baseMemory + queryMemory + resultMemory
 }

@@ -79,11 +79,11 @@ func (s *SearchService) Search(ctx context.Context, req *SearchRequest) (*Search
 
 	// Convert search results to response
 	response := &SearchResponse{
-		Results:       make([]*SearchResult, 0, len(result.Hits)),
-		TotalResults:  result.TotalHits,
-		Query:         req.Query,
-		TimeTaken:     result.TimeMs,
-		SearchMode:    result.Mode,
+		Results:      make([]*SearchResult, 0, len(result.Hits)),
+		TotalResults: result.TotalHits,
+		Query:        req.Query,
+		TimeTaken:    result.TimeMs,
+		SearchMode:   result.Mode,
 	}
 
 	// Convert hits to search results

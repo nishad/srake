@@ -43,7 +43,7 @@ var (
 	filterStatsOnly     bool
 	filterVerbose       bool
 	filterProfile       string
-	skipStats           bool  // Skip updating database statistics
+	skipStats           bool // Skip updating database statistics
 )
 
 // NewIngestCmd creates the ingest command
@@ -714,17 +714,17 @@ func hasFilters() bool {
 // buildFilterOptions creates a FilterOptions struct from command-line flags
 func buildFilterOptions() (*processor.FilterOptions, error) {
 	opts := &processor.FilterOptions{
-		TaxonomyIDs:      filterTaxonIDs,
-		ExcludeTaxIDs:    filterExcludeTaxIDs,
-		Organisms:        filterOrganisms,
-		Platforms:        filterPlatforms,
-		Strategies:       filterStrategies,
-		MinReads:         filterMinReads,
-		MaxReads:         filterMaxReads,
-		MinBases:         filterMinBases,
-		MaxBases:         filterMaxBases,
-		StatsOnly:        filterStatsOnly,
-		Verbose:          filterVerbose,
+		TaxonomyIDs:   filterTaxonIDs,
+		ExcludeTaxIDs: filterExcludeTaxIDs,
+		Organisms:     filterOrganisms,
+		Platforms:     filterPlatforms,
+		Strategies:    filterStrategies,
+		MinReads:      filterMinReads,
+		MaxReads:      filterMaxReads,
+		MinBases:      filterMinBases,
+		MaxBases:      filterMaxBases,
+		StatsOnly:     filterStatsOnly,
+		Verbose:       filterVerbose,
 	}
 
 	// Parse date filters

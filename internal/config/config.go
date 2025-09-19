@@ -12,9 +12,9 @@ import (
 // Config represents the SRAKE configuration
 type Config struct {
 	DataDirectory string          `yaml:"data_directory"`
-	Database      DatabaseConfig  `yaml:"database"`  // SQLite settings
-	Search        SearchConfig    `yaml:"search"`    // Optional search
-	Vectors       VectorConfig    `yaml:"vectors"`   // Optional vectors
+	Database      DatabaseConfig  `yaml:"database"` // SQLite settings
+	Search        SearchConfig    `yaml:"search"`   // Optional search
+	Vectors       VectorConfig    `yaml:"vectors"`  // Optional vectors
 	Embeddings    EmbeddingConfig `yaml:"embeddings"`
 }
 
@@ -28,16 +28,16 @@ type DatabaseConfig struct {
 
 // SearchConfig contains search-related settings
 type SearchConfig struct {
-	Enabled         bool   `yaml:"enabled"`          // Enable Bleve search
-	Backend         string `yaml:"backend"`          // "bleve" or "sqlite"
-	IndexPath       string `yaml:"index_path"`       // Path to Bleve index
-	RebuildOnStart  bool   `yaml:"rebuild_on_start"` // Rebuild index on startup
-	AutoSync        bool   `yaml:"auto_sync"`        // Auto-sync with SQLite
-	SyncInterval    int    `yaml:"sync_interval"`    // Sync interval in seconds
-	DefaultLimit    int    `yaml:"default_limit"`    // Default result limit
-	BatchSize       int    `yaml:"batch_size"`       // Indexing batch size
-	UseCache        bool   `yaml:"use_cache"`        // Enable search cache
-	CacheTTL        int    `yaml:"cache_ttl"`        // Cache TTL in seconds
+	Enabled        bool   `yaml:"enabled"`          // Enable Bleve search
+	Backend        string `yaml:"backend"`          // "bleve" or "sqlite"
+	IndexPath      string `yaml:"index_path"`       // Path to Bleve index
+	RebuildOnStart bool   `yaml:"rebuild_on_start"` // Rebuild index on startup
+	AutoSync       bool   `yaml:"auto_sync"`        // Auto-sync with SQLite
+	SyncInterval   int    `yaml:"sync_interval"`    // Sync interval in seconds
+	DefaultLimit   int    `yaml:"default_limit"`    // Default result limit
+	BatchSize      int    `yaml:"batch_size"`       // Indexing batch size
+	UseCache       bool   `yaml:"use_cache"`        // Enable search cache
+	CacheTTL       int    `yaml:"cache_ttl"`        // Cache TTL in seconds
 }
 
 // VectorConfig contains vector search settings
@@ -54,13 +54,13 @@ type VectorConfig struct {
 type EmbeddingConfig struct {
 	Enabled         bool     `yaml:"enabled"`
 	ModelsDirectory string   `yaml:"models_directory"`
-	DefaultModel    string   `yaml:"default_model"`     // HuggingFace model path
-	DefaultVariant  string   `yaml:"default_variant"`   // quantized, fp16, or default
-	BatchSize       int      `yaml:"batch_size"`        // Batch size for embedding
-	NumThreads      int      `yaml:"num_threads"`       // ONNX runtime threads
-	MaxTextLength   int      `yaml:"max_text_length"`   // Max tokens
-	CombineFields   []string `yaml:"combine_fields"`    // Fields to combine for embedding
-	CacheEmbeddings bool     `yaml:"cache_embeddings"`  // Cache computed embeddings
+	DefaultModel    string   `yaml:"default_model"`    // HuggingFace model path
+	DefaultVariant  string   `yaml:"default_variant"`  // quantized, fp16, or default
+	BatchSize       int      `yaml:"batch_size"`       // Batch size for embedding
+	NumThreads      int      `yaml:"num_threads"`      // ONNX runtime threads
+	MaxTextLength   int      `yaml:"max_text_length"`  // Max tokens
+	CombineFields   []string `yaml:"combine_fields"`   // Fields to combine for embedding
+	CacheEmbeddings bool     `yaml:"cache_embeddings"` // Cache computed embeddings
 }
 
 // DefaultConfig returns the default configuration

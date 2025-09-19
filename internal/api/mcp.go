@@ -378,10 +378,10 @@ func (s *Server) handleMCPGetPrompt(w http.ResponseWriter, id interface{}, param
 
 func (s *Server) mcpSearchSRA(ctx context.Context, args map[string]interface{}) (interface{}, error) {
 	req := &service.SearchRequest{
-		Query: getString(args, "query", ""),
-		Limit: getInt(args, "limit", 20),
+		Query:               getString(args, "query", ""),
+		Limit:               getInt(args, "limit", 20),
 		SimilarityThreshold: getFloat32(args, "similarity_threshold", 0.5),
-		ShowConfidence: true,
+		ShowConfidence:      true,
 	}
 
 	if organism := getString(args, "organism", ""); organism != "" {
@@ -418,10 +418,10 @@ func (s *Server) mcpGetMetadata(ctx context.Context, args map[string]interface{}
 
 func (s *Server) mcpFindSimilar(ctx context.Context, args map[string]interface{}) (interface{}, error) {
 	req := &service.SearchRequest{
-		Query:      getString(args, "query", ""),
-		Limit:      getInt(args, "limit", 10),
-		SearchMode: "vector",
-		UseVectors: true,
+		Query:          getString(args, "query", ""),
+		Limit:          getInt(args, "limit", 10),
+		SearchMode:     "vector",
+		UseVectors:     true,
 		ShowConfidence: true,
 	}
 

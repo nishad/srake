@@ -15,8 +15,8 @@ import (
 
 // CheckpointManager handles checkpoint creation and restoration
 type CheckpointManager struct {
-	builder       *IndexBuilder
-	checkpointDir string
+	builder        *IndexBuilder
+	checkpointDir  string
 	maxCheckpoints int
 }
 

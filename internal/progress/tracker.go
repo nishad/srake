@@ -24,31 +24,31 @@ const (
 
 // Progress represents the ingestion progress for a source
 type Progress struct {
-	ID               int64     `json:"id" db:"id"`
-	SourceURL        string    `json:"source_url" db:"source_url"`
-	SourceHash       string    `json:"source_hash" db:"source_hash"`
-	TotalBytes       int64     `json:"total_bytes" db:"total_bytes"`
-	DownloadedBytes  int64     `json:"downloaded_bytes" db:"downloaded_bytes"`
-	ProcessedBytes   int64     `json:"processed_bytes" db:"processed_bytes"`
-	LastTarPosition  int64     `json:"last_tar_position" db:"last_tar_position"`
-	LastXMLFile      string    `json:"last_xml_file" db:"last_xml_file"`
-	RecordsProcessed int64     `json:"records_processed" db:"records_processed"`
-	State            State     `json:"state" db:"state"`
-	StartedAt        time.Time `json:"started_at" db:"started_at"`
-	UpdatedAt        time.Time `json:"updated_at" db:"updated_at"`
+	ID               int64      `json:"id" db:"id"`
+	SourceURL        string     `json:"source_url" db:"source_url"`
+	SourceHash       string     `json:"source_hash" db:"source_hash"`
+	TotalBytes       int64      `json:"total_bytes" db:"total_bytes"`
+	DownloadedBytes  int64      `json:"downloaded_bytes" db:"downloaded_bytes"`
+	ProcessedBytes   int64      `json:"processed_bytes" db:"processed_bytes"`
+	LastTarPosition  int64      `json:"last_tar_position" db:"last_tar_position"`
+	LastXMLFile      string     `json:"last_xml_file" db:"last_xml_file"`
+	RecordsProcessed int64      `json:"records_processed" db:"records_processed"`
+	State            State      `json:"state" db:"state"`
+	StartedAt        time.Time  `json:"started_at" db:"started_at"`
+	UpdatedAt        time.Time  `json:"updated_at" db:"updated_at"`
 	CompletedAt      *time.Time `json:"completed_at,omitempty" db:"completed_at"`
-	ErrorMessage     string    `json:"error_message,omitempty" db:"error_message"`
+	ErrorMessage     string     `json:"error_message,omitempty" db:"error_message"`
 }
 
 // ProcessedFile represents a file that has been processed
 type ProcessedFile struct {
-	ID            int64     `json:"id" db:"id"`
-	ProgressID    int64     `json:"progress_id" db:"progress_id"`
-	FileName      string    `json:"file_name" db:"file_name"`
-	FileSize      int64     `json:"file_size" db:"file_size"`
-	RecordsCount  int       `json:"records_count" db:"records_count"`
-	ProcessedAt   time.Time `json:"processed_at" db:"processed_at"`
-	Checksum      string    `json:"checksum" db:"checksum"`
+	ID           int64     `json:"id" db:"id"`
+	ProgressID   int64     `json:"progress_id" db:"progress_id"`
+	FileName     string    `json:"file_name" db:"file_name"`
+	FileSize     int64     `json:"file_size" db:"file_size"`
+	RecordsCount int       `json:"records_count" db:"records_count"`
+	ProcessedAt  time.Time `json:"processed_at" db:"processed_at"`
+	Checksum     string    `json:"checksum" db:"checksum"`
 }
 
 // Checkpoint represents a checkpoint in the ingestion process

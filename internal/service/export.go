@@ -178,10 +178,10 @@ func (e *ExportService) exportTSV(results []*SearchResult, writer io.Writer, fie
 // exportXML exports results as XML
 func (e *ExportService) exportXML(results []*SearchResult, writer io.Writer, fields []string) error {
 	type XMLResult struct {
-		Type   string      `xml:"type,attr"`
-		ID     string      `xml:"id,attr"`
-		Score  float32     `xml:"score,omitempty"`
-		Data   interface{} `xml:"data"`
+		Type  string      `xml:"type,attr"`
+		ID    string      `xml:"id,attr"`
+		Score float32     `xml:"score,omitempty"`
+		Data  interface{} `xml:"data"`
 	}
 
 	type XMLExport struct {

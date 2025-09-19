@@ -593,4 +593,3 @@ func (rp *ResumableProcessor) reportProgress(currentFile string) {
 
 	rp.progressFunc(progress)
 }
-

@@ -22,9 +22,9 @@ type FilterOptions struct {
 	ExcludeOrganisms []string // Scientific names to exclude
 
 	// Technical filters
-	Platforms      []string // Sequencing platforms (ILLUMINA, OXFORD_NANOPORE, etc.)
-	Strategies     []string // Library strategies (RNA-Seq, WGS, WES, etc.)
-	StudyTypes     []string // Study types
+	Platforms        []string // Sequencing platforms (ILLUMINA, OXFORD_NANOPORE, etc.)
+	Strategies       []string // Library strategies (RNA-Seq, WGS, WES, etc.)
+	StudyTypes       []string // Study types
 	InstrumentModels []string // Specific instrument models
 
 	// Quality filters
@@ -106,7 +106,7 @@ func (f *FilterOptions) Validate() error {
 			return fmt.Errorf("invalid date field: %s (must be one of: %s)",
 				f.DateField, strings.Join(validFields, ", "))
 		}
-	} else if (!f.DateFrom.IsZero() || !f.DateTo.IsZero()) {
+	} else if !f.DateFrom.IsZero() || !f.DateTo.IsZero() {
 		// Default to submission date if date filters are set but field is not specified
 		f.DateField = "submission"
 	}
@@ -247,22 +247,22 @@ Processing Time: %s`,
 func normalizeStrategy(strategy string) string {
 	// Normalize common variations
 	replacements := map[string]string{
-		"rnaseq":     "RNA-Seq",
-		"rna seq":    "RNA-Seq",
-		"wgs":        "WGS",
-		"wes":        "WES",
-		"wxs":        "WXS",
-		"chipseq":    "ChIP-Seq",
-		"chip seq":   "ChIP-Seq",
-		"atacseq":    "ATAC-Seq",
-		"atac seq":   "ATAC-Seq",
-		"amplicon":   "AMPLICON",
-		"targeted":   "Targeted-Capture",
-		"bisulfite":  "Bisulfite-Seq",
-		"hic":        "Hi-C",
-		"hi c":       "Hi-C",
-		"mirnaseq":   "miRNA-Seq",
-		"mirna seq":  "miRNA-Seq",
+		"rnaseq":    "RNA-Seq",
+		"rna seq":   "RNA-Seq",
+		"wgs":       "WGS",
+		"wes":       "WES",
+		"wxs":       "WXS",
+		"chipseq":   "ChIP-Seq",
+		"chip seq":  "ChIP-Seq",
+		"atacseq":   "ATAC-Seq",
+		"atac seq":  "ATAC-Seq",
+		"amplicon":  "AMPLICON",
+		"targeted":  "Targeted-Capture",
+		"bisulfite": "Bisulfite-Seq",
+		"hic":       "Hi-C",
+		"hi c":      "Hi-C",
+		"mirnaseq":  "miRNA-Seq",
+		"mirna seq": "miRNA-Seq",
 	}
 
 	lower := strings.ToLower(strings.TrimSpace(strategy))
@@ -271,4 +271,3 @@ func normalizeStrategy(strategy string) string {
 	}
 	return strategy
 }
-

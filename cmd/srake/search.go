@@ -64,20 +64,20 @@ Search modes:
 
 var (
 	// Filter flags
-	searchOrganism        string
-	searchPlatform        string
-	searchLibraryStrategy string
-	searchLibrarySource   string
+	searchOrganism         string
+	searchPlatform         string
+	searchLibraryStrategy  string
+	searchLibrarySource    string
 	searchLibrarySelection string
-	searchLibraryLayout   string
-	searchStudyType       string
-	searchInstrumentModel string
-	searchDateFrom        string
-	searchDateTo          string
-	searchSpotsMin        int64
-	searchSpotsMax        int64
-	searchBasesMin        int64
-	searchBasesMax        int64
+	searchLibraryLayout    string
+	searchStudyType        string
+	searchInstrumentModel  string
+	searchDateFrom         string
+	searchDateTo           string
+	searchSpotsMin         int64
+	searchSpotsMax         int64
+	searchBasesMin         int64
+	searchBasesMax         int64
 
 	// Output flags
 	searchLimit    int
@@ -88,16 +88,16 @@ var (
 	searchFields   string
 
 	// Search mode flags
-	searchFuzzy         bool
-	searchExact         bool
-	searchStats         bool
-	searchFacets        bool
-	searchHighlight     bool
-	searchAdvanced      bool
-	searchBoolOp        string
-	searchAggregateBy   string
-	searchCountOnly     bool
-	searchGroupBy       string
+	searchFuzzy       bool
+	searchExact       bool
+	searchStats       bool
+	searchFacets      bool
+	searchHighlight   bool
+	searchAdvanced    bool
+	searchBoolOp      string
+	searchAggregateBy string
+	searchCountOnly   bool
+	searchGroupBy     string
 
 	// Advanced flags
 	searchIndexPath string
@@ -105,18 +105,18 @@ var (
 	searchTimeout   int
 
 	// Search mode flags
-	searchMode        string
-	searchNoFTS       bool
-	searchNoVectors   bool
+	searchMode         string
+	searchNoFTS        bool
+	searchNoVectors    bool
 	searchVectorWeight float64
-	searchKNN         int
+	searchKNN          int
 
 	// Quality control flags
 	searchSimilarityThreshold float32
-	searchMinScore           float32
-	searchTopPercentile      int
-	searchShowConfidence     bool
-	searchHybridWeight       float32
+	searchMinScore            float32
+	searchTopPercentile       int
+	searchShowConfidence      bool
+	searchHybridWeight        float32
 )
 
 func init() {
@@ -531,9 +531,9 @@ func outputTable(result *search.BleveSearchResult, query string, elapsed time.Du
 // outputJSON outputs results as JSON
 func outputJSON(result *search.BleveSearchResult) error {
 	output := map[string]interface{}{
-		"total":   result.Total,
-		"hits":    result.Hits,
-		"facets":  result.Facets,
+		"total":     result.Total,
+		"hits":      result.Hits,
+		"facets":    result.Facets,
 		"max_score": result.MaxScore,
 	}
 
@@ -794,8 +794,8 @@ func formatAggregatedResults(results interface{}, query string, elapsed time.Dur
 	if searchCountOnly {
 		if searchFormat == "json" {
 			output := map[string]interface{}{
-				"query": query,
-				"count": bleveResult.Total,
+				"query":   query,
+				"count":   bleveResult.Total,
 				"time_ms": elapsed.Milliseconds(),
 			}
 			encoder := json.NewEncoder(os.Stdout)
@@ -826,10 +826,10 @@ func formatAggregatedResults(results interface{}, query string, elapsed time.Dur
 			// Output aggregation
 			if searchFormat == "json" {
 				output := map[string]interface{}{
-					"query": query,
+					"query":             query,
 					"aggregation_field": searchAggregateBy,
-					"values": aggregation,
-					"total": bleveResult.Total,
+					"values":            aggregation,
+					"total":             bleveResult.Total,
 				}
 				encoder := json.NewEncoder(os.Stdout)
 				encoder.SetIndent("", "  ")
@@ -852,10 +852,10 @@ func formatAggregatedResults(results interface{}, query string, elapsed time.Dur
 			// Use facet data
 			if searchFormat == "json" {
 				output := map[string]interface{}{
-					"query": query,
+					"query":             query,
 					"aggregation_field": searchAggregateBy,
-					"facet": facet,
-					"total": bleveResult.Total,
+					"facet":             facet,
+					"total":             bleveResult.Total,
 				}
 				encoder := json.NewEncoder(os.Stdout)
 				encoder.SetIndent("", "  ")

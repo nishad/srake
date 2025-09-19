@@ -224,23 +224,23 @@ func (s *Server) writeJSON(w http.ResponseWriter, status int, data interface{}) 
 
 func (s *Server) writeError(w http.ResponseWriter, status int, message string) {
 	s.writeJSON(w, status, map[string]interface{}{
-		"error":  true,
+		"error":   true,
 		"message": message,
-		"status": status,
+		"status":  status,
 	})
 }
 
 // handleRoot returns API information
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	info := map[string]interface{}{
-		"name":    "SRAKE API",
-		"version": "1.0.0",
+		"name":        "SRAKE API",
+		"version":     "1.0.0",
 		"description": "SRA Knowledgebase Engine API",
 		"endpoints": map[string]string{
-			"search":   "/api/v1/search",
-			"studies":  "/api/v1/studies",
-			"stats":    "/api/v1/stats",
-			"health":   "/api/v1/health",
+			"search":  "/api/v1/search",
+			"studies": "/api/v1/studies",
+			"stats":   "/api/v1/stats",
+			"health":  "/api/v1/health",
 		},
 	}
 	s.writeJSON(w, http.StatusOK, info)
@@ -251,7 +251,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	health := map[string]interface{}{
-		"status": "healthy",
+		"status":    "healthy",
 		"timestamp": time.Now().Format(time.RFC3339),
 	}
 

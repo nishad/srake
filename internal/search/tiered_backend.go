@@ -64,20 +64,20 @@ type TieredConfig struct {
 
 // StudySearchDoc represents an enriched study document with aggregated data
 type StudySearchDoc struct {
-	Type            string   `json:"type"`
-	StudyAccession  string   `json:"study_accession"`
-	StudyTitle      string   `json:"study_title"`
-	StudyAbstract   string   `json:"study_abstract"`
-	StudyType       string   `json:"study_type"`
-	Organism        string   `json:"organism"`
-	LibraryStrategies []string `json:"library_strategies"`
-	Platforms       []string `json:"platforms"`
-	ExperimentCount int      `json:"experiment_count"`
-	SampleCount     int      `json:"sample_count"`
-	RunCount        int      `json:"run_count"`
-	EarliestRun     string   `json:"earliest_run"`
-	LatestRun       string   `json:"latest_run"`
-	Embedding       []float32 `json:"embedding,omitempty"`
+	Type              string    `json:"type"`
+	StudyAccession    string    `json:"study_accession"`
+	StudyTitle        string    `json:"study_title"`
+	StudyAbstract     string    `json:"study_abstract"`
+	StudyType         string    `json:"study_type"`
+	Organism          string    `json:"organism"`
+	LibraryStrategies []string  `json:"library_strategies"`
+	Platforms         []string  `json:"platforms"`
+	ExperimentCount   int       `json:"experiment_count"`
+	SampleCount       int       `json:"sample_count"`
+	RunCount          int       `json:"run_count"`
+	EarliestRun       string    `json:"earliest_run"`
+	LatestRun         string    `json:"latest_run"`
+	Embedding         []float32 `json:"embedding,omitempty"`
 }
 
 // NewTieredSearchBackend creates a new tiered search backend

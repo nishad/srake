@@ -20,7 +20,7 @@ type SearchBackend interface {
 
 	// Management
 	Close() error
-	Flush() error  // Flush pending changes to disk
+	Flush() error // Flush pending changes to disk
 	IsEnabled() bool
 	GetStats() (*IndexStats, error)
 	Rebuild(ctx context.Context) error
@@ -36,16 +36,16 @@ type SearchOptions struct {
 	IncludeScore bool                   // Include relevance scores
 
 	// Vector search options
-	UseVectors      bool    // Enable vector search
-	VectorWeight    float64 // Weight for vector scoring (0-1)
-	KNN             int     // Number of nearest neighbors
-	MinScore        float64 // Minimum score threshold
+	UseVectors   bool    // Enable vector search
+	VectorWeight float64 // Weight for vector scoring (0-1)
+	KNN          int     // Number of nearest neighbors
+	MinScore     float64 // Minimum score threshold
 
 	// Quality control options
 	SimilarityThreshold float32 // Minimum cosine similarity for vector results (0-1)
-	TopPercentile      int     // Only return top N percentile of results
-	ShowConfidence     bool    // Include confidence levels in results
-	HybridWeight       float32 // Weight for hybrid scoring (0=text only, 1=vector only)
+	TopPercentile       int     // Only return top N percentile of results
+	ShowConfidence      bool    // Include confidence levels in results
+	HybridWeight        float32 // Weight for hybrid scoring (0=text only, 1=vector only)
 
 	// Performance options
 	TimeoutMs int  // Query timeout in milliseconds
@@ -54,12 +54,12 @@ type SearchOptions struct {
 
 // SearchResult represents search results
 type SearchResult struct {
-	Query       string         `json:"query"`
-	TotalHits   int            `json:"total_hits"`
-	Hits        []Hit          `json:"hits"`
-	Facets      map[string][]FacetValue `json:"facets,omitempty"`
-	TimeMs      int64          `json:"time_ms"`
-	Mode        string         `json:"mode"` // "text", "vector", "hybrid"
+	Query     string                  `json:"query"`
+	TotalHits int                     `json:"total_hits"`
+	Hits      []Hit                   `json:"hits"`
+	Facets    map[string][]FacetValue `json:"facets,omitempty"`
+	TimeMs    int64                   `json:"time_ms"`
+	Mode      string                  `json:"mode"` // "text", "vector", "hybrid"
 }
 
 // Hit represents a single search result
@@ -67,7 +67,7 @@ type Hit struct {
 	ID         string                 `json:"id"`
 	Score      float64                `json:"score,omitempty"`
 	Similarity float32                `json:"similarity,omitempty"` // Cosine similarity for vector search
-	Confidence string                 `json:"confidence,omitempty"`  // "high", "medium", "low"
+	Confidence string                 `json:"confidence,omitempty"` // "high", "medium", "low"
 	Fields     map[string]interface{} `json:"fields"`
 	Highlights map[string][]string    `json:"highlights,omitempty"`
 	Type       string                 `json:"type"` // study, experiment, sample, run
@@ -81,12 +81,12 @@ type FacetValue struct {
 
 // IndexStats contains index statistics
 type IndexStats struct {
-	DocumentCount uint64    `json:"document_count"`
-	IndexSize     int64     `json:"index_size"`
-	LastModified  time.Time `json:"last_modified"`
-	IsHealthy     bool      `json:"is_healthy"`
-	Backend       string    `json:"backend"`
-	VectorsEnabled bool     `json:"vectors_enabled"`
+	DocumentCount  uint64    `json:"document_count"`
+	IndexSize      int64     `json:"index_size"`
+	LastModified   time.Time `json:"last_modified"`
+	IsHealthy      bool      `json:"is_healthy"`
+	Backend        string    `json:"backend"`
+	VectorsEnabled bool      `json:"vectors_enabled"`
 }
 
 // Document represents a generic document for indexing

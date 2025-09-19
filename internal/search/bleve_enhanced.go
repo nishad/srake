@@ -63,7 +63,6 @@ func (b *BleveBackend) createIndexMapping() mapping.IndexMapping {
 	return indexMapping
 }
 
-
 // createDocumentMapping creates the document mapping with optional vector field
 func (b *BleveBackend) createDocumentMapping() *mapping.DocumentMapping {
 	docMapping := bleve.NewDocumentMapping()

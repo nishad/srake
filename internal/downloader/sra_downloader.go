@@ -335,7 +335,7 @@ func (d *SRADownloader) downloadWithAspera(ctx context.Context, url, outputPath 
 	cmd := exec.CommandContext(ctx, "ascp",
 		"-i", d.getAsperaKeyPath(),
 		"-k", "1", // Resume partial transfers
-		"-T", // No encryption
+		"-T",         // No encryption
 		"-l", "300m", // Target rate
 		asperaURL,
 		outputPath,

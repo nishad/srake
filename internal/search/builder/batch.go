@@ -73,11 +73,11 @@ func (b *IndexBuilder) ProcessDocumentType(ctx context.Context, docType string) 
 			Type:      UpdateTypeBatchComplete,
 			Timestamp: time.Now(),
 			Data: map[string]interface{}{
-				"type":       docType,
-				"batch":      batchNum,
-				"processed":  processed,
-				"offset":     offset,
-				"total":      typeProgress.ProcessedDocs,
+				"type":      docType,
+				"batch":     batchNum,
+				"processed": processed,
+				"offset":    offset,
+				"total":     typeProgress.ProcessedDocs,
 			},
 		}
 

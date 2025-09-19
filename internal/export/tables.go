@@ -110,19 +110,19 @@ func (e *Exporter) exportStudies() error {
 			s.title.String,
 			s.studyType.String,
 			s.abstract.String,
-			"", // broker_name
-			"", // center_name
-			"", // center_project_name
+			"",                // broker_name
+			"",                // center_name
+			"",                // center_project_name
 			s.abstract.String, // use abstract as description
-			"", // related_studies
-			"", // primary_study
+			"",                // related_studies
+			"",                // primary_study
 			sraLink,
 			"", // study_url_link
 			"", // xref_link
 			entrezLink,
-			"", // ddbj_link
-			"", // ena_link
-			"", // attributes
+			"",          // ddbj_link
+			"",          // ena_link
+			"",          // attributes
 			"SRA000001", // submission_accession
 			time.Now().Format("2006-01-02 15:04:05"),
 		)
@@ -435,12 +435,12 @@ func (e *Exporter) exportRuns() error {
 			"", // bamFile
 			"", // alias - not in simplified schema
 			r.accession,
-			"", // broker_name - not in simplified schema
-			"", // instrument_name
+			"",         // broker_name - not in simplified schema
+			"",         // instrument_name
 			runDateStr, // using published date as run_date
-			"", // run_file
-			"", // run_center - not in simplified schema
-			0,  // total_data_blocks
+			"",         // run_file
+			"",         // run_center - not in simplified schema
+			0,          // total_data_blocks
 			r.expAccession.String,
 			"", // experiment_name/alias - not in simplified schema
 			sraLink,

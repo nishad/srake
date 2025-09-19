@@ -18,6 +18,7 @@ import (
 )
 
 // Embed the tokenizer.json file
+//
 //go:embed assets/tokenizer.json
 var embeddedTokenizer []byte
 

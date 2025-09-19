@@ -109,14 +109,14 @@ func runExport(cmd *cobra.Command, args []string) error {
 
 	// Create exporter
 	cfg := &export.Config{
-		SourceDB:    srcDBPath,
-		OutputPath:  outputPath,
-		FTSVersion:  exportFTSVersion,
-		BatchSize:   exportBatchSize,
+		SourceDB:     srcDBPath,
+		OutputPath:   outputPath,
+		FTSVersion:   exportFTSVersion,
+		BatchSize:    exportBatchSize,
 		ShowProgress: exportProgress && !quiet,
-		Compress:    exportCompress,
-		Verbose:     verbose,
-		Debug:       debug,
+		Compress:     exportCompress,
+		Verbose:      verbose,
+		Debug:        debug,
 	}
 
 	exporter, err := export.NewExporter(cfg)

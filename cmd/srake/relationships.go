@@ -584,7 +584,7 @@ func outputRelationshipTable(data interface{}, dataType string, detailed bool) e
 		w.Flush()
 		fmt.Printf("\n%s\n", colorize(colorGray, fmt.Sprintf("Total: %d runs", len(runs))))
 
-	// Add similar cases for samples, experiments, studies...
+		// Add similar cases for samples, experiments, studies...
 	}
 
 	return nil

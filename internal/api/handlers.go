@@ -277,7 +277,7 @@ func (s *Server) handleGetStudyExperiments(w http.ResponseWriter, r *http.Reques
 	s.writeJSON(w, http.StatusOK, map[string]interface{}{
 		"study_accession": accession,
 		"experiments":     experiments,
-		"total":          len(experiments),
+		"total":           len(experiments),
 	})
 }
 
@@ -295,7 +295,7 @@ func (s *Server) handleGetStudySamples(w http.ResponseWriter, r *http.Request) {
 	s.writeJSON(w, http.StatusOK, map[string]interface{}{
 		"study_accession": accession,
 		"samples":         samples,
-		"total":          len(samples),
+		"total":           len(samples),
 	})
 }
 
@@ -320,9 +320,9 @@ func (s *Server) handleGetStudyRuns(w http.ResponseWriter, r *http.Request) {
 
 	s.writeJSON(w, http.StatusOK, map[string]interface{}{
 		"study_accession": accession,
-		"runs":           runs,
-		"total":          len(runs),
-		"limit":          limit,
+		"runs":            runs,
+		"total":           len(runs),
+		"limit":           limit,
 	})
 }
 

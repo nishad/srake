@@ -9,12 +9,12 @@ import (
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/nishad/srake/internal/cli"
 	"github.com/nishad/srake/internal/config"
 	"github.com/nishad/srake/internal/database"
 	"github.com/nishad/srake/internal/paths"
 	"github.com/nishad/srake/internal/search"
 	"github.com/nishad/srake/internal/search/builder"
-	"github.com/nishad/srake/internal/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -53,20 +53,20 @@ The default tiered backend provides optimized performance:
 }
 
 var (
-	indexBuild       bool
-	indexRebuild     bool
-	indexVerify      bool
-	indexStats       bool
-	indexBatchSize   int
-	indexWorkers     int
-	indexPath        string
-	indexBackend     string
-	indexEmbeddings  bool
-	embeddingModel   string
-	indexProgress    bool
-	indexResume      bool
-	progressFile     string
-	checkpointDir    string
+	indexBuild      bool
+	indexRebuild    bool
+	indexVerify     bool
+	indexStats      bool
+	indexBatchSize  int
+	indexWorkers    int
+	indexPath       string
+	indexBackend    string
+	indexEmbeddings bool
+	embeddingModel  string
+	indexProgress   bool
+	indexResume     bool
+	progressFile    string
+	checkpointDir   string
 )
 
 func init() {
@@ -532,4 +532,3 @@ func displayProgress(ctx context.Context, builder *builder.IndexBuilder) {
 		}
 	}
 }
-

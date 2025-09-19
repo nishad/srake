@@ -21,22 +21,22 @@ type SearchRequest struct {
 	Fields []string `json:"fields,omitempty"`
 
 	// Search options
-	Fuzzy       bool    `json:"fuzzy,omitempty"`
-	Exact       bool    `json:"exact,omitempty"`
-	UseVectors  bool    `json:"use_vectors,omitempty"`
-	SearchMode  string  `json:"search_mode,omitempty"`
+	Fuzzy      bool   `json:"fuzzy,omitempty"`
+	Exact      bool   `json:"exact,omitempty"`
+	UseVectors bool   `json:"use_vectors,omitempty"`
+	SearchMode string `json:"search_mode,omitempty"`
 
 	// Quality control
 	SimilarityThreshold float32 `json:"similarity_threshold,omitempty"`
-	MinScore           float32 `json:"min_score,omitempty"`
-	TopPercentile      int     `json:"top_percentile,omitempty"`
-	ShowConfidence     bool    `json:"show_confidence,omitempty"`
-	HybridWeight       float32 `json:"hybrid_weight,omitempty"`
+	MinScore            float32 `json:"min_score,omitempty"`
+	TopPercentile       int     `json:"top_percentile,omitempty"`
+	ShowConfidence      bool    `json:"show_confidence,omitempty"`
+	HybridWeight        float32 `json:"hybrid_weight,omitempty"`
 }
 
 // SearchResponse represents search results
 type SearchResponse struct {
-	Results      []*SearchResult         `json:"results"`
+	Results      []*SearchResult        `json:"results"`
 	TotalResults int                    `json:"total_results"`
 	Query        string                 `json:"query"`
 	TimeTaken    int64                  `json:"time_taken_ms"`
@@ -66,9 +66,9 @@ type SearchHit struct {
 	Experiment *database.Experiment `json:"experiment,omitempty"`
 	Sample     *database.Sample     `json:"sample,omitempty"`
 	Run        *database.Run        `json:"run,omitempty"`
-	Score      float64             `json:"score,omitempty"`
-	Confidence string              `json:"confidence,omitempty"`
-	Highlights map[string][]string `json:"highlights,omitempty"`
+	Score      float64              `json:"score,omitempty"`
+	Confidence string               `json:"confidence,omitempty"`
+	Highlights map[string][]string  `json:"highlights,omitempty"`
 }
 
 // MetadataRequest for fetching specific records
@@ -79,21 +79,21 @@ type MetadataRequest struct {
 
 // MetadataResponse for metadata queries
 type MetadataResponse struct {
-	Data       interface{}   `json:"data"`
-	Type       string        `json:"type"`
-	Retrieved  time.Time     `json:"retrieved"`
+	Data      interface{} `json:"data"`
+	Type      string      `json:"type"`
+	Retrieved time.Time   `json:"retrieved"`
 }
 
 // SearchStats for search service statistics
 type SearchStats struct {
-	TotalDocuments   int64       `json:"total_documents"`
-	IndexedDocuments int64       `json:"indexed_documents"`
-	IndexSize        int64       `json:"index_size"`
-	LastIndexed      time.Time   `json:"last_indexed,omitempty"`
-	LastUpdated      time.Time   `json:"last_updated"`
-	TopOrganisms     []StatItem  `json:"top_organisms,omitempty"`
-	TopPlatforms     []StatItem  `json:"top_platforms,omitempty"`
-	TopStrategies    []StatItem  `json:"top_strategies,omitempty"`
+	TotalDocuments   int64      `json:"total_documents"`
+	IndexedDocuments int64      `json:"indexed_documents"`
+	IndexSize        int64      `json:"index_size"`
+	LastIndexed      time.Time  `json:"last_indexed,omitempty"`
+	LastUpdated      time.Time  `json:"last_updated"`
+	TopOrganisms     []StatItem `json:"top_organisms,omitempty"`
+	TopPlatforms     []StatItem `json:"top_platforms,omitempty"`
+	TopStrategies    []StatItem `json:"top_strategies,omitempty"`
 }
 
 // StatItem for statistical data
@@ -104,16 +104,16 @@ type StatItem struct {
 
 // StatsResponse for database statistics (alias for API compatibility)
 type StatsResponse struct {
-	TotalStudies      int64              `json:"total_studies"`
-	TotalExperiments  int64              `json:"total_experiments"`
-	TotalSamples      int64              `json:"total_samples"`
-	TotalRuns         int64              `json:"total_runs"`
-	LastUpdate        time.Time          `json:"last_update"`
-	IndexSize         int64              `json:"index_size"`
-	DatabaseSize      int64              `json:"database_size"`
-	TopOrganisms      []CountItem        `json:"top_organisms,omitempty"`
-	TopPlatforms      []CountItem        `json:"top_platforms,omitempty"`
-	TopStrategies     []CountItem        `json:"top_strategies,omitempty"`
+	TotalStudies     int64       `json:"total_studies"`
+	TotalExperiments int64       `json:"total_experiments"`
+	TotalSamples     int64       `json:"total_samples"`
+	TotalRuns        int64       `json:"total_runs"`
+	LastUpdate       time.Time   `json:"last_update"`
+	IndexSize        int64       `json:"index_size"`
+	DatabaseSize     int64       `json:"database_size"`
+	TopOrganisms     []CountItem `json:"top_organisms,omitempty"`
+	TopPlatforms     []CountItem `json:"top_platforms,omitempty"`
+	TopStrategies    []CountItem `json:"top_strategies,omitempty"`
 }
 
 // CountItem for statistical counts
@@ -124,17 +124,17 @@ type CountItem struct {
 
 // ExportRequest for data export
 type ExportRequest struct {
-	Query     string            `json:"query"`
-	Filters   map[string]string `json:"filters,omitempty"`
-	Format    string            `json:"format"` // json, csv, tsv, xml
-	Limit     int               `json:"limit,omitempty"`
-	Fields    []string          `json:"fields,omitempty"`
+	Query   string            `json:"query"`
+	Filters map[string]string `json:"filters,omitempty"`
+	Format  string            `json:"format"` // json, csv, tsv, xml
+	Limit   int               `json:"limit,omitempty"`
+	Fields  []string          `json:"fields,omitempty"`
 }
 
 // IngestRequest for data ingestion
 type IngestRequest struct {
-	Source    string    `json:"source"` // file path or URL
-	BatchSize int       `json:"batch_size,omitempty"`
+	Source    string        `json:"source"` // file path or URL
+	BatchSize int           `json:"batch_size,omitempty"`
 	Filters   IngestFilters `json:"filters,omitempty"`
 }
 
@@ -158,9 +158,9 @@ type IngestResponse struct {
 
 // IndexRequest for index operations
 type IndexRequest struct {
-	Operation string `json:"operation"` // build, rebuild, update
-	BatchSize int    `json:"batch_size,omitempty"`
-	WithVectors bool `json:"with_vectors,omitempty"`
+	Operation   string `json:"operation"` // build, rebuild, update
+	BatchSize   int    `json:"batch_size,omitempty"`
+	WithVectors bool   `json:"with_vectors,omitempty"`
 }
 
 // IndexResponse for index operations
@@ -172,8 +172,8 @@ type IndexResponse struct {
 
 // ServiceError represents a service-level error
 type ServiceError struct {
-	Code    string `json:"code"`
-	Message string `json:"message"`
+	Code    string      `json:"code"`
+	Message string      `json:"message"`
 	Details interface{} `json:"details,omitempty"`
 }
 

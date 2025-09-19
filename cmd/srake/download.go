@@ -219,7 +219,6 @@ func expandAccessions(ctx context.Context, accessions []string) ([]string, error
 	return expanded, nil
 }
 
-
 // Helper functions to get runs from database
 func getRunsForStudy(studyAccession string) ([]string, error) {
 	// This would query the database for all runs in a study

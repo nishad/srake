@@ -13,7 +13,7 @@ var (
 	noColor bool
 	verbose bool
 	quiet   bool
-	debug   bool  // Debug flag
+	debug   bool // Debug flag
 
 	// Version information
 	version = "0.0.1-alpha"

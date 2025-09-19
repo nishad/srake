@@ -282,8 +282,8 @@ func (p *QueryParser) createFieldQuery(field, value string) query.Query {
 // Helper functions
 func containsBooleanOp(s string) bool {
 	return strings.Contains(s, " AND ") ||
-	       strings.Contains(s, " OR ") ||
-	       strings.Contains(s, "NOT ")
+		strings.Contains(s, " OR ") ||
+		strings.Contains(s, "NOT ")
 }
 
 func splitByOperator(s, op string) []string {

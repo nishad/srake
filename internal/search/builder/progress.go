@@ -22,13 +22,13 @@ type ProgressUpdate struct {
 type UpdateType string
 
 const (
-	UpdateTypeDocProcessed   UpdateType = "doc_processed"
-	UpdateTypeDocIndexed     UpdateType = "doc_indexed"
-	UpdateTypeDocFailed      UpdateType = "doc_failed"
-	UpdateTypeBatchComplete  UpdateType = "batch_complete"
-	UpdateTypeCheckpoint     UpdateType = "checkpoint"
-	UpdateTypeError          UpdateType = "error"
-	UpdateTypeStateChange    UpdateType = "state_change"
+	UpdateTypeDocProcessed  UpdateType = "doc_processed"
+	UpdateTypeDocIndexed    UpdateType = "doc_indexed"
+	UpdateTypeDocFailed     UpdateType = "doc_failed"
+	UpdateTypeBatchComplete UpdateType = "batch_complete"
+	UpdateTypeCheckpoint    UpdateType = "checkpoint"
+	UpdateTypeError         UpdateType = "error"
+	UpdateTypeStateChange   UpdateType = "state_change"
 )
 
 // Progress tracks the progress of index building
@@ -36,9 +36,9 @@ type Progress struct {
 	mu sync.RWMutex
 
 	// Version and metadata
-	Version   string    `json:"version"`
-	BuilderID string    `json:"builder_id"`
-	StartTime time.Time `json:"started_at"`
+	Version    string    `json:"version"`
+	BuilderID  string    `json:"builder_id"`
+	StartTime  time.Time `json:"started_at"`
 	LastUpdate time.Time `json:"updated_at"`
 
 	// Paths
@@ -50,18 +50,18 @@ type Progress struct {
 	Config BuildConfig `json:"config"`
 
 	// State
-	State              BuildState    `json:"state"`
-	CurrentBatch       int64         `json:"current_batch"`
-	TotalBatches       int64         `json:"total_batches"`
-	TotalDocuments     int64         `json:"total_documents"`
-	ProcessedDocs      int64         `json:"documents_processed"`
-	IndexedDocs        int64         `json:"documents_indexed"`
-	FailedDocs         int64         `json:"documents_failed"`
-	EmbeddingsGenerated int64        `json:"embeddings_generated"`
-	EmbeddingsFailed   int64         `json:"embeddings_failed"`
-	LastDocumentID     string        `json:"last_document_id"`
-	LastCheckpointDocs int64         `json:"last_checkpoint_docs"`
-	Error              *string       `json:"error,omitempty"`
+	State               BuildState `json:"state"`
+	CurrentBatch        int64      `json:"current_batch"`
+	TotalBatches        int64      `json:"total_batches"`
+	TotalDocuments      int64      `json:"total_documents"`
+	ProcessedDocs       int64      `json:"documents_processed"`
+	IndexedDocs         int64      `json:"documents_indexed"`
+	FailedDocs          int64      `json:"documents_failed"`
+	EmbeddingsGenerated int64      `json:"embeddings_generated"`
+	EmbeddingsFailed    int64      `json:"embeddings_failed"`
+	LastDocumentID      string     `json:"last_document_id"`
+	LastCheckpointDocs  int64      `json:"last_checkpoint_docs"`
+	Error               *string    `json:"error,omitempty"`
 
 	// Document type progress
 	TypeProgress map[string]*TypeProgress `json:"type_progress"`
@@ -85,15 +85,15 @@ type BuildConfig struct {
 
 // TypeProgress tracks progress for a specific document type
 type TypeProgress struct {
-	Type          string    `json:"type"`
-	TotalDocs     int64     `json:"total_docs"`
-	ProcessedDocs int64     `json:"processed_docs"`
-	IndexedDocs   int64     `json:"indexed_docs"`
-	FailedDocs    int64     `json:"failed_docs"`
-	StartTime     time.Time `json:"start_time"`
+	Type          string     `json:"type"`
+	TotalDocs     int64      `json:"total_docs"`
+	ProcessedDocs int64      `json:"processed_docs"`
+	IndexedDocs   int64      `json:"indexed_docs"`
+	FailedDocs    int64      `json:"failed_docs"`
+	StartTime     time.Time  `json:"start_time"`
 	EndTime       *time.Time `json:"end_time,omitempty"`
-	Completed     bool      `json:"completed"`
-	LastOffset    int64     `json:"last_offset"`
+	Completed     bool       `json:"completed"`
+	LastOffset    int64      `json:"last_offset"`
 }
 
 // Checkpoint represents a resumable checkpoint
@@ -110,13 +110,13 @@ type Checkpoint struct {
 
 // BuildMetrics contains performance metrics
 type BuildMetrics struct {
-	AvgDocsPerSecond   float64 `json:"avg_docs_per_second"`
-	AvgBatchTimeMs     int64   `json:"avg_batch_time_ms"`
+	AvgDocsPerSecond    float64 `json:"avg_docs_per_second"`
+	AvgBatchTimeMs      int64   `json:"avg_batch_time_ms"`
 	TotalIndexSizeBytes int64   `json:"total_index_size_bytes"`
-	MemoryPeakMB       int64   `json:"memory_peak_mb"`
-	EmbeddingRate      float64 `json:"embedding_rate"`
-	AvgEmbeddingTimeMs int64   `json:"avg_embedding_time_ms"`
-	TotalDuration      string  `json:"total_duration,omitempty"`
+	MemoryPeakMB        int64   `json:"memory_peak_mb"`
+	EmbeddingRate       float64 `json:"embedding_rate"`
+	AvgEmbeddingTimeMs  int64   `json:"avg_embedding_time_ms"`
+	TotalDuration       string  `json:"total_duration,omitempty"`
 }
 
 // NewProgress creates a new progress tracker

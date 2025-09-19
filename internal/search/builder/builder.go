@@ -16,27 +16,27 @@ import (
 type BuildState string
 
 const (
-	StateIdle       BuildState = "idle"
-	StateRunning    BuildState = "running"
-	StatePaused     BuildState = "paused"
-	StateCompleted  BuildState = "completed"
-	StateFailed     BuildState = "failed"
-	StateResuming   BuildState = "resuming"
+	StateIdle      BuildState = "idle"
+	StateRunning   BuildState = "running"
+	StatePaused    BuildState = "paused"
+	StateCompleted BuildState = "completed"
+	StateFailed    BuildState = "failed"
+	StateResuming  BuildState = "resuming"
 )
 
 // BuildOptions configures the index building process
 type BuildOptions struct {
-	BatchSize          int           // Number of documents per batch
-	CheckpointInterval int           // Documents between checkpoints
-	MaxMemoryMB        int           // Maximum memory usage in MB
-	NumWorkers         int           // Number of parallel workers
-	WithEmbeddings     bool          // Generate embeddings during indexing
-	EmbeddingModel     string        // Model for embeddings
-	ProgressFile       string        // Path to progress file
-	CheckpointDir      string        // Directory for checkpoints
-	Resume             bool          // Resume from checkpoint
-	Verbose            bool          // Verbose logging
-	DryRun             bool          // Simulate without actual indexing
+	BatchSize          int    // Number of documents per batch
+	CheckpointInterval int    // Documents between checkpoints
+	MaxMemoryMB        int    // Maximum memory usage in MB
+	NumWorkers         int    // Number of parallel workers
+	WithEmbeddings     bool   // Generate embeddings during indexing
+	EmbeddingModel     string // Model for embeddings
+	ProgressFile       string // Path to progress file
+	CheckpointDir      string // Directory for checkpoints
+	Resume             bool   // Resume from checkpoint
+	Verbose            bool   // Verbose logging
+	DryRun             bool   // Simulate without actual indexing
 }
 
 // IndexBuilder manages the index building process with progress tracking

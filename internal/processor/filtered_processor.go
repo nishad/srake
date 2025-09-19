@@ -446,7 +446,6 @@ func extractPlatform(exp *parser.Experiment) string {
 	return ""
 }
 
-
 func getStudyType(study *parser.Study) string {
 	if study.Descriptor.StudyType != nil {
 		if study.Descriptor.StudyType.ExistingStudyType != "" {
