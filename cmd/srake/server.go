@@ -2,16 +2,14 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/nishad/srake/internal/database"
+	"github.com/nishad/srake/internal/api"
+	"github.com/nishad/srake/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -20,195 +18,115 @@ var serverCmd = &cobra.Command{
 	Short: "Start the API server",
 	Long: `Start the srake API server for programmatic access to SRA metadata.
 
-The server provides RESTful endpoints for searching and retrieving
-SRA metadata from the local database.`,
+The server provides:
+- RESTful API endpoints for searching and retrieving metadata
+- MCP (Model Context Protocol) support for AI assistants
+- Export functionality in multiple formats
+- CORS support for web applications`,
 	Example: `  srake server
   srake server --port 3000
-  srake server --dev --log-level debug`,
+  srake server --enable-cors --enable-mcp`,
 	RunE: runServer,
 }
 
 var (
-	serverPort     int
-	serverHost     string
-	serverDBPath   string
-	serverLogLevel string
-	serverDev      bool
+	serverPort       int
+	serverHost       string
+	serverDBPath     string
+	serverIndexPath  string
+	serverEnableCORS bool
+	serverEnableMCP  bool
 )
 
 func init() {
 	// Server command flags
 	serverCmd.Flags().IntVarP(&serverPort, "port", "p", 8080, "Port to listen on")
-	serverCmd.Flags().StringVar(&serverHost, "host", "localhost", "Host to bind to")
-	serverCmd.Flags().StringVar(&serverDBPath, "db", "./data/SRAmetadb.sqlite", "Database path")
-	serverCmd.Flags().StringVar(&serverLogLevel, "log-level", "info", "Log level (debug|info|warn|error)")
-	serverCmd.Flags().BoolVar(&serverDev, "dev", false, "Enable development mode")
+	serverCmd.Flags().StringVar(&serverHost, "host", "0.0.0.0", "Host to bind to")
+	serverCmd.Flags().StringVar(&serverDBPath, "db", "", "Database path (default: uses SRAKE_DB_PATH)")
+	serverCmd.Flags().StringVar(&serverIndexPath, "index", "", "Index path (default: uses SRAKE_INDEX_PATH)")
+	serverCmd.Flags().BoolVar(&serverEnableCORS, "enable-cors", true, "Enable CORS for web access")
+	serverCmd.Flags().BoolVar(&serverEnableMCP, "enable-mcp", true, "Enable MCP (Model Context Protocol) endpoints")
 }
 
 func runServer(cmd *cobra.Command, args []string) error {
-	// Initialize database
-	db, err := database.Initialize(serverDBPath)
-	if err != nil {
-		printError("Failed to initialize database: %v", err)
-		return err
+	// Get database path
+	if serverDBPath == "" {
+		serverDBPath = os.Getenv("SRAKE_DB_PATH")
+		if serverDBPath == "" {
+			serverDBPath = paths.GetDatabasePath()
+		}
 	}
-	defer db.Close()
 
-	// Setup interrupt handling
+	// Get index path
+	if serverIndexPath == "" {
+		serverIndexPath = os.Getenv("SRAKE_INDEX_PATH")
+		if serverIndexPath == "" {
+			serverIndexPath = paths.GetIndexPath()
+		}
+	}
+
+	// Validate database exists
+	if _, err := os.Stat(serverDBPath); os.IsNotExist(err) {
+		return fmt.Errorf("database not found: %s", serverDBPath)
+	}
+
+	// Create server configuration
+	config := &api.Config{
+		Host:         serverHost,
+		Port:         serverPort,
+		DatabasePath: serverDBPath,
+		IndexPath:    serverIndexPath,
+		EnableCORS:   serverEnableCORS,
+		EnableMCP:    serverEnableMCP,
+	}
+
+	// Initialize API server
+	server, err := api.NewServer(config)
+	if err != nil {
+		return fmt.Errorf("failed to initialize server: %w", err)
+	}
+
+	// Setup graceful shutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	router := mux.NewRouter()
-
-	// Health check endpoint
-	router.HandleFunc("/api/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		// Check database connection
-		dbStatus := "healthy"
-		if err := db.Ping(); err != nil {
-			dbStatus = "unhealthy"
-		}
-
-		json.NewEncoder(w).Encode(map[string]string{
-			"status":   "healthy",
-			"version":  version,
-			"database": dbStatus,
-		})
-	})
-
-	// Search endpoint
-	router.HandleFunc("/api/search", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		query := r.URL.Query().Get("q")
-		organism := r.URL.Query().Get("organism")
-		strategy := r.URL.Query().Get("library_strategy")
-		limitStr := r.URL.Query().Get("limit")
-
-		limit := 100
-		if limitStr != "" {
-			fmt.Sscanf(limitStr, "%d", &limit)
-		}
-
-		var results interface{}
-		var err error
-
-		if query != "" {
-			// Full-text search
-			results, err = db.FullTextSearch(query)
-		} else if organism != "" {
-			// Search by organism
-			results, err = db.SearchByOrganism(organism, limit)
-		} else if strategy != "" {
-			// Search by library strategy
-			results, err = db.SearchByLibraryStrategy(strategy, limit)
-		} else {
-			http.Error(w, "No search parameters provided", http.StatusBadRequest)
-			return
-		}
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		response := map[string]interface{}{
-			"query":   query + organism + strategy,
-			"results": results,
-			"limit":   limit,
-		}
-		json.NewEncoder(w).Encode(response)
-	})
-
-	// Get specific accession endpoints
-	router.HandleFunc("/api/experiment/{accession}", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		exp, err := db.GetExperiment(vars["accession"])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		json.NewEncoder(w).Encode(exp)
-	})
-
-	router.HandleFunc("/api/run/{accession}", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		run, err := db.GetRun(vars["accession"])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		json.NewEncoder(w).Encode(run)
-	})
-
-	router.HandleFunc("/api/sample/{accession}", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		sample, err := db.GetSample(vars["accession"])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		json.NewEncoder(w).Encode(sample)
-	})
-
-	router.HandleFunc("/api/study/{accession}", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		vars := mux.Vars(r)
-		study, err := db.GetStudy(vars["accession"])
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusNotFound)
-			return
-		}
-		json.NewEncoder(w).Encode(study)
-	})
-
-	// Statistics endpoint
-	router.HandleFunc("/api/stats", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		stats, err := db.GetStats()
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		json.NewEncoder(w).Encode(stats)
-	})
-
-	// Setup server
-	srv := &http.Server{
-		Addr:         fmt.Sprintf("%s:%d", serverHost, serverPort),
-		Handler:      router,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
-	}
-
 	// Start server in goroutine
+	serverErr := make(chan error, 1)
 	go func() {
-		printInfo("Starting server on %s:%d", serverHost, serverPort)
-		if serverDev {
-			printInfo("Development mode enabled")
-		}
-		printSuccess("Server ready at http://%s:%d", serverHost, serverPort)
+		printInfo("Starting API server on %s:%d", serverHost, serverPort)
+		printInfo("Database: %s", serverDBPath)
+		printInfo("Index: %s", serverIndexPath)
 
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			printError("Server failed: %v", err)
-			os.Exit(1)
+		if serverEnableCORS {
+			printInfo("CORS enabled for web access")
+		}
+		if serverEnableMCP {
+			printInfo("MCP endpoints enabled at /mcp")
+		}
+
+		printSuccess("\nServer ready at http://%s:%d", serverHost, serverPort)
+		printInfo("API documentation at http://%s:%d/", serverHost, serverPort)
+
+		if err := server.Start(); err != nil {
+			serverErr <- err
 		}
 	}()
 
-	// Wait for interrupt signal
-	<-sigChan
-	printInfo("\nShutting down server...")
+	// Wait for interrupt or server error
+	select {
+	case <-sigChan:
+		printInfo("\nShutting down server...")
+	case err := <-serverErr:
+		log.Printf("Server error: %v", err)
+		return err
+	}
 
-	// Graceful shutdown with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// Graceful shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 10)
 	defer cancel()
 
-	if err := srv.Shutdown(ctx); err != nil {
-		return fmt.Errorf("server shutdown failed: %v", err)
+	if err := server.Shutdown(ctx); err != nil {
+		return fmt.Errorf("server shutdown failed: %w", err)
 	}
 
 	printSuccess("Server stopped gracefully")

@@ -50,7 +50,7 @@ func (m *MetadataService) GetMetadata(ctx context.Context, req *MetadataRequest)
 
 // GetStudy retrieves a study by accession
 func (m *MetadataService) GetStudy(ctx context.Context, accession string) (*database.Study, error) {
-	query := `SELECT * FROM studies WHERE accession = ?`
+	query := `SELECT * FROM studies WHERE study_accession = ?`
 
 	var study database.Study
 	row := m.db.QueryRow(query, accession)
@@ -63,7 +63,7 @@ func (m *MetadataService) GetStudy(ctx context.Context, accession string) (*data
 
 // GetStudies retrieves multiple studies with pagination
 func (m *MetadataService) GetStudies(ctx context.Context, limit, offset int) ([]*database.Study, error) {
-	query := `SELECT * FROM studies ORDER BY accession LIMIT ? OFFSET ?`
+	query := `SELECT * FROM studies ORDER BY study_accession LIMIT ? OFFSET ?`
 
 	rows, err := m.db.Query(query, limit, offset)
 	if err != nil {
@@ -85,7 +85,7 @@ func (m *MetadataService) GetStudies(ctx context.Context, limit, offset int) ([]
 
 // GetExperiment retrieves an experiment by accession
 func (m *MetadataService) GetExperiment(ctx context.Context, accession string) (*database.Experiment, error) {
-	query := `SELECT * FROM experiments WHERE accession = ?`
+	query := `SELECT * FROM experiments WHERE experiment_accession = ?`
 
 	var exp database.Experiment
 	row := m.db.QueryRow(query, accession)
@@ -98,7 +98,7 @@ func (m *MetadataService) GetExperiment(ctx context.Context, accession string) (
 
 // GetExperimentsByStudy retrieves all experiments for a study
 func (m *MetadataService) GetExperimentsByStudy(ctx context.Context, studyAccession string) ([]*database.Experiment, error) {
-	query := `SELECT * FROM experiments WHERE study_accession = ? ORDER BY accession`
+	query := `SELECT * FROM experiments WHERE study_accession = ? ORDER BY experiment_accession`
 
 	rows, err := m.db.Query(query, studyAccession)
 	if err != nil {
@@ -120,7 +120,7 @@ func (m *MetadataService) GetExperimentsByStudy(ctx context.Context, studyAccess
 
 // GetSample retrieves a sample by accession
 func (m *MetadataService) GetSample(ctx context.Context, accession string) (*database.Sample, error) {
-	query := `SELECT * FROM samples WHERE accession = ?`
+	query := `SELECT * FROM samples WHERE sample_accession = ?`
 
 	var sample database.Sample
 	row := m.db.QueryRow(query, accession)
@@ -135,10 +135,10 @@ func (m *MetadataService) GetSample(ctx context.Context, accession string) (*dat
 func (m *MetadataService) GetSamplesByStudy(ctx context.Context, studyAccession string) ([]*database.Sample, error) {
 	query := `
 		SELECT s.* FROM samples s
-		JOIN experiment_samples es ON s.accession = es.sample_accession
-		JOIN experiments e ON es.experiment_accession = e.accession
+		JOIN experiment_samples es ON s.sample_accession = es.sample_accession
+		JOIN experiments e ON es.experiment_accession = e.experiment_accession
 		WHERE e.study_accession = ?
-		ORDER BY s.accession
+		ORDER BY s.sample_accession
 	`
 
 	rows, err := m.db.Query(query, studyAccession)
@@ -156,9 +156,9 @@ func (m *MetadataService) GetSamplesByStudy(ctx context.Context, studyAccession 
 			continue
 		}
 		// Deduplicate samples
-		if !seenSamples[sample.Accession] {
+		if !seenSamples[sample.SampleAccession] {
 			samples = append(samples, &sample)
-			seenSamples[sample.Accession] = true
+			seenSamples[sample.SampleAccession] = true
 		}
 	}
 
@@ -167,7 +167,7 @@ func (m *MetadataService) GetSamplesByStudy(ctx context.Context, studyAccession 
 
 // GetRun retrieves a run by accession
 func (m *MetadataService) GetRun(ctx context.Context, accession string) (*database.Run, error) {
-	query := `SELECT * FROM runs WHERE accession = ?`
+	query := `SELECT * FROM runs WHERE run_accession = ?`
 
 	var run database.Run
 	row := m.db.QueryRow(query, accession)
@@ -180,7 +180,7 @@ func (m *MetadataService) GetRun(ctx context.Context, accession string) (*databa
 
 // GetRunsByExperiment retrieves all runs for an experiment
 func (m *MetadataService) GetRunsByExperiment(ctx context.Context, experimentAccession string) ([]*database.Run, error) {
-	query := `SELECT * FROM runs WHERE experiment_accession = ? ORDER BY accession`
+	query := `SELECT * FROM runs WHERE experiment_accession = ? ORDER BY run_accession`
 
 	rows, err := m.db.Query(query, experimentAccession)
 	if err != nil {

@@ -36,13 +36,31 @@ type SearchRequest struct {
 
 // SearchResponse represents search results
 type SearchResponse struct {
-	Results    []SearchHit    `json:"results"`
-	Total      int           `json:"total"`
-	Took       time.Duration `json:"took"`
-	Facets     map[string]interface{} `json:"facets,omitempty"`
+	Results      []*SearchResult         `json:"results"`
+	TotalResults int                    `json:"total_results"`
+	Query        string                 `json:"query"`
+	TimeTaken    int64                  `json:"time_taken_ms"`
+	SearchMode   string                 `json:"search_mode,omitempty"`
+	Facets       map[string]interface{} `json:"facets,omitempty"`
 }
 
-// SearchHit represents a single search result
+// SearchResult represents a single search result
+type SearchResult struct {
+	ID              string                 `json:"id"`
+	Type            string                 `json:"type"`
+	Title           string                 `json:"title,omitempty"`
+	Description     string                 `json:"description,omitempty"`
+	Organism        string                 `json:"organism,omitempty"`
+	Platform        string                 `json:"platform,omitempty"`
+	LibraryStrategy string                 `json:"library_strategy,omitempty"`
+	Score           float32                `json:"score,omitempty"`
+	Similarity      float32                `json:"similarity,omitempty"`
+	Confidence      string                 `json:"confidence,omitempty"`
+	Fields          map[string]interface{} `json:"fields,omitempty"`
+	Highlights      map[string][]string    `json:"highlights,omitempty"`
+}
+
+// SearchHit represents a single search result with full entities (deprecated, use SearchResult)
 type SearchHit struct {
 	Study      *database.Study      `json:"study,omitempty"`
 	Experiment *database.Experiment `json:"experiment,omitempty"`
@@ -66,7 +84,25 @@ type MetadataResponse struct {
 	Retrieved  time.Time     `json:"retrieved"`
 }
 
-// StatsResponse for database statistics
+// SearchStats for search service statistics
+type SearchStats struct {
+	TotalDocuments   int64       `json:"total_documents"`
+	IndexedDocuments int64       `json:"indexed_documents"`
+	IndexSize        int64       `json:"index_size"`
+	LastIndexed      time.Time   `json:"last_indexed,omitempty"`
+	LastUpdated      time.Time   `json:"last_updated"`
+	TopOrganisms     []StatItem  `json:"top_organisms,omitempty"`
+	TopPlatforms     []StatItem  `json:"top_platforms,omitempty"`
+	TopStrategies    []StatItem  `json:"top_strategies,omitempty"`
+}
+
+// StatItem for statistical data
+type StatItem struct {
+	Name  string `json:"name"`
+	Count int64  `json:"count"`
+}
+
+// StatsResponse for database statistics (alias for API compatibility)
 type StatsResponse struct {
 	TotalStudies      int64              `json:"total_studies"`
 	TotalExperiments  int64              `json:"total_experiments"`

@@ -5,376 +5,236 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/nishad/srake/internal/config"
 	"github.com/nishad/srake/internal/database"
 	"github.com/nishad/srake/internal/search"
-	"github.com/nishad/srake/internal/ui"
 )
 
-// SearchService handles all search-related operations
+// SearchService handles search operations
 type SearchService struct {
 	db         *database.DB
-	index      search.Backend
-	indexPath  string
+	manager    *search.Manager
 	useVectors bool
 }
 
-// NewSearchService creates a new search service instance
+// NewSearchService creates a new search service
 func NewSearchService(db *database.DB, indexPath string) (*SearchService, error) {
-	// Initialize search backend
-	backend, err := search.NewBleveBackend(indexPath, db)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize search backend: %w", err)
+	// Create config for search
+	cfg := &config.Config{
+		Search: config.SearchConfig{
+			IndexPath: indexPath,
+			Enabled:   true,
+			UseCache:  true,
+			CacheTTL:  300,
+		},
 	}
 
-	// Check if vectors are enabled
-	useVectors := backend.HasVectorSupport()
+	// Create search manager
+	manager, err := search.NewManager(cfg, db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize search manager: %w", err)
+	}
 
 	return &SearchService{
 		db:         db,
-		index:      backend,
-		indexPath:  indexPath,
-		useVectors: useVectors,
+		manager:    manager,
+		useVectors: false, // Will be enabled when vector support is added
 	}, nil
 }
 
-// Search performs a search with the given request parameters
+// Search performs a search using the search manager
 func (s *SearchService) Search(ctx context.Context, req *SearchRequest) (*SearchResponse, error) {
-	start := time.Now()
+	// Validate request
+	if req.Limit <= 0 {
+		req.Limit = 20
+	}
+	if req.Limit > 1000 {
+		req.Limit = 1000
+	}
 
 	// Convert request to search options
 	opts := search.SearchOptions{
-		Query:               req.Query,
 		Limit:               req.Limit,
 		Offset:              req.Offset,
 		SimilarityThreshold: req.SimilarityThreshold,
-		MinScore:           req.MinScore,
-		TopPercentile:      req.TopPercentile,
-		ShowConfidence:     req.ShowConfidence,
-		HybridWeight:       req.HybridWeight,
-		UseVectors:         req.UseVectors && s.useVectors,
-		Fuzzy:              req.Fuzzy,
-		Exact:              req.Exact,
+		MinScore:            float64(req.MinScore),
+		TopPercentile:       req.TopPercentile,
+		ShowConfidence:      req.ShowConfidence,
+		UseVectors:          req.UseVectors && s.useVectors,
 	}
 
-	// Apply filters
-	if req.Filters != nil {
+	// Convert filters
+	if len(req.Filters) > 0 {
 		opts.Filters = make(map[string]interface{})
 		for k, v := range req.Filters {
 			opts.Filters[k] = v
 		}
 	}
 
-	// Apply field selections
-	if len(req.Fields) > 0 {
-		opts.Fields = req.Fields
-	}
-
-	// Determine search mode
-	var results []search.SearchResult
-	var err error
-
-	switch req.SearchMode {
-	case "database", "db":
-		// Direct database search without index
-		results, err = s.searchDatabase(ctx, opts)
-	case "fts", "fulltext":
-		// Full-text search only
-		opts.UseVectors = false
-		results, err = s.index.Search(opts)
-	case "vector", "semantic":
-		// Vector search only
-		if !s.useVectors {
-			return nil, fmt.Errorf("vector search not available - index was built without embeddings")
-		}
-		opts.UseVectors = true
-		results, err = s.index.Search(opts)
-	case "hybrid", "":
-		// Default hybrid search
-		results, err = s.index.Search(opts)
-	default:
-		return nil, fmt.Errorf("invalid search mode: %s", req.SearchMode)
-	}
-
+	// Perform search
+	result, err := s.manager.Search(req.Query, opts)
 	if err != nil {
 		return nil, fmt.Errorf("search failed: %w", err)
 	}
 
-	// Convert results to response format
+	// Convert search results to response
 	response := &SearchResponse{
-		Results: make([]SearchHit, 0, len(results)),
-		Total:   len(results),
-		Took:    time.Since(start),
+		Results:       make([]*SearchResult, 0, len(result.Hits)),
+		TotalResults:  result.TotalHits,
+		Query:         req.Query,
+		TimeTaken:     result.TimeMs,
+		SearchMode:    result.Mode,
 	}
 
-	for _, res := range results {
-		hit := SearchHit{
-			Score:      res.Score,
-			Highlights: res.Highlights,
+	// Convert hits to search results
+	for _, hit := range result.Hits {
+		sr := &SearchResult{
+			ID:         hit.ID,
+			Type:       hit.Type,
+			Score:      float32(hit.Score),
+			Similarity: hit.Similarity,
+			Confidence: hit.Confidence,
+			Fields:     hit.Fields,
+			Highlights: hit.Highlights,
 		}
 
-		// Add confidence if requested
-		if req.ShowConfidence && res.Similarity > 0 {
-			hit.Confidence = s.calculateConfidence(res.Score, res.Similarity)
+		// Extract key fields
+		if title, ok := hit.Fields["title"].(string); ok {
+			sr.Title = title
+		} else if title, ok := hit.Fields["study_title"].(string); ok {
+			sr.Title = title
+		}
+		if desc, ok := hit.Fields["description"].(string); ok {
+			sr.Description = desc
+		} else if desc, ok := hit.Fields["study_abstract"].(string); ok {
+			sr.Description = desc
+		}
+		if org, ok := hit.Fields["organism"].(string); ok {
+			sr.Organism = org
+		}
+		if platform, ok := hit.Fields["platform"].(string); ok {
+			sr.Platform = platform
+		}
+		if strategy, ok := hit.Fields["library_strategy"].(string); ok {
+			sr.LibraryStrategy = strategy
 		}
 
-		// Populate the appropriate entity type
-		switch res.Type {
-		case "study":
-			if study, ok := res.Document.(*database.Study); ok {
-				hit.Study = study
-			}
-		case "experiment":
-			if exp, ok := res.Document.(*database.Experiment); ok {
-				hit.Experiment = exp
-			}
-		case "sample":
-			if sample, ok := res.Document.(*database.Sample); ok {
-				hit.Sample = sample
-			}
-		case "run":
-			if run, ok := res.Document.(*database.Run); ok {
-				hit.Run = run
-			}
-		}
-
-		response.Results = append(response.Results, hit)
+		response.Results = append(response.Results, sr)
 	}
 
 	return response, nil
 }
 
-// searchDatabase performs direct database search without index
-func (s *SearchService) searchDatabase(ctx context.Context, opts search.SearchOptions) ([]search.SearchResult, error) {
-	// Build SQL query based on filters
-	query := "SELECT * FROM studies WHERE 1=1"
-	args := []interface{}{}
-
-	if opts.Query != "" {
-		query += " AND (title LIKE ? OR abstract LIKE ? OR alias LIKE ?)"
-		searchTerm := "%" + opts.Query + "%"
-		args = append(args, searchTerm, searchTerm, searchTerm)
+// BuildIndex builds or rebuilds the search index
+func (s *SearchService) BuildIndex(ctx context.Context, batchSize int, withEmbeddings bool) error {
+	// Build index using manager
+	if s.manager != nil {
+		return fmt.Errorf("index building should be done through CLI commands")
 	}
-
-	// Add filters
-	if filters, ok := opts.Filters["organism"].(string); ok && filters != "" {
-		query += " AND organism LIKE ?"
-		args = append(args, "%"+filters+"%")
-	}
-
-	if filters, ok := opts.Filters["library_strategy"].(string); ok && filters != "" {
-		query += " AND accession IN (SELECT study_accession FROM experiments WHERE library_strategy = ?)"
-		args = append(args, filters)
-	}
-
-	// Add limit and offset
-	if opts.Limit > 0 {
-		query += fmt.Sprintf(" LIMIT %d", opts.Limit)
-		if opts.Offset > 0 {
-			query += fmt.Sprintf(" OFFSET %d", opts.Offset)
-		}
-	}
-
-	// Execute query
-	rows, err := s.db.Query(query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var results []search.SearchResult
-	for rows.Next() {
-		var study database.Study
-		if err := s.db.ScanStudy(rows, &study); err != nil {
-			continue
-		}
-
-		results = append(results, search.SearchResult{
-			Type:     "study",
-			Document: &study,
-			Score:    1.0, // Default score for database results
-		})
-	}
-
-	return results, nil
+	return nil
 }
 
-// calculateConfidence determines confidence level based on scores
-func (s *SearchService) calculateConfidence(score float64, similarity float32) string {
-	// High confidence: high similarity or high text score
-	if similarity > 0.8 || score > 10.0 {
-		return "high"
-	}
-	// Medium confidence
-	if similarity > 0.5 || score > 5.0 {
-		return "medium"
-	}
-	// Low confidence
-	return "low"
-}
-
-// GetStats returns database and index statistics
-func (s *SearchService) GetStats(ctx context.Context) (*StatsResponse, error) {
-	stats := &StatsResponse{
-		LastUpdate: time.Now(),
+// GetStats retrieves search statistics
+func (s *SearchService) GetStats(ctx context.Context) (*SearchStats, error) {
+	if s.manager == nil {
+		return nil, fmt.Errorf("search manager not initialized")
 	}
 
-	// Get database counts
-	var err error
-	stats.TotalStudies, err = s.db.CountTable("studies")
-	if err != nil {
-		return nil, fmt.Errorf("failed to count studies: %w", err)
+	stats := &SearchStats{
+		TotalDocuments: 0,
+		IndexSize:      0,
+		LastUpdated:    time.Now(),
 	}
 
-	stats.TotalExperiments, err = s.db.CountTable("experiments")
-	if err != nil {
-		return nil, fmt.Errorf("failed to count experiments: %w", err)
-	}
+	// Get database statistics
+	studyCount, _ := s.db.CountTable("studies")
+	experimentCount, _ := s.db.CountTable("experiments")
+	sampleCount, _ := s.db.CountTable("samples")
+	runCount, _ := s.db.CountTable("runs")
 
-	stats.TotalSamples, err = s.db.CountTable("samples")
-	if err != nil {
-		return nil, fmt.Errorf("failed to count samples: %w", err)
-	}
-
-	stats.TotalRuns, err = s.db.CountTable("runs")
-	if err != nil {
-		return nil, fmt.Errorf("failed to count runs: %w", err)
-	}
-
-	// Get database size
-	if dbInfo, err := s.db.GetInfo(); err == nil {
-		stats.DatabaseSize = dbInfo.Size
-	}
-
-	// Get index stats if available
-	if indexStats, err := s.index.Stats(); err == nil {
-		stats.IndexSize = indexStats.DocumentCount
-	}
+	stats.TotalDocuments = studyCount + experimentCount + sampleCount + runCount
 
 	// Get top organisms
-	topOrganisms, err := s.getTopItems("SELECT organism, COUNT(*) as cnt FROM studies GROUP BY organism ORDER BY cnt DESC LIMIT 10")
+	rows, err := s.db.Query(`
+		SELECT organism, COUNT(*) as count
+		FROM studies
+		WHERE organism IS NOT NULL AND organism != ''
+		GROUP BY organism
+		ORDER BY count DESC
+		LIMIT 10
+	`)
 	if err == nil {
-		stats.TopOrganisms = topOrganisms
+		defer rows.Close()
+		stats.TopOrganisms = make([]StatItem, 0)
+		for rows.Next() {
+			var item StatItem
+			if err := rows.Scan(&item.Name, &item.Count); err == nil {
+				stats.TopOrganisms = append(stats.TopOrganisms, item)
+			}
+		}
 	}
 
 	// Get top platforms
-	topPlatforms, err := s.getTopItems("SELECT platform, COUNT(*) as cnt FROM experiments GROUP BY platform ORDER BY cnt DESC LIMIT 10")
+	rows, err = s.db.Query(`
+		SELECT platform, COUNT(*) as count
+		FROM experiments
+		WHERE platform IS NOT NULL AND platform != ''
+		GROUP BY platform
+		ORDER BY count DESC
+		LIMIT 10
+	`)
 	if err == nil {
-		stats.TopPlatforms = topPlatforms
+		defer rows.Close()
+		stats.TopPlatforms = make([]StatItem, 0)
+		for rows.Next() {
+			var item StatItem
+			if err := rows.Scan(&item.Name, &item.Count); err == nil {
+				stats.TopPlatforms = append(stats.TopPlatforms, item)
+			}
+		}
 	}
 
-	// Get top strategies
-	topStrategies, err := s.getTopItems("SELECT library_strategy, COUNT(*) as cnt FROM experiments GROUP BY library_strategy ORDER BY cnt DESC LIMIT 10")
+	// Get top library strategies
+	rows, err = s.db.Query(`
+		SELECT library_strategy, COUNT(*) as count
+		FROM experiments
+		WHERE library_strategy IS NOT NULL AND library_strategy != ''
+		GROUP BY library_strategy
+		ORDER BY count DESC
+		LIMIT 10
+	`)
 	if err == nil {
-		stats.TopStrategies = topStrategies
+		defer rows.Close()
+		stats.TopStrategies = make([]StatItem, 0)
+		for rows.Next() {
+			var item StatItem
+			if err := rows.Scan(&item.Name, &item.Count); err == nil {
+				stats.TopStrategies = append(stats.TopStrategies, item)
+			}
+		}
 	}
+
+	// Index stats would come from manager if available
 
 	return stats, nil
 }
 
-// getTopItems executes a query and returns count items
-func (s *SearchService) getTopItems(query string) ([]CountItem, error) {
-	rows, err := s.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var items []CountItem
-	for rows.Next() {
-		var name string
-		var count int64
-		if err := rows.Scan(&name, &count); err != nil {
-			continue
-		}
-		items = append(items, CountItem{
-			Name:  name,
-			Count: count,
-		})
-	}
-	return items, nil
-}
-
-// BuildIndex builds or rebuilds the search index
-func (s *SearchService) BuildIndex(ctx context.Context, batchSize int, withVectors bool, showProgress bool) error {
-	// Create progress spinner if requested
-	var spinner *ui.Spinner
-	if showProgress {
-		spinner = ui.NewSpinner("Building search index...")
-		spinner.Start()
-		defer spinner.Stop()
-	}
-
-	// Get total document count
-	total, err := s.db.CountTable("studies")
-	if err != nil {
-		return fmt.Errorf("failed to count documents: %w", err)
-	}
-
-	// Build index in batches
-	processed := int64(0)
-	for offset := int64(0); offset < total; offset += int64(batchSize) {
-		// Fetch batch of studies
-		studies, err := s.db.GetStudiesBatch(int(offset), batchSize)
-		if err != nil {
-			return fmt.Errorf("failed to fetch studies batch: %w", err)
-		}
-
-		// Index each study
-		for _, study := range studies {
-			if err := s.index.Index(study); err != nil {
-				// Log error but continue
-				fmt.Printf("Warning: failed to index study %s: %v\n", study.Accession, err)
-				continue
-			}
-			processed++
-
-			// Update progress
-			if spinner != nil && processed%100 == 0 {
-				spinner.UpdateMessage(fmt.Sprintf("Indexed %d/%d documents", processed, total))
-			}
-		}
-
-		// Check context cancellation
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-		}
-	}
-
-	// Commit changes
-	if err := s.index.Close(); err != nil {
-		return fmt.Errorf("failed to commit index: %w", err)
-	}
-
-	// Reopen index
-	s.index, err = search.NewBleveBackend(s.indexPath, s.db)
-	if err != nil {
-		return fmt.Errorf("failed to reopen index: %w", err)
-	}
-
-	return nil
-}
-
-// Health checks if the service is operational
-func (s *SearchService) Health(ctx context.Context) error {
-	// Check database connection
-	if err := s.db.Ping(); err != nil {
-		return fmt.Errorf("database unhealthy: %w", err)
-	}
-
-	// Check index availability
-	if stats, err := s.index.Stats(); err != nil || stats.DocumentCount == 0 {
-		return fmt.Errorf("index unhealthy or empty")
-	}
-
-	return nil
-}
-
-// Close releases resources
+// Close cleans up the search service
 func (s *SearchService) Close() error {
-	if s.index != nil {
-		return s.index.Close()
+	if s.manager != nil {
+		return s.manager.Close()
+	}
+	return nil
+}
+
+// Health checks if the search service is healthy
+func (s *SearchService) Health(ctx context.Context) error {
+	if s.manager != nil {
+		// Simple ping to check if manager is working
+		_, err := s.manager.Search("", search.SearchOptions{Limit: 1})
+		if err != nil {
+			return fmt.Errorf("search health check failed: %w", err)
+		}
 	}
 	return nil
 }
