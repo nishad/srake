@@ -14,6 +14,7 @@ import (
 	"github.com/nishad/srake/internal/paths"
 	"github.com/nishad/srake/internal/search"
 	"github.com/nishad/srake/internal/search/builder"
+	"github.com/nishad/srake/internal/cli"
 	"github.com/spf13/cobra"
 )
 
@@ -47,6 +48,7 @@ The search index enables powerful search capabilities including:
 
   # Verify index integrity
   srake search index --verify`,
+	RunE: runSearchIndex,
 }
 
 var (
@@ -80,7 +82,8 @@ func init() {
 	searchIndexCmd.Flags().StringVar(&progressFile, "progress-file", "", "Custom progress file path (default: .srake/index-progress.json)")
 	searchIndexCmd.Flags().StringVar(&checkpointDir, "checkpoint-dir", "", "Custom checkpoint directory (default: .srake/checkpoints)")
 
-	searchIndexCmd.RunE = runSearchIndex
+	// Setup custom help for index command
+	cli.SetupIndexHelp(searchIndexCmd)
 
 	// Add as subcommand to search
 	searchCmd.AddCommand(searchIndexCmd)
