@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 )
 
 // Color codes for terminal output
@@ -99,4 +100,80 @@ func readAccessionFile(path string) ([]string, error) {
 	defer file.Close()
 
 	return readAccessionsFromReader(file)
+}
+
+// Spinner represents a simple command-line spinner
+type Spinner struct {
+	message string
+	stop    chan bool
+	done    chan bool
+}
+
+// StartSpinner creates and starts a new spinner
+func StartSpinner(message string) *Spinner {
+	if quiet || !isTerminal() {
+		// Just print the message without spinner in quiet mode or non-terminal
+		fmt.Printf("%s...", message)
+		return &Spinner{
+			message: message,
+			stop:    make(chan bool),
+			done:    make(chan bool),
+		}
+	}
+
+	s := &Spinner{
+		message: message,
+		stop:    make(chan bool),
+		done:    make(chan bool),
+	}
+
+	go func() {
+		spinChars := []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+		i := 0
+		for {
+			select {
+			case <-s.stop:
+				s.done <- true
+				return
+			default:
+				fmt.Printf("\r%s %s %s", colorize(colorCyan, spinChars[i]), message, colorize(colorGray, "..."))
+				i = (i + 1) % len(spinChars)
+				time.Sleep(100 * time.Millisecond)
+			}
+		}
+	}()
+
+	return s
+}
+
+// StopSpinner stops the spinner and prints a result
+func (s *Spinner) Stop(success bool, resultMsg string) {
+	if quiet || !isTerminal() {
+		if success {
+			fmt.Println(" ✓")
+		} else {
+			fmt.Println(" ✗")
+		}
+		return
+	}
+
+	s.stop <- true
+	<-s.done
+
+	// Clear the line
+	fmt.Printf("\r%s", strings.Repeat(" ", len(s.message)+20))
+
+	// Print the final result
+	if success {
+		fmt.Printf("\r%s %s %s\n", colorize(colorGreen, "✓"), s.message, colorize(colorGray, resultMsg))
+	} else {
+		fmt.Printf("\r%s %s %s\n", colorize(colorRed, "✗"), s.message, colorize(colorGray, resultMsg))
+	}
+}
+
+// PrintPhase prints a phase header
+func printPhase(phase string) {
+	if !quiet {
+		fmt.Printf("\n%s %s\n", colorize(colorBlue, "▶"), colorize(colorBold, phase))
+	}
 }

@@ -3,6 +3,7 @@ package search
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 	"time"
 
@@ -59,11 +60,14 @@ func NewManager(cfg *config.Config, db *database.DB) (*Manager, error) {
 
 	// Initialize search backend if enabled
 	if cfg.IsSearchEnabled() {
+		log.Printf("[INIT] Creating search backend")
+		backendStart := time.Now()
 		backend, err := CreateSearchBackend(cfg)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create search backend: %w", err)
 		}
 		m.bleve = backend
+		log.Printf("[INIT] Search backend created in %v", time.Since(backendStart))
 	}
 
 	return m, nil

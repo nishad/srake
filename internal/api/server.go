@@ -36,11 +36,16 @@ type Config struct {
 
 // NewServer creates a new API server instance
 func NewServer(cfg *Config) (*Server, error) {
+	start := time.Now()
+
 	// Open database
+	log.Printf("[INIT] Opening database: %s", cfg.DatabasePath)
+	dbStart := time.Now()
 	db, err := database.Initialize(cfg.DatabasePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
+	log.Printf("[INIT] Database opened in %v", time.Since(dbStart))
 
 	// Initialize services
 	indexPath := cfg.IndexPath
@@ -48,12 +53,18 @@ func NewServer(cfg *Config) (*Server, error) {
 		indexPath = paths.GetIndexPath()
 	}
 
+	// Initialize search service
+	log.Printf("[INIT] Initializing search service with index: %s", indexPath)
+	searchStart := time.Now()
 	searchService, err := service.NewSearchService(db, indexPath)
 	if err != nil {
 		db.Close()
 		return nil, fmt.Errorf("failed to initialize search service: %w", err)
 	}
+	log.Printf("[INIT] Search service initialized in %v", time.Since(searchStart))
 
+	// Initialize other services
+	log.Printf("[INIT] Initializing metadata and export services")
 	metadataService := service.NewMetadataService(db)
 	exportService := service.NewExportService(db, searchService)
 
@@ -67,6 +78,8 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 
 	// Setup routes
+	log.Printf("[INIT] Setting up API routes")
+	routeStart := time.Now()
 	s.setupRoutes(cfg.EnableMCP)
 
 	// Setup middleware
@@ -75,6 +88,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	}
 	s.router.Use(loggingMiddleware)
 	s.router.Use(jsonMiddleware)
+	log.Printf("[INIT] Routes configured in %v", time.Since(routeStart))
 
 	// Create HTTP server
 	s.server = &http.Server{
@@ -85,6 +99,7 @@ func NewServer(cfg *Config) (*Server, error) {
 		IdleTimeout:  60 * time.Second,
 	}
 
+	log.Printf("[INIT] Server initialization complete in %v", time.Since(start))
 	return s, nil
 }
 

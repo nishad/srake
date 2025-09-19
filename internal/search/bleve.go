@@ -2,6 +2,10 @@ package search
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/mapping"
@@ -16,25 +20,58 @@ type BleveIndex struct {
 
 // InitBleveIndex initializes or opens a Bleve index
 func InitBleveIndex(indexPath string) (*BleveIndex, error) {
-	// Use the provided index path directly
+	start := time.Now()
+	log.Printf("[INIT] Opening Bleve index: %s", indexPath)
+
+	// Check if index exists and get its size
+	if _, err := os.Stat(indexPath); err == nil {
+		log.Printf("[INIT] Existing index found, size: %.2f MB", float64(getDirectorySize(indexPath))/(1024*1024))
+	}
 
 	// Try to open existing index
 	index, err := bleve.Open(indexPath)
 	if err == bleve.ErrorIndexPathDoesNotExist {
+		log.Printf("[INIT] Index does not exist, creating new index")
 		// Create new index with biological analyzer
 		indexMapping := createBiologicalIndexMapping()
 		index, err = bleve.New(indexPath, indexMapping)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create index: %w", err)
 		}
+		log.Printf("[INIT] New index created in %v", time.Since(start))
 	} else if err != nil {
 		return nil, fmt.Errorf("failed to open index: %w", err)
+	} else {
+		// Get index statistics
+		if docCount, err := index.DocCount(); err == nil {
+			log.Printf("[INIT] Index loaded with %d documents in %v", docCount, time.Since(start))
+		} else {
+			log.Printf("[INIT] Index loaded in %v", time.Since(start))
+		}
 	}
 
 	return &BleveIndex{
 		index: index,
 		path:  indexPath,
 	}, nil
+}
+
+// getDirectorySize calculates the total size of a directory
+func getDirectorySize(path string) int64 {
+	var size int64
+	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			size += info.Size()
+		}
+		return nil
+	})
+	if err != nil {
+		return 0
+	}
+	return size
 }
 
 // createBiologicalIndexMapping creates an index mapping optimized for biological terms

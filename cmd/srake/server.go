@@ -80,11 +80,19 @@ func runServer(cmd *cobra.Command, args []string) error {
 		EnableMCP:    serverEnableMCP,
 	}
 
-	// Initialize API server
+	// Print initialization header
+	printPhase("Initializing srake server")
+	printInfo("Database: %s", serverDBPath)
+	printInfo("Index: %s", serverIndexPath)
+
+	// Initialize API server with spinner
+	spinner := StartSpinner("Initializing server components")
 	server, err := api.NewServer(config)
 	if err != nil {
+		spinner.Stop(false, "failed")
 		return fmt.Errorf("failed to initialize server: %w", err)
 	}
+	spinner.Stop(true, "ready")
 
 	// Setup graceful shutdown
 	sigChan := make(chan os.Signal, 1)
