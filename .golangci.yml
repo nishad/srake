@@ -1,8 +1,9 @@
 run:
   timeout: 5m
-  skip-dirs:
-    - vendor
-    - test_human.bleve
+  tests: true
+  build-tags:
+    - sqlite_fts5
+    - search
 
 linters:
   enable:
@@ -14,8 +15,15 @@ linters:
     - unconvert
     - prealloc
     - nakedret
+    - gosec
+    - bodyclose
+    - unparam
+    - gocyclo
+    - dupl
+    - goimports
   disable:
     - errcheck
+    - unused
 
 linters-settings:
   gofmt:
@@ -24,8 +32,55 @@ linters-settings:
     enable-all: true
   staticcheck:
     checks: ["all"]
+  gosec:
+    excludes:
+      - G104  # Unhandled errors (we handle these selectively)
+      - G304  # File path provided as taint input (we validate these)
+  gocyclo:
+    min-complexity: 15
+  dupl:
+    threshold: 100
+  goconst:
+    min-len: 3
+    min-occurrences: 3
 
 issues:
   exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
+  exclude-dirs:
+    - vendor
+    - test_human.bleve
+    - docs/public
+    - web/node_modules
+    - .git
+    - build
+    - dist
+    - tmp
+  exclude-files:
+    - ".*\\.pb\\.go$"
+    - ".*_test\\.go$"
+  exclude-rules:
+    # Exclude certain linters for test files
+    - path: _test\.go
+      linters:
+        - gosec
+        - dupl
+    # Exclude certain linters for generated files
+    - path: "generated"
+      linters:
+        - gosec
+        - govet
+        - ineffassign
+    # Allow fmt.Printf in main packages
+    - path: cmd/
+      linters:
+        - forbidigo
+    # Exclude G201 SQL string formatting when using constant table names
+    - source: "// #nosec"
+      linters:
+        - gosec
+    # Allow longer lines in test files
+    - path: _test\.go
+      linters:
+        - lll
