@@ -18,7 +18,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var searchIndexCmd = &cobra.Command{
+var indexCmd = &cobra.Command{
 	Use:   "index",
 	Short: "Manage search index",
 	Long: `Build, rebuild, or manage the Bleve search index for fast full-text search.
@@ -29,25 +29,25 @@ The search index enables powerful search capabilities including:
   • Faceted search and filtering
   • Fast response times even for large datasets`,
 	Example: `  # Build or rebuild the search index
-  srake search index --build
+  srake index --build
 
   # Build index with custom batch size
-  srake search index --build --batch-size 1000
+  srake index --build --batch-size 1000
 
   # Build index with vector embeddings
-  srake search index --build --with-embeddings
+  srake index --build --with-embeddings
 
   # Build index with progress tracking
-  srake search index --build --progress
+  srake index --build --progress
 
   # Resume interrupted index build
-  srake search index --resume
+  srake index --resume
 
   # Show index statistics
-  srake search index --stats
+  srake index --stats
 
   # Verify index integrity
-  srake search index --verify`,
+  srake index --verify`,
 	RunE: runSearchIndex,
 }
 
@@ -68,25 +68,25 @@ var (
 )
 
 func init() {
-	searchIndexCmd.Flags().BoolVar(&indexBuild, "build", false, "Build search index from database")
-	searchIndexCmd.Flags().BoolVar(&indexRebuild, "rebuild", false, "Rebuild index from scratch")
-	searchIndexCmd.Flags().BoolVar(&indexVerify, "verify", false, "Verify index integrity")
-	searchIndexCmd.Flags().BoolVar(&indexStats, "stats", false, "Show index statistics")
-	searchIndexCmd.Flags().IntVar(&indexBatchSize, "batch-size", 500, "Batch size for indexing")
-	searchIndexCmd.Flags().IntVar(&indexWorkers, "workers", 0, "Number of workers (0 = auto)")
-	searchIndexCmd.Flags().StringVar(&indexPath, "path", "", "Custom index path")
-	searchIndexCmd.Flags().BoolVar(&indexEmbeddings, "with-embeddings", false, "Generate vector embeddings for documents")
-	searchIndexCmd.Flags().StringVar(&embeddingModel, "embedding-model", "Xenova/SapBERT-from-PubMedBERT-fulltext", "Model to use for embeddings")
-	searchIndexCmd.Flags().BoolVar(&indexProgress, "progress", false, "Show real-time indexing progress")
-	searchIndexCmd.Flags().BoolVar(&indexResume, "resume", false, "Resume interrupted index build from checkpoint")
-	searchIndexCmd.Flags().StringVar(&progressFile, "progress-file", "", "Custom progress file path (default: .srake/index-progress.json)")
-	searchIndexCmd.Flags().StringVar(&checkpointDir, "checkpoint-dir", "", "Custom checkpoint directory (default: .srake/checkpoints)")
+	indexCmd.Flags().BoolVar(&indexBuild, "build", false, "Build search index from database")
+	indexCmd.Flags().BoolVar(&indexRebuild, "rebuild", false, "Rebuild index from scratch")
+	indexCmd.Flags().BoolVar(&indexVerify, "verify", false, "Verify index integrity")
+	indexCmd.Flags().BoolVar(&indexStats, "stats", false, "Show index statistics")
+	indexCmd.Flags().IntVar(&indexBatchSize, "batch-size", 500, "Batch size for indexing")
+	indexCmd.Flags().IntVar(&indexWorkers, "workers", 0, "Number of workers (0 = auto)")
+	indexCmd.Flags().StringVar(&indexPath, "path", "", "Custom index path")
+	indexCmd.Flags().BoolVar(&indexEmbeddings, "with-embeddings", false, "Generate vector embeddings for documents")
+	indexCmd.Flags().StringVar(&embeddingModel, "embedding-model", "Xenova/SapBERT-from-PubMedBERT-fulltext", "Model to use for embeddings")
+	indexCmd.Flags().BoolVar(&indexProgress, "progress", false, "Show real-time indexing progress")
+	indexCmd.Flags().BoolVar(&indexResume, "resume", false, "Resume interrupted index build from checkpoint")
+	indexCmd.Flags().StringVar(&progressFile, "progress-file", "", "Custom progress file path (default: .srake/index-progress.json)")
+	indexCmd.Flags().StringVar(&checkpointDir, "checkpoint-dir", "", "Custom checkpoint directory (default: .srake/checkpoints)")
 
 	// Setup custom help for index command
-	cli.SetupIndexHelp(searchIndexCmd)
+	cli.SetupIndexHelp(indexCmd)
 
-	// Add as subcommand to search
-	searchCmd.AddCommand(searchIndexCmd)
+	// Add as root command
+	rootCmd.AddCommand(indexCmd)
 }
 
 func runSearchIndex(cmd *cobra.Command, args []string) error {
