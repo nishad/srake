@@ -146,11 +146,12 @@ func (s *SearchService) GetStats(ctx context.Context) (*SearchStats, error) {
 		LastUpdated:    time.Now(),
 	}
 
-	// Get database statistics
-	studyCount, _ := s.db.CountTable("studies")
-	experimentCount, _ := s.db.CountTable("experiments")
-	sampleCount, _ := s.db.CountTable("samples")
-	runCount, _ := s.db.CountTable("runs")
+	// Get database statistics from cached values
+	cachedStats, _ := s.db.GetStatistics()
+	studyCount := cachedStats["studies"]
+	experimentCount := cachedStats["experiments"]
+	sampleCount := cachedStats["samples"]
+	runCount := cachedStats["runs"]
 
 	stats.TotalDocuments = studyCount + experimentCount + sampleCount + runCount
 

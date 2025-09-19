@@ -166,6 +166,17 @@ func createTables(db *sql.DB) error {
 	CREATE INDEX IF NOT EXISTS idx_analysis_type ON analyses(analysis_type);
 	CREATE INDEX IF NOT EXISTS idx_analysis_date ON analyses(analysis_date);
 
+	-- Statistics table for pre-computed counts
+	CREATE TABLE IF NOT EXISTS statistics (
+		table_name TEXT PRIMARY KEY,
+		row_count INTEGER DEFAULT 0,
+		last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+		metadata JSON
+	);
+
+	-- Index for quick lookups
+	CREATE INDEX IF NOT EXISTS idx_stats_table ON statistics(table_name);
+
 	-- Pool/multiplex relationships
 	CREATE TABLE IF NOT EXISTS sample_pool (
 		pool_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -852,6 +863,74 @@ func (db *DB) CountTable(table string) (int64, error) {
 	return count, err
 }
 
+// GetStatistics retrieves cached statistics from the statistics table
+func (db *DB) GetStatistics() (map[string]int64, error) {
+	stats := make(map[string]int64)
+
+	query := `SELECT table_name, row_count FROM statistics`
+	rows, err := db.Query(query)
+	if err != nil {
+		// If table doesn't exist, return empty stats (not an error)
+		return stats, nil
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var tableName string
+		var rowCount int64
+		if err := rows.Scan(&tableName, &rowCount); err != nil {
+			continue
+		}
+		stats[tableName] = rowCount
+	}
+
+	return stats, rows.Err()
+}
+
+// UpdateStatistics recalculates and updates the statistics table
+// This should be called only after batch operations complete
+func (db *DB) UpdateStatistics() error {
+	// Start a transaction for atomic updates
+	tx, err := db.Begin()
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	// Tables to count
+	tables := []string{"studies", "experiments", "samples", "runs", "submissions", "analyses"}
+
+	for _, table := range tables {
+		// Count rows in the table
+		var count int64
+		query := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
+		err := tx.QueryRow(query).Scan(&count)
+		if err != nil {
+			// Table might not exist, skip it
+			continue
+		}
+
+		// Update or insert the statistics
+		_, err = tx.Exec(`
+			INSERT OR REPLACE INTO statistics (table_name, row_count, last_updated)
+			VALUES (?, ?, CURRENT_TIMESTAMP)
+		`, table, count)
+		if err != nil {
+			return fmt.Errorf("failed to update statistics for %s: %w", table, err)
+		}
+	}
+
+	return tx.Commit()
+}
+
+// InitializeStatistics ensures the statistics table exists but does NOT populate it
+// Population happens only via UpdateStatistics() after ingestion
+func (db *DB) InitializeStatistics() error {
+	// The table is already created in createTables()
+	// This function is for future extensibility
+	return nil
+}
+
 // GetInfo returns database information
 func (db *DB) GetInfo() (*DatabaseInfo, error) {
 	info := &DatabaseInfo{}
@@ -863,11 +942,12 @@ func (db *DB) GetInfo() (*DatabaseInfo, error) {
 		}
 	}
 
-	// Get table counts
-	info.Studies, _ = db.CountTable("studies")
-	info.Experiments, _ = db.CountTable("experiments")
-	info.Samples, _ = db.CountTable("samples")
-	info.Runs, _ = db.CountTable("runs")
+	// Get table counts from cached statistics
+	stats, _ := db.GetStatistics()
+	info.Studies = stats["studies"]
+	info.Experiments = stats["experiments"]
+	info.Samples = stats["samples"]
+	info.Runs = stats["runs"]
 
 	return info, nil
 }

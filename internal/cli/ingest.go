@@ -43,6 +43,7 @@ var (
 	filterStatsOnly     bool
 	filterVerbose       bool
 	filterProfile       string
+	skipStats           bool  // Skip updating database statistics
 )
 
 // NewIngestCmd creates the ingest command
@@ -102,6 +103,7 @@ Examples:
 	cmd.Flags().BoolVar(&filterStatsOnly, "stats-only", false, "Only show statistics without inserting data")
 	cmd.Flags().BoolVar(&filterVerbose, "filter-verbose", false, "Show detailed filtering information")
 	cmd.Flags().StringVar(&filterProfile, "filter-profile", "", "Load filter settings from YAML profile")
+	cmd.Flags().BoolVar(&skipStats, "skip-stats", false, "Skip updating database statistics after ingestion")
 
 	// Mark mutually exclusive flags
 	cmd.MarkFlagsMutuallyExclusive("auto", "daily", "monthly", "file", "list")
@@ -290,6 +292,16 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		if filterStats != nil {
 			fmt.Print("\n")
 			fmt.Print(filterStats.GetSummary())
+		}
+
+		// Update database statistics after successful ingestion
+		if !skipStats {
+			fmt.Printf("\n📈 Updating database statistics...")
+			if err := db.UpdateStatistics(); err != nil {
+				fmt.Printf(" ⚠️ Warning: Failed to update statistics: %v\n", err)
+			} else {
+				fmt.Printf(" ✓\n")
+			}
 		}
 	} else {
 		// No filters, use standard processor
@@ -571,6 +583,16 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 			fmt.Printf("   Records:     %d\n", recordsInserted)
 		}
 		fmt.Printf("   Database:    %s\n", dbPath)
+	}
+
+	// Update database statistics after successful ingestion
+	if !skipStats {
+		fmt.Printf("\n📈 Updating database statistics...")
+		if err := db.UpdateStatistics(); err != nil {
+			fmt.Printf(" ⚠️ Warning: Failed to update statistics: %v\n", err)
+		} else {
+			fmt.Printf(" ✓\n")
+		}
 	}
 
 	// Get database stats
