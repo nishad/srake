@@ -106,7 +106,7 @@ func (f *FTS5Manager) createAccessionTable() error {
 		SELECT
 			sample_accession,
 			'sample',
-			COALESCE(description, COALESCE(title, '')),
+			COALESCE(description, ''),
 			COALESCE(organism, '') || ' ' || COALESCE(scientific_name, '') || ' ' || COALESCE(tissue, '') || ' ' || COALESCE(cell_type, '')
 		FROM samples
 		LIMIT 1000000
@@ -165,7 +165,7 @@ func (f *FTS5Manager) createSampleFTSTable() error {
 		INSERT INTO fts_samples
 		SELECT
 			sample_accession,
-			COALESCE(description, COALESCE(title, '')),
+			COALESCE(description, ''),
 			COALESCE(organism, ''),
 			COALESCE(scientific_name, ''),
 			COALESCE(tissue, '')
