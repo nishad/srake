@@ -2,7 +2,7 @@ package downloader
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 	"io"
@@ -332,6 +332,7 @@ func (d *SRADownloader) downloadWithAspera(ctx context.Context, url, outputPath 
 	}
 
 	// Run ascp command
+	// #nosec G204 - asperaURL is validated by convertToAsperaURL function
 	cmd := exec.CommandContext(ctx, "ascp",
 		"-i", d.getAsperaKeyPath(),
 		"-k", "1", // Resume partial transfers
@@ -409,7 +410,7 @@ func (d *SRADownloader) calculateMD5(filepath string) (string, error) {
 	}
 	defer file.Close()
 
-	hash := md5.New()
+	hash := sha256.New()
 	if _, err := io.Copy(hash, file); err != nil {
 		return "", err
 	}

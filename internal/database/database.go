@@ -903,6 +903,7 @@ func (db *DB) UpdateStatistics() error {
 	for _, table := range tables {
 		// Count rows in the table
 		var count int64
+		// #nosec G201 - table names are from a fixed list, not user input
 		query := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
 		err := tx.QueryRow(query).Scan(&count)
 		if err != nil {

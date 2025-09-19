@@ -393,7 +393,7 @@ func (t *Tracker) GetStatistics() (*Statistics, error) {
 	// Count processed files
 	var fileCount int
 	countQuery := `SELECT COUNT(*) FROM processed_files WHERE progress_id = ?`
-	t.db.QueryRow(countQuery, t.progressID).Scan(&fileCount)
+	_ = t.db.QueryRow(countQuery, t.progressID).Scan(&fileCount)
 	stats.FilesProcessed = fileCount
 
 	return &stats, nil
@@ -563,5 +563,5 @@ func (t *Tracker) SaveCheckpointFile(dir string) error {
 	}
 
 	checkpointPath := filepath.Join(dir, fmt.Sprintf("checkpoint_%s.json", progress.SourceHash))
-	return os.WriteFile(checkpointPath, data, 0644)
+	return os.WriteFile(checkpointPath, data, 0600)
 }

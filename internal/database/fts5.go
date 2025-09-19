@@ -338,6 +338,7 @@ func (f *FTS5Manager) OptimizeFTSTables() error {
 
 	for _, table := range tables {
 		// Optimize the FTS table
+		// #nosec G201 - table names are from a fixed list, not user input
 		query := fmt.Sprintf("INSERT INTO %s(%s) VALUES('optimize')", table, table)
 		_, err := f.db.DB.Exec(query)
 		if err != nil {
@@ -356,6 +357,7 @@ func (f *FTS5Manager) GetFTSStats() (map[string]int64, error) {
 	tables := []string{"fts_accessions", "fts_samples", "fts_runs"}
 	for _, table := range tables {
 		var count int64
+		// #nosec G201 - table names are from a fixed list, not user input
 		query := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
 		err := f.db.DB.QueryRow(query).Scan(&count)
 		if err != nil {

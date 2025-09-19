@@ -447,13 +447,19 @@ func (vs *VectorStore) GetStats() (map[string]int, error) {
 	stats := make(map[string]int)
 
 	var count int
-	vs.db.QueryRow("SELECT COUNT(*) FROM project_vectors").Scan(&count)
+	if err := vs.db.QueryRow("SELECT COUNT(*) FROM project_vectors").Scan(&count); err != nil {
+		return nil, fmt.Errorf("failed to count project_vectors: %w", err)
+	}
 	stats["project_vectors"] = count
 
-	vs.db.QueryRow("SELECT COUNT(*) FROM sample_vectors").Scan(&count)
+	if err := vs.db.QueryRow("SELECT COUNT(*) FROM sample_vectors").Scan(&count); err != nil {
+		return nil, fmt.Errorf("failed to count sample_vectors: %w", err)
+	}
 	stats["sample_vectors"] = count
 
-	vs.db.QueryRow("SELECT COUNT(*) FROM embedding_metadata").Scan(&count)
+	if err := vs.db.QueryRow("SELECT COUNT(*) FROM embedding_metadata").Scan(&count); err != nil {
+		return nil, fmt.Errorf("failed to count embedding_metadata: %w", err)
+	}
 	stats["embeddings"] = count
 
 	return stats, nil

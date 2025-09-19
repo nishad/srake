@@ -4,7 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"context"
-	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
@@ -191,11 +191,11 @@ func (rp *ResumableProcessor) processWithRetry(ctx context.Context, url string, 
 		}
 
 		// Update progress state
-		rp.tracker.MarkFailed(err.Error())
+		_ = rp.tracker.MarkFailed(err.Error())
 	}
 
 	// Final failure
-	rp.tracker.MarkFailed(fmt.Sprintf("Failed after %d attempts: %v", maxRetries, lastErr))
+	_ = rp.tracker.MarkFailed(fmt.Sprintf("Failed after %d attempts: %v", maxRetries, lastErr))
 	return lastErr
 }
 
@@ -231,7 +231,7 @@ func (rp *ResumableProcessor) processURLInternal(ctx context.Context, url string
 	// Update total bytes if not resuming
 	if progressInfo.TotalBytes == 0 {
 		rp.totalBytes = resp.ContentLength
-		rp.tracker.UpdateDownloadProgress(0, rp.totalBytes)
+		_ = rp.tracker.UpdateDownloadProgress(0, rp.totalBytes)
 	}
 
 	// Create counting reader to track download progress
@@ -541,16 +541,16 @@ func (rp *ResumableProcessor) confirmResume(progress *progress.Progress) bool {
 	fmt.Printf("\nResume from last position? (y/n): ")
 
 	var response string
-	fmt.Scanln(&response)
+	_, _ = fmt.Scanln(&response)
 	return strings.ToLower(response) == "y"
 }
 
 func (rp *ResumableProcessor) onBytesDownloaded(bytes int64) {
-	rp.tracker.UpdateDownloadProgress(bytes, rp.totalBytes)
+	_ = rp.tracker.UpdateDownloadProgress(bytes, rp.totalBytes)
 }
 
 func (rp *ResumableProcessor) calculateChecksum(data string) string {
-	h := md5.Sum([]byte(data))
+	h := sha256.Sum256([]byte(data))
 	return hex.EncodeToString(h[:])
 }
 

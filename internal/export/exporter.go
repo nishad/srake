@@ -64,7 +64,7 @@ func NewExporter(cfg *Config) (*Exporter, error) {
 
 	// Create output directory if needed
 	outputDir := filepath.Dir(cfg.OutputPath)
-	if err := os.MkdirAll(outputDir, 0755); err != nil {
+	if err := os.MkdirAll(outputDir, 0750); err != nil {
 		sourceDB.Close()
 		return nil, fmt.Errorf("failed to create output directory: %w", err)
 	}
@@ -197,12 +197,14 @@ func (e *Exporter) Export() (*Stats, error) {
 
 // compressDatabase compresses the database file
 func (e *Exporter) compressDatabase(src, dst string) error {
+	// #nosec G304 - src is internally generated path, not user input
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 	defer srcFile.Close()
 
+	// #nosec G304 - dst is internally generated path, not user input
 	dstFile, err := os.Create(dst)
 	if err != nil {
 		return err
