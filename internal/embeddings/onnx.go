@@ -38,7 +38,12 @@ func NewONNXEmbedder(modelPath string, cacheDir string) (*ONNXEmbedder, error) {
 	// Initialize ONNX Runtime
 	// Set the library path for macOS
 	if runtime.GOOS == "darwin" {
-		ort.SetSharedLibraryPath("/opt/homebrew/lib/libonnxruntime.dylib")
+		libraryPath := "/opt/homebrew/lib/libonnxruntime.dylib"
+		if _, err := os.Stat(libraryPath); err != nil {
+			// Try alternate path for Intel Macs
+			libraryPath = "/usr/local/lib/libonnxruntime.dylib"
+		}
+		ort.SetSharedLibraryPath(libraryPath)
 	}
 	if err := ort.InitializeEnvironment(); err != nil {
 		return nil, fmt.Errorf("failed to initialize ONNX Runtime: %w", err)
@@ -47,7 +52,7 @@ func NewONNXEmbedder(modelPath string, cacheDir string) (*ONNXEmbedder, error) {
 	// Get model variant from environment
 	modelVariant := os.Getenv("SRAKE_MODEL_VARIANT")
 	if modelVariant == "" {
-		modelVariant = "int8" // Default to INT8 for smaller size
+		modelVariant = "quantized" // Default to quantized for better compatibility
 	}
 
 	// Download model if needed
@@ -132,6 +137,8 @@ func (e *ONNXEmbedder) downloadModel(modelPath string, cacheDir string, variant 
 	// Determine model filename based on variant
 	modelFile := "model.onnx"
 	switch variant {
+	case "quantized":
+		modelFile = "model_quantized.onnx"
 	case "int8":
 		modelFile = "model_int8.onnx"
 	case "fp16":
@@ -147,6 +154,9 @@ func (e *ONNXEmbedder) downloadModel(modelPath string, cacheDir string, variant 
 		// Size ranges for different variants
 		var minSize, maxSize int64
 		switch variant {
+		case "quantized":
+			minSize = int64(100 * 1024 * 1024) // 100 MB
+			maxSize = int64(110 * 1024 * 1024) // 110 MB
 		case "int8":
 			minSize = int64(100 * 1024 * 1024) // 100 MB
 			maxSize = int64(120 * 1024 * 1024) // 120 MB
