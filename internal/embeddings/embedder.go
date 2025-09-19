@@ -3,6 +3,8 @@ package embeddings
 import (
 	"fmt"
 	"math"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -68,16 +70,36 @@ func (e *Embedder) LoadModel(modelID string) error {
 		e.model = nil
 	}
 
-	// Get model info from manager
+	// Try to get model info from manager first
+	var modelPath string
+	var variantName string
+	var tokenizerPath string
+
 	modelInfo, err := e.manager.GetModel(modelID)
 	if err != nil {
-		return fmt.Errorf("model %s not found: %w", modelID, err)
-	}
-
-	// Get active variant path
-	variantPath, err := e.manager.GetActiveVariantPath(modelID)
-	if err != nil {
-		return fmt.Errorf("failed to get active variant: %w", err)
+		// If manager doesn't have the model, try direct paths
+		// This supports both managed models and direct file paths
+		modelPath = e.findModelDirectly(modelID)
+		if modelPath == "" {
+			return fmt.Errorf("model %s not found: %w", modelID, err)
+		}
+		variantName = e.getVariantFromEnv()
+		tokenizerPath = e.findTokenizerPath(modelID)
+	} else {
+		// Use manager's model info
+		variantPath, err := e.manager.GetActiveVariantPath(modelID)
+		if err != nil {
+			// Try direct path as fallback
+			modelPath = e.findModelDirectly(modelID)
+			if modelPath == "" {
+				return fmt.Errorf("failed to get active variant: %w", err)
+			}
+			variantName = e.getVariantFromEnv()
+		} else {
+			modelPath = variantPath
+			variantName = modelInfo.ActiveVariant
+		}
+		tokenizerPath = filepath.Join(modelInfo.Path, "tokenizer.json")
 	}
 
 	// Get model config
@@ -87,14 +109,21 @@ func (e *Embedder) LoadModel(modelID string) error {
 	}
 
 	// Load ONNX model
-	model, err := LoadModel(variantPath, config, modelInfo.ActiveVariant)
+	model, err := LoadModel(modelPath, config, variantName)
 	if err != nil {
-		return fmt.Errorf("failed to load ONNX model: %w", err)
+		return fmt.Errorf("failed to load ONNX model from %s: %w", modelPath, err)
 	}
 
-	// Load tokenizer
-	tokenizer, err := LoadTokenizer(modelInfo.Path)
-	if err != nil {
+	// Load tokenizer - try different locations
+	var tokenizer *Tokenizer
+	if tokenizerPath != "" && fileExists(tokenizerPath) {
+		tokenizer, err = LoadTokenizer(filepath.Dir(tokenizerPath))
+	}
+	if err != nil || tokenizer == nil {
+		// Use embedded tokenizer as fallback
+		tokenizer, err = LoadEmbeddedTokenizer()
+	}
+	if err != nil || tokenizer == nil {
 		model.Close()
 		return fmt.Errorf("failed to load tokenizer: %w", err)
 	}
@@ -104,6 +133,72 @@ func (e *Embedder) LoadModel(modelID string) error {
 	e.modelID = modelID
 
 	return nil
+}
+
+// findModelDirectly searches for model files in standard locations
+func (e *Embedder) findModelDirectly(modelID string) string {
+	// Get variant from environment or use default
+	variant := e.getVariantFromEnv()
+
+	// Define possible model file names based on variant
+	modelFiles := []string{
+		fmt.Sprintf("model_%s.onnx", variant),
+		"model.onnx",
+	}
+	if variant == "quantized" {
+		modelFiles = []string{"model_quantized.onnx", "model.onnx"}
+	}
+
+	// Search paths to check
+	paths := []string{
+		filepath.Join(os.Getenv("HOME"), ".local/share/srake/models", modelID, "onnx"),
+		filepath.Join(os.Getenv("HOME"), ".srake/models", modelID, "onnx"),
+		filepath.Join(e.config.ModelsDir, modelID, "onnx"),
+	}
+
+	// Check each combination
+	for _, basePath := range paths {
+		for _, modelFile := range modelFiles {
+			fullPath := filepath.Join(basePath, modelFile)
+			if fileExists(fullPath) {
+				return fullPath
+			}
+		}
+	}
+
+	return ""
+}
+
+// findTokenizerPath searches for tokenizer files in standard locations
+func (e *Embedder) findTokenizerPath(modelID string) string {
+	paths := []string{
+		filepath.Join(os.Getenv("HOME"), ".local/share/srake/models", modelID, "tokenizer.json"),
+		filepath.Join(os.Getenv("HOME"), ".srake/models", modelID, "tokenizer.json"),
+		filepath.Join(e.config.ModelsDir, modelID, "tokenizer.json"),
+	}
+
+	for _, path := range paths {
+		if fileExists(path) {
+			return path
+		}
+	}
+
+	return ""
+}
+
+// getVariantFromEnv gets the model variant from environment or returns default
+func (e *Embedder) getVariantFromEnv() string {
+	variant := os.Getenv("SRAKE_MODEL_VARIANT")
+	if variant == "" {
+		variant = "quantized" // Default to quantized for better compatibility
+	}
+	return variant
+}
+
+// fileExists checks if a file exists
+func fileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
 
 // LoadDefaultModel loads the default model

@@ -293,3 +293,58 @@ func (t *Tokenizer) GetVocabSize() int {
 func (t *Tokenizer) GetSpecialTokens() map[string]int64 {
 	return t.specialTokens
 }
+
+// LoadEmbeddedTokenizer loads the embedded tokenizer
+func LoadEmbeddedTokenizer() (*Tokenizer, error) {
+	tokenizer := &Tokenizer{
+		vocab:         make(map[string]int64),
+		invVocab:      make(map[int64]string),
+		specialTokens: make(map[string]int64),
+		maxLength:     512,
+		doLowerCase:   true,
+		unkToken:      "[UNK]",
+		sepToken:      "[SEP]",
+		padToken:      "[PAD]",
+		clsToken:      "[CLS]",
+		maskToken:     "[MASK]",
+	}
+
+	// Use the embedded tokenizer data from onnx.go
+	if len(embeddedTokenizer) > 0 {
+		var tokenizerData map[string]interface{}
+		if err := json.Unmarshal(embeddedTokenizer, &tokenizerData); err != nil {
+			return nil, err
+		}
+
+		// Extract vocab from model section
+		if model, ok := tokenizerData["model"].(map[string]interface{}); ok {
+			if vocab, ok := model["vocab"].(map[string]interface{}); ok {
+				for token, idx := range vocab {
+					if idxFloat, ok := idx.(float64); ok {
+						tokenizer.vocab[token] = int64(idxFloat)
+						tokenizer.invVocab[int64(idxFloat)] = token
+					}
+				}
+			}
+		}
+
+		// Set special token IDs
+		tokenizer.specialTokens[tokenizer.padToken] = tokenizer.vocab[tokenizer.padToken]
+		tokenizer.specialTokens[tokenizer.clsToken] = tokenizer.vocab[tokenizer.clsToken]
+		tokenizer.specialTokens[tokenizer.sepToken] = tokenizer.vocab[tokenizer.sepToken]
+		tokenizer.specialTokens[tokenizer.unkToken] = tokenizer.vocab[tokenizer.unkToken]
+		tokenizer.specialTokens[tokenizer.maskToken] = tokenizer.vocab[tokenizer.maskToken]
+
+		return tokenizer, nil
+	}
+
+	// Fallback to basic tokenizer
+	tokenizer.initBasicVocab()
+	tokenizer.specialTokens[tokenizer.padToken] = tokenizer.vocab[tokenizer.padToken]
+	tokenizer.specialTokens[tokenizer.clsToken] = tokenizer.vocab[tokenizer.clsToken]
+	tokenizer.specialTokens[tokenizer.sepToken] = tokenizer.vocab[tokenizer.sepToken]
+	tokenizer.specialTokens[tokenizer.unkToken] = tokenizer.vocab[tokenizer.unkToken]
+	tokenizer.specialTokens[tokenizer.maskToken] = tokenizer.vocab[tokenizer.maskToken]
+
+	return tokenizer, nil
+}
