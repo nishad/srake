@@ -1,13 +1,13 @@
 module github.com/nishad/srake
 
-go 1.23
+go 1.23.0
 
 require (
 	github.com/blevesearch/bleve/v2 v2.5.3
 	github.com/gorilla/mux v1.8.1
 	github.com/mattn/go-sqlite3 v1.14.32
 	github.com/spf13/cobra v1.10.1
-	github.com/spf13/pflag v1.0.9
+	github.com/spf13/pflag v1.0.10
 	github.com/sugarme/tokenizer v0.3.0
 	github.com/yalue/onnxruntime_go v1.21.0
 	gopkg.in/yaml.v3 v3.0.1
