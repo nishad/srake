@@ -3,6 +3,7 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -824,4 +825,92 @@ func (db *DB) GetLinks(recordType, recordAccession string) ([]Link, error) {
 	}
 
 	return links, rows.Err()
+}
+
+// Additional helper methods for service layer
+
+// Query executes a query that returns rows
+func (db *DB) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return db.DB.Query(query, args...)
+}
+
+// QueryRow executes a query that returns at most one row
+func (db *DB) QueryRow(query string, args ...interface{}) *sql.Row {
+	return db.DB.QueryRow(query, args...)
+}
+
+// Ping verifies database connection
+func (db *DB) Ping() error {
+	return db.DB.Ping()
+}
+
+// CountTable counts rows in a table
+func (db *DB) CountTable(table string) (int64, error) {
+	var count int64
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
+	err := db.QueryRow(query).Scan(&count)
+	return count, err
+}
+
+// GetInfo returns database information
+func (db *DB) GetInfo() (*DatabaseInfo, error) {
+	info := &DatabaseInfo{}
+
+	// Get database file size if possible
+	if db.path != "" {
+		if stat, err := os.Stat(db.path); err == nil {
+			info.Size = stat.Size()
+		}
+	}
+
+	// Get table counts
+	info.Studies, _ = db.CountTable("studies")
+	info.Experiments, _ = db.CountTable("experiments")
+	info.Samples, _ = db.CountTable("samples")
+	info.Runs, _ = db.CountTable("runs")
+
+	return info, nil
+}
+
+// ScanStudy scans a row into a Study struct
+func (db *DB) ScanStudy(scanner interface{}, study *Study) error {
+	// This is a simplified version - in production, you'd need to match
+	// the exact database schema
+	return fmt.Errorf("ScanStudy not implemented - use GetStudy method")
+}
+
+// ScanExperiment scans a row into an Experiment struct
+func (db *DB) ScanExperiment(scanner interface{}, exp *Experiment) error {
+	// This is a simplified version - in production, you'd need to match
+	// the exact database schema
+	return fmt.Errorf("ScanExperiment not implemented - use GetExperiment method")
+}
+
+// ScanSample scans a row into a Sample struct
+func (db *DB) ScanSample(scanner interface{}, sample *Sample) error {
+	// This is a simplified version - in production, you'd need to match
+	// the exact database schema
+	return fmt.Errorf("ScanSample not implemented - use GetSample method")
+}
+
+// ScanRun scans a row into a Run struct
+func (db *DB) ScanRun(scanner interface{}, run *Run) error {
+	// This is a simplified version - in production, you'd need to match
+	// the exact database schema
+	return fmt.Errorf("ScanRun not implemented - use GetRun method")
+}
+
+// GetStudiesBatch retrieves a batch of studies
+func (db *DB) GetStudiesBatch(offset, limit int) ([]*Study, error) {
+	// Use the existing GetStudy method approach for now
+	return nil, fmt.Errorf("GetStudiesBatch not implemented")
+}
+
+// DatabaseInfo holds database statistics
+type DatabaseInfo struct {
+	Size        int64
+	Studies     int64
+	Experiments int64
+	Samples     int64
+	Runs        int64
 }
