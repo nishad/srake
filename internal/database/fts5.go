@@ -91,8 +91,8 @@ func (f *FTS5Manager) createAccessionTable() error {
 		SELECT
 			experiment_accession,
 			'experiment',
-			experiment_title,
-			library_strategy || ' ' || COALESCE(platform, '') || ' ' || COALESCE(instrument_model, '')
+			COALESCE(title, ''),
+			COALESCE(library_strategy, '') || ' ' || COALESCE(platform, '') || ' ' || COALESCE(instrument_model, '')
 		FROM experiments
 	`
 	_, err = f.db.DB.Exec(query)
@@ -106,8 +106,8 @@ func (f *FTS5Manager) createAccessionTable() error {
 		SELECT
 			sample_accession,
 			'sample',
-			sample_title,
-			COALESCE(organism, '') || ' ' || COALESCE(sample_attribute, '')
+			COALESCE(description, COALESCE(title, '')),
+			COALESCE(organism, '') || ' ' || COALESCE(scientific_name, '') || ' ' || COALESCE(tissue, '') || ' ' || COALESCE(cell_type, '')
 		FROM samples
 		LIMIT 1000000
 	`
@@ -122,7 +122,7 @@ func (f *FTS5Manager) createAccessionTable() error {
 		SELECT
 			run_accession,
 			'run',
-			run_alias,
+			COALESCE(run_accession, ''),
 			experiment_accession
 		FROM runs
 		LIMIT 1000000
@@ -147,10 +147,10 @@ func (f *FTS5Manager) createSampleFTSTable() error {
 	query := `
 		CREATE VIRTUAL TABLE fts_samples USING fts5(
 			sample_accession UNINDEXED,
-			sample_title,
-			organism,
-			sample_attribute,
 			description,
+			organism,
+			scientific_name,
+			tissue,
 			tokenize='porter'
 		)
 	`
@@ -165,10 +165,10 @@ func (f *FTS5Manager) createSampleFTSTable() error {
 		INSERT INTO fts_samples
 		SELECT
 			sample_accession,
-			sample_title,
-			organism,
-			sample_attribute,
-			sample_description
+			COALESCE(description, COALESCE(title, '')),
+			COALESCE(organism, ''),
+			COALESCE(scientific_name, ''),
+			COALESCE(tissue, '')
 		FROM samples
 		LIMIT 1000000
 	`
@@ -193,8 +193,8 @@ func (f *FTS5Manager) createRunFTSTable() error {
 		CREATE VIRTUAL TABLE fts_runs USING fts5(
 			run_accession UNINDEXED,
 			experiment_accession UNINDEXED,
-			run_alias,
-			run_attribute,
+			total_spots,
+			total_bases,
 			tokenize='porter'
 		)
 	`
@@ -210,8 +210,8 @@ func (f *FTS5Manager) createRunFTSTable() error {
 		SELECT
 			run_accession,
 			experiment_accession,
-			run_alias,
-			run_attribute
+			CAST(total_spots AS TEXT),
+			CAST(total_bases AS TEXT)
 		FROM runs
 		LIMIT 1000000
 	`
@@ -267,9 +267,9 @@ func (f *FTS5Manager) SearchSamples(query string, limit int) ([]SampleResult, er
 	sqlQuery := `
 		SELECT
 			sample_accession,
-			sample_title,
+			description,
 			organism,
-			sample_attribute,
+			scientific_name,
 			bm25(fts_samples) as score
 		FROM fts_samples
 		WHERE fts_samples MATCH ?
@@ -286,7 +286,7 @@ func (f *FTS5Manager) SearchSamples(query string, limit int) ([]SampleResult, er
 	var results []SampleResult
 	for rows.Next() {
 		var r SampleResult
-		err := rows.Scan(&r.SampleAccession, &r.Title, &r.Organism, &r.Attribute, &r.Score)
+		err := rows.Scan(&r.SampleAccession, &r.Description, &r.Organism, &r.ScientificName, &r.Score)
 		if err != nil {
 			return nil, err
 		}
@@ -304,8 +304,8 @@ func (f *FTS5Manager) SearchRuns(query string, limit int) ([]RunResult, error) {
 		SELECT
 			run_accession,
 			experiment_accession,
-			run_alias,
-			run_attribute,
+			total_spots,
+			total_bases,
 			bm25(fts_runs) as score
 		FROM fts_runs
 		WHERE fts_runs MATCH ?
@@ -322,7 +322,7 @@ func (f *FTS5Manager) SearchRuns(query string, limit int) ([]RunResult, error) {
 	var results []RunResult
 	for rows.Next() {
 		var r RunResult
-		err := rows.Scan(&r.RunAccession, &r.ExperimentAccession, &r.Alias, &r.Attribute, &r.Score)
+		err := rows.Scan(&r.RunAccession, &r.ExperimentAccession, &r.TotalSpots, &r.TotalBases, &r.Score)
 		if err != nil {
 			return nil, err
 		}
@@ -399,16 +399,16 @@ type AccessionResult struct {
 
 type SampleResult struct {
 	SampleAccession string
-	Title           string
+	Description     string
 	Organism        string
-	Attribute       string
+	ScientificName  string
 	Score           float64
 }
 
 type RunResult struct {
 	RunAccession        string
 	ExperimentAccession string
-	Alias               string
-	Attribute           string
+	TotalSpots          string
+	TotalBases          string
 	Score               float64
 }

@@ -77,7 +77,7 @@ func DefaultConfig() *Config {
 		},
 		Search: SearchConfig{
 			Enabled:        true,
-			Backend:        "bleve",
+			Backend:        getSearchBackend(),
 			IndexPath:      paths.GetIndexPath(),
 			RebuildOnStart: false,
 			AutoSync:       true,
@@ -212,6 +212,16 @@ func (c *Config) EnsureDirectories() error {
 	}
 
 	return nil
+}
+
+// getSearchBackend returns the search backend to use, checking environment variable first
+func getSearchBackend() string {
+	// Check environment variable for override
+	if backend := os.Getenv("SRAKE_SEARCH_BACKEND"); backend != "" {
+		return backend
+	}
+	// Default to tiered backend for optimized performance
+	return "tiered"
 }
 
 // expandPath expands ~ to home directory

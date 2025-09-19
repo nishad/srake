@@ -2,8 +2,10 @@ package search
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -437,19 +439,244 @@ func (t *TieredSearchBackend) Rebuild(ctx context.Context) error {
 	log.Printf("[TIERED] Starting index rebuild")
 	start := time.Now()
 
-	// Create new index with optimized mapping
+	// Step 1: Close and recreate the Bleve index with optimized mapping
 	if err := t.lazyIdx.ForceClose(); err != nil {
 		log.Printf("[TIERED] Warning: failed to close existing index: %v", err)
 	}
 
-	// TODO: Implement full rebuild logic
-	// 1. Create new index with optimized mapping
-	// 2. Index studies (Tier 1)
-	// 3. Index experiments (Tier 2)
-	// 4. Create FTS5 tables for samples/runs (Tier 3)
-	// 5. Generate embeddings if enabled
+	// Remove existing index directory to start fresh
+	if err := os.RemoveAll(t.config.IndexPath); err != nil {
+		log.Printf("[TIERED] Warning: failed to remove old index: %v", err)
+	}
+
+	// Create new lazy index with optimized mapping
+	t.lazyIdx = NewLazyIndex(t.config.IndexPath, t.config.IdleTimeout)
+
+	// Step 2: Create FTS5 tables for Tier 3 (samples/runs)
+	log.Printf("[TIERED] Creating FTS5 tables for fast accession lookups")
+	ftsManager := database.NewFTS5Manager(t.db)
+	if err := ftsManager.CreateFTSTables(); err != nil {
+		return fmt.Errorf("failed to create FTS5 tables: %w", err)
+	}
+
+	// Step 3: Index studies (Tier 1) - most important, full indexing
+	if t.config.IndexStudies {
+		log.Printf("[TIERED] Indexing studies (Tier 1)")
+		if err := t.indexStudies(ctx); err != nil {
+			return fmt.Errorf("failed to index studies: %w", err)
+		}
+	}
+
+	// Step 4: Index experiments (Tier 2) - selective indexing
+	if t.config.IndexExperiments {
+		log.Printf("[TIERED] Indexing experiments (Tier 2)")
+		if err := t.indexExperiments(ctx); err != nil {
+			return fmt.Errorf("failed to index experiments: %w", err)
+		}
+	}
+
+	// Step 5: Generate embeddings if enabled
+	if t.config.UseEmbeddings && t.embedder != nil {
+		log.Printf("[TIERED] Generating vector embeddings")
+		// TODO: Implement embedding generation
+		// This would typically generate embeddings for study abstracts
+	}
+
+	// Step 6: Optimize FTS5 tables for better performance
+	if err := ftsManager.OptimizeFTSTables(); err != nil {
+		log.Printf("[TIERED] Warning: failed to optimize FTS5 tables: %v", err)
+	}
 
 	log.Printf("[TIERED] Index rebuild completed in %v", time.Since(start))
+	return nil
+}
+
+// indexStudies indexes all studies with aggregated metadata
+func (t *TieredSearchBackend) indexStudies(ctx context.Context) error {
+	query := `
+		SELECT
+			s.study_accession,
+			s.study_title,
+			s.study_abstract,
+			s.study_type,
+			GROUP_CONCAT(DISTINCT e.library_strategy) as library_strategies,
+			GROUP_CONCAT(DISTINCT e.platform) as platforms,
+			GROUP_CONCAT(DISTINCT sa.organism) as organisms,
+			COUNT(DISTINCT e.experiment_accession) as experiment_count,
+			COUNT(DISTINCT sa.sample_accession) as sample_count,
+			COUNT(DISTINCT r.run_accession) as run_count
+		FROM studies s
+		LEFT JOIN experiments e ON s.study_accession = e.study_accession
+		LEFT JOIN samples sa ON e.sample_accession = sa.sample_accession
+		LEFT JOIN runs r ON e.experiment_accession = r.experiment_accession
+		GROUP BY s.study_accession
+		LIMIT ?
+		OFFSET ?
+	`
+
+	offset := 0
+	batchSize := t.config.StudyBatchSize
+	totalIndexed := 0
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		rows, err := t.db.DB.QueryContext(ctx, query, batchSize, offset)
+		if err != nil {
+			return fmt.Errorf("failed to query studies: %w", err)
+		}
+
+		batch := make([]interface{}, 0, batchSize)
+		count := 0
+
+		for rows.Next() {
+			var study StudySearchDoc
+			var libStrategies, platforms, organisms sql.NullString
+
+			err := rows.Scan(
+				&study.StudyAccession,
+				&study.StudyTitle,
+				&study.StudyAbstract,
+				&study.StudyType,
+				&libStrategies,
+				&platforms,
+				&organisms,
+				&study.ExperimentCount,
+				&study.SampleCount,
+				&study.RunCount,
+			)
+			if err != nil {
+				rows.Close()
+				return fmt.Errorf("failed to scan study: %w", err)
+			}
+
+			study.Type = "study"
+
+			// Parse concatenated fields
+			if libStrategies.Valid {
+				study.LibraryStrategies = strings.Split(libStrategies.String, ",")
+			}
+			if platforms.Valid {
+				study.Platforms = strings.Split(platforms.String, ",")
+			}
+			if organisms.Valid {
+				study.Organism = organisms.String
+			}
+
+			batch = append(batch, study)
+			count++
+		}
+		rows.Close()
+
+		if count == 0 {
+			break // No more records
+		}
+
+		// Index the batch
+		if err := t.lazyIdx.BatchIndex(batch); err != nil {
+			return fmt.Errorf("failed to index study batch: %w", err)
+		}
+
+		totalIndexed += count
+		offset += batchSize
+
+		if count < batchSize {
+			break // Last batch
+		}
+	}
+
+	log.Printf("[TIERED] Indexed %d studies", totalIndexed)
+	return nil
+}
+
+// indexExperiments indexes experiments with selective fields
+func (t *TieredSearchBackend) indexExperiments(ctx context.Context) error {
+	query := `
+		SELECT
+			e.experiment_accession,
+			e.study_accession,
+			e.experiment_title,
+			e.library_strategy,
+			e.library_source,
+			e.library_selection,
+			e.library_layout,
+			e.platform,
+			e.instrument_model
+		FROM experiments e
+		LIMIT ?
+		OFFSET ?
+	`
+
+	offset := 0
+	batchSize := t.config.ExpBatchSize
+	totalIndexed := 0
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		rows, err := t.db.DB.QueryContext(ctx, query, batchSize, offset)
+		if err != nil {
+			return fmt.Errorf("failed to query experiments: %w", err)
+		}
+
+		batch := make([]interface{}, 0, batchSize)
+		count := 0
+
+		for rows.Next() {
+			var exp ExperimentDoc
+			var studyAccession, title, libSource, libSelection, libLayout sql.NullString
+
+			err := rows.Scan(
+				&exp.ExperimentAccession,
+				&studyAccession,
+				&title,
+				&exp.LibraryStrategy,
+				&libSource,
+				&libSelection,
+				&libLayout,
+				&exp.Platform,
+				&exp.InstrumentModel,
+			)
+			if err != nil {
+				rows.Close()
+				return fmt.Errorf("failed to scan experiment: %w", err)
+			}
+
+			exp.Type = "experiment"
+			if title.Valid {
+				exp.Title = title.String
+			}
+			batch = append(batch, exp)
+			count++
+		}
+		rows.Close()
+
+		if count == 0 {
+			break // No more records
+		}
+
+		// Index the batch
+		if err := t.lazyIdx.BatchIndex(batch); err != nil {
+			return fmt.Errorf("failed to index experiment batch: %w", err)
+		}
+
+		totalIndexed += count
+		offset += batchSize
+
+		if count < batchSize {
+			break // Last batch
+		}
+	}
+
+	log.Printf("[TIERED] Indexed %d experiments", totalIndexed)
 	return nil
 }
 

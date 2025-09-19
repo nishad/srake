@@ -21,13 +21,14 @@ import (
 var indexCmd = &cobra.Command{
 	Use:   "index",
 	Short: "Manage search index",
-	Long: `Build, rebuild, or manage the Bleve search index for fast full-text search.
+	Long: `Build, rebuild, or manage the search index for fast full-text search.
 
-The search index enables powerful search capabilities including:
-  • Full-text search across all metadata
-  • Fuzzy search for typo tolerance
-  • Faceted search and filtering
-  • Fast response times even for large datasets`,
+The default tiered backend provides optimized performance:
+  • Tier 1: Studies with Bleve index (~500K records)
+  • Tier 2: Experiments with selective Bleve (~2M records)
+  • Tier 3: Samples/Runs with SQLite FTS5 (~34M records)
+  • Smart query intent detection for optimal tier routing
+  • Memory-optimized lazy index loading`,
 	Example: `  # Build or rebuild the search index
   srake index --build
 
@@ -59,6 +60,7 @@ var (
 	indexBatchSize   int
 	indexWorkers     int
 	indexPath        string
+	indexBackend     string
 	indexEmbeddings  bool
 	embeddingModel   string
 	indexProgress    bool
@@ -75,6 +77,7 @@ func init() {
 	indexCmd.Flags().IntVar(&indexBatchSize, "batch-size", 500, "Batch size for indexing")
 	indexCmd.Flags().IntVar(&indexWorkers, "workers", 0, "Number of workers (0 = auto)")
 	indexCmd.Flags().StringVar(&indexPath, "path", "", "Custom index path")
+	indexCmd.Flags().StringVar(&indexBackend, "backend", "", "Search backend to use (tiered, bleve) - defaults to tiered")
 	indexCmd.Flags().BoolVar(&indexEmbeddings, "with-embeddings", false, "Generate vector embeddings for documents")
 	indexCmd.Flags().StringVar(&embeddingModel, "embedding-model", "Xenova/SapBERT-from-PubMedBERT-fulltext", "Model to use for embeddings")
 	indexCmd.Flags().BoolVar(&indexProgress, "progress", false, "Show real-time indexing progress")
@@ -107,6 +110,11 @@ func runSearchIndex(cmd *cobra.Command, args []string) error {
 
 	cfg.Search.Enabled = true
 	cfg.Search.BatchSize = indexBatchSize
+
+	// Set backend if specified
+	if indexBackend != "" {
+		cfg.Search.Backend = indexBackend
+	}
 
 	// Configure embeddings if requested
 	if indexEmbeddings {
