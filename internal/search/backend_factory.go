@@ -2,10 +2,12 @@ package search
 
 import (
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/nishad/srake/internal/config"
 	"github.com/nishad/srake/internal/database"
+	"github.com/nishad/srake/internal/embeddings"
 	"github.com/nishad/srake/internal/paths"
 )
 
@@ -35,7 +37,35 @@ func CreateSearchBackend(cfg *config.Config) (SearchBackend, error) {
 			IndexPath:        paths.GetIndexPath(),
 			EmbeddingsPath:   paths.GetEmbeddingsPath(),
 		}
-		return NewTieredSearchBackend(db, tieredCfg)
+
+		backend, err := NewTieredSearchBackend(db, tieredCfg)
+		if err != nil {
+			return nil, err
+		}
+
+		// Initialize embedder if vector search is enabled
+		if cfg.IsVectorEnabled() {
+			embedderConfig := embeddings.DefaultEmbedderConfig()
+			embedderConfig.ModelsDir = paths.GetModelsPath()
+
+			embedder, err := embeddings.NewEmbedder(embedderConfig)
+			if err != nil {
+				log.Printf("[FACTORY] Warning: failed to create embedder: %v", err)
+				// Continue without embeddings
+			} else {
+				// Load the default model
+				if err := embedder.LoadDefaultModel(); err != nil {
+					log.Printf("[FACTORY] Warning: failed to load default embedding model: %v", err)
+					// Continue without embeddings
+				} else {
+					// Backend is already the correct type (*TieredSearchBackend)
+					backend.SetEmbedder(embedder)
+					log.Printf("[FACTORY] Successfully initialized embedder for tiered backend")
+				}
+			}
+		}
+
+		return backend, nil
 	}
 
 	// Try to create the enhanced backend if available

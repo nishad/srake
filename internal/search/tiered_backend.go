@@ -106,7 +106,15 @@ func NewTieredSearchBackend(db *database.DB, cfg *TieredConfig) (*TieredSearchBa
 		config:     cfg,
 		studyCache: make(map[string]*StudySearchDoc),
 		cacheTTL:   cfg.CacheTTL,
+		embedder:   nil, // Will be set via SetEmbedder if needed
 	}, nil
+}
+
+// SetEmbedder sets the embedder for vector search
+func (t *TieredSearchBackend) SetEmbedder(embedder EmbedderInterface) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.embedder = embedder
 }
 
 // IsEnabled returns true if the backend is enabled
@@ -475,79 +483,7 @@ func (t *TieredSearchBackend) Rebuild(ctx context.Context) error {
 		}
 	}
 
-	// Step 5: Generate embeddings if enabled
-	if t.config.UseEmbeddings && t.embedder != nil && t.embedder.IsEnabled() {
-		log.Printf("[TIERED] Generating vector embeddings for studies")
-
-		// Generate embeddings for studies in batches
-		batchSize := 100
-		offset := 0
-		totalEmbeddings := 0
-
-		for {
-			// Query studies in batches
-			query := `
-				SELECT study_accession,
-					   COALESCE(study_title, '') || ' ' ||
-					   COALESCE(study_abstract, '') || ' ' ||
-					   COALESCE(study_type, '') AS text
-				FROM studies
-				LIMIT ? OFFSET ?
-			`
-
-			rows, err := t.db.DB.Query(query, batchSize, offset)
-			if err != nil {
-				return fmt.Errorf("failed to query studies for embeddings: %w", err)
-			}
-
-			var accessions []string
-			var texts []string
-
-			for rows.Next() {
-				var accession, text string
-				if err := rows.Scan(&accession, &text); err != nil {
-					rows.Close()
-					return fmt.Errorf("failed to scan study for embedding: %w", err)
-				}
-				accessions = append(accessions, accession)
-				texts = append(texts, text)
-			}
-			rows.Close()
-
-			if len(texts) == 0 {
-				break
-			}
-
-			// Generate embeddings for this batch
-			embeddings, err := t.embedder.EmbedBatch(texts)
-			if err != nil {
-				log.Printf("[TIERED] Warning: failed to generate embeddings for batch: %v", err)
-				// Continue with next batch
-				offset += batchSize
-				continue
-			}
-
-			// Store embeddings in the index
-			for i := range accessions {
-				if i < len(embeddings) {
-					// The embeddings are stored as part of the document when it's indexed
-					// For now, we're tracking successful generation
-					totalEmbeddings++
-					// TODO: Store embeddings in a separate vector store or as part of Bleve documents
-					// when we update the document structure to support vector fields
-				}
-			}
-
-			offset += batchSize
-			if offset%1000 == 0 {
-				log.Printf("[TIERED] Generated %d embeddings so far...", totalEmbeddings)
-			}
-		}
-
-		log.Printf("[TIERED] Generated %d total embeddings for studies", totalEmbeddings)
-	}
-
-	// Step 6: Optimize FTS5 tables for better performance
+	// Step 5: Optimize FTS5 tables for better performance
 	if err := ftsManager.OptimizeFTSTables(); err != nil {
 		log.Printf("[TIERED] Warning: failed to optimize FTS5 tables: %v", err)
 	}
@@ -572,7 +508,7 @@ func (t *TieredSearchBackend) indexStudies(ctx context.Context) error {
 			COUNT(DISTINCT r.run_accession) as run_count
 		FROM studies s
 		LEFT JOIN experiments e ON s.study_accession = e.study_accession
-		LEFT JOIN samples sa ON e.sample_accession = sa.sample_accession
+		LEFT JOIN samples sa ON e.experiment_accession = sa.experiment_accession
 		LEFT JOIN runs r ON e.experiment_accession = r.experiment_accession
 		GROUP BY s.study_accession
 		LIMIT ?
@@ -641,7 +577,40 @@ func (t *TieredSearchBackend) indexStudies(ctx context.Context) error {
 			break // No more records
 		}
 
-		// Index the batch
+		// Generate embeddings for this batch if embedder is available
+		if t.config.UseEmbeddings && t.embedder != nil && t.embedder.IsEnabled() {
+			texts := make([]string, len(batch))
+			for i, doc := range batch {
+				if study, ok := doc.(StudySearchDoc); ok {
+					// Combine title and abstract for embedding
+					text := study.StudyTitle
+					if study.StudyAbstract != "" {
+						text = text + " " + study.StudyAbstract
+					}
+					if study.StudyType != "" {
+						text = text + " " + study.StudyType
+					}
+					texts[i] = text
+				}
+			}
+
+			// Generate embeddings
+			embeddings, err := t.embedder.EmbedBatch(texts)
+			if err != nil {
+				log.Printf("[TIERED] Warning: failed to generate embeddings for batch: %v", err)
+			} else {
+				// Add embeddings to the documents
+				for i, doc := range batch {
+					if study, ok := doc.(StudySearchDoc); ok && i < len(embeddings) {
+						study.Embedding = embeddings[i]
+						batch[i] = study
+					}
+				}
+				log.Printf("[TIERED] Generated embeddings for %d studies", len(embeddings))
+			}
+		}
+
+		// Index the batch (with or without embeddings)
 		if err := t.lazyIdx.BatchIndex(batch); err != nil {
 			return fmt.Errorf("failed to index study batch: %w", err)
 		}
@@ -664,11 +633,9 @@ func (t *TieredSearchBackend) indexExperiments(ctx context.Context) error {
 		SELECT
 			e.experiment_accession,
 			e.study_accession,
-			e.experiment_title,
+			e.title,
 			e.library_strategy,
 			e.library_source,
-			e.library_selection,
-			e.library_layout,
 			e.platform,
 			e.instrument_model
 		FROM experiments e
@@ -697,7 +664,7 @@ func (t *TieredSearchBackend) indexExperiments(ctx context.Context) error {
 
 		for rows.Next() {
 			var exp ExperimentDoc
-			var studyAccession, title, libSource, libSelection, libLayout sql.NullString
+			var studyAccession, title, libSource sql.NullString
 
 			err := rows.Scan(
 				&exp.ExperimentAccession,
@@ -705,8 +672,6 @@ func (t *TieredSearchBackend) indexExperiments(ctx context.Context) error {
 				&title,
 				&exp.LibraryStrategy,
 				&libSource,
-				&libSelection,
-				&libLayout,
 				&exp.Platform,
 				&exp.InstrumentModel,
 			)
@@ -789,13 +754,6 @@ func (t *TieredSearchBackend) Close() error {
 	return t.lazyIdx.Close()
 }
 
-// SetEmbedder sets the embedder for vector search
-func (t *TieredSearchBackend) SetEmbedder(embedder EmbedderInterface) {
-	t.mu.Lock()
-	defer t.mu.Unlock()
-	t.embedder = embedder
-}
-
 // RefreshCache refreshes the study cache
 func (t *TieredSearchBackend) RefreshCache() error {
 	t.mu.Lock()
@@ -818,7 +776,7 @@ func (t *TieredSearchBackend) RefreshCache() error {
 			COUNT(DISTINCT r.run_accession) as run_count
 		FROM studies s
 		LEFT JOIN experiments e ON s.study_accession = e.study_accession
-		LEFT JOIN samples sa ON e.sample_accession = sa.sample_accession
+		LEFT JOIN samples sa ON e.experiment_accession = sa.experiment_accession
 		LEFT JOIN runs r ON e.experiment_accession = r.experiment_accession
 		GROUP BY s.study_accession
 		LIMIT 10000

@@ -336,6 +336,21 @@ func PrepareTextForEmbedding(organism, libraryStrategy, title, abstract string) 
 	return strings.Join(parts, " ")
 }
 
+// Embed generates an embedding for a text string (implements EmbedderInterface)
+func (e *Embedder) Embed(text string) ([]float32, error) {
+	return e.EmbedText(text)
+}
+
+// EmbedBatch generates embeddings for multiple texts (implements EmbedderInterface)
+func (e *Embedder) EmbedBatch(texts []string) ([][]float32, error) {
+	return e.EmbedTexts(texts)
+}
+
+// IsEnabled checks if the embedder is enabled and has a model loaded
+func (e *Embedder) IsEnabled() bool {
+	return e.IsModelLoaded()
+}
+
 // Close releases all resources
 func (e *Embedder) Close() error {
 	e.mu.Lock()
