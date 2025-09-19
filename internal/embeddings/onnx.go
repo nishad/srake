@@ -127,11 +127,20 @@ func (e *ONNXEmbedder) downloadModel(modelPath string, cacheDir string, variant 
 
 	log.Printf("Looking for model in cache directory: %s", cacheDir)
 
-	// Create cache directory structure matching HuggingFace layout
-	modelDir := filepath.Join(cacheDir, strings.Replace(modelPath, "/", "_", -1))
-	onnxDir := filepath.Join(modelDir, "onnx")
-	if err := os.MkdirAll(onnxDir, 0755); err != nil {
-		return "", err
+	// Check multiple possible locations for the model
+	// Try both underscore and slash separators
+	modelDirs := []string{
+		filepath.Join(cacheDir, strings.Replace(modelPath, "/", "_", -1)),
+		filepath.Join(cacheDir, modelPath),
+	}
+
+	// Also check common user directories
+	home, _ := os.UserHomeDir()
+	if home != "" {
+		modelDirs = append(modelDirs,
+			filepath.Join(home, ".local/share/srake/models", strings.Replace(modelPath, "/", "_", -1)),
+			filepath.Join(home, ".srake/models", strings.Replace(modelPath, "/", "_", -1)),
+		)
 	}
 
 	// Determine model filename based on variant
@@ -147,46 +156,32 @@ func (e *ONNXEmbedder) downloadModel(modelPath string, cacheDir string, variant 
 		modelFile = "model_bnb4.onnx"
 	}
 
-	// Check if model already exists and verify size
-	onnxPath := filepath.Join(onnxDir, modelFile)
-	log.Printf("Checking for %s model at: %s", variant, onnxPath)
-	if info, err := os.Stat(onnxPath); err == nil {
-		// Size ranges for different variants
-		var minSize, maxSize int64
-		switch variant {
-		case "quantized":
-			minSize = int64(100 * 1024 * 1024) // 100 MB
-			maxSize = int64(110 * 1024 * 1024) // 110 MB
-		case "int8":
-			minSize = int64(100 * 1024 * 1024) // 100 MB
-			maxSize = int64(120 * 1024 * 1024) // 120 MB
-		case "fp16":
-			minSize = int64(200 * 1024 * 1024) // 200 MB
-			maxSize = int64(240 * 1024 * 1024) // 240 MB
-		case "bnb4":
-			minSize = int64(130 * 1024 * 1024) // 130 MB
-			maxSize = int64(160 * 1024 * 1024) // 160 MB
-		default:
-			minSize = int64(400 * 1024 * 1024) // 400 MB
-			maxSize = int64(450 * 1024 * 1024) // 450 MB
-		}
+	// Try to find existing model
+	for _, modelDir := range modelDirs {
+		onnxPath := filepath.Join(modelDir, "onnx", modelFile)
+		log.Printf("Checking for model at: %s", onnxPath)
 
-		log.Printf("Found model file, size: %.2f MB", float64(info.Size())/(1024*1024))
-		if info.Size() > minSize && info.Size() < maxSize {
-			// Verify ONNX file header
-			if e.verifyONNXFile(onnxPath) {
-				log.Printf("Using cached %s model: %s (size: %.2f MB)", variant, onnxPath, float64(info.Size())/(1024*1024))
-				return onnxPath, nil
+		if info, err := os.Stat(onnxPath); err == nil {
+			// Verify size is reasonable
+			if info.Size() > 50*1024*1024 { // At least 50MB
+				log.Printf("Found existing %s model: %s (%.2f MB)", variant, onnxPath, float64(info.Size())/(1024*1024))
+				if e.verifyONNXFile(onnxPath) {
+					return onnxPath, nil
+				}
 			}
-			log.Printf("Model file failed verification")
 		}
-		// File exists but is corrupted or wrong size
-		log.Printf("Model file size out of range (size: %.2f MB, expected: %d-%d MB)",
-			float64(info.Size())/(1024*1024), minSize/(1024*1024), maxSize/(1024*1024))
-		os.Remove(onnxPath) // Remove corrupted file
-	} else {
-		log.Printf("Model not found, will download")
 	}
+
+	// If not found, prepare to download
+	// Use the first model dir for download
+	modelDir := filepath.Join(cacheDir, strings.Replace(modelPath, "/", "_", -1))
+	onnxDir := filepath.Join(modelDir, "onnx")
+	if err := os.MkdirAll(onnxDir, 0755); err != nil {
+		return "", err
+	}
+
+	onnxPath := filepath.Join(onnxDir, modelFile)
+	log.Printf("Model not found locally, will download to: %s", onnxPath)
 
 	// Download ONNX model from HuggingFace
 	modelURL := fmt.Sprintf("https://huggingface.co/%s/resolve/main/onnx/%s", modelPath, modelFile)

@@ -22,12 +22,20 @@ func NewSearchEmbedder(cfg *config.Config) (*SearchEmbedder, error) {
 		cfg.Embeddings.ModelsDirectory,
 	)
 	if err != nil {
+		// Log warning but don't fail completely
+		// The ONNXEmbedder might have set enabled=false internally
+		if onnx != nil && !onnx.enabled {
+			return &SearchEmbedder{
+				onnx:    onnx,
+				enabled: false,
+			}, nil
+		}
 		return nil, fmt.Errorf("failed to initialize ONNX embedder: %w", err)
 	}
 
 	return &SearchEmbedder{
 		onnx:    onnx,
-		enabled: true,
+		enabled: onnx != nil && onnx.enabled,
 	}, nil
 }
 
