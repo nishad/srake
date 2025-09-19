@@ -170,7 +170,7 @@ func (qe *QueryEngine) Search(query string, opts SearchOptions) (*SearchResults,
 			if opts.IncludeFacets {
 				results.Facets = convertBleveFacets(bleveResults)
 			}
-			results.TotalHits += bleveResults.Total
+			results.TotalHits += int(bleveResults.Total)
 			mu.Unlock()
 		}
 	}()
@@ -271,7 +271,7 @@ func (qe *QueryEngine) searchMetadata(filters map[string]string, limit int) ([]M
 
 		for _, sample := range samples {
 			results = append(results, MetadataMatch{
-				ID:   sample.Accession,
+				ID:   sample.SampleAccession,
 				Type: "sample",
 				Fields: map[string]interface{}{
 					"organism":        sample.Organism,
@@ -293,7 +293,7 @@ func (qe *QueryEngine) searchMetadata(filters map[string]string, limit int) ([]M
 
 		for _, exp := range experiments {
 			results = append(results, MetadataMatch{
-				ID:   exp.Accession,
+				ID:   exp.ExperimentAccession,
 				Type: "experiment",
 				Fields: map[string]interface{}{
 					"title":            exp.Title,
@@ -374,10 +374,10 @@ func (qe *QueryEngine) IndexDocument(docType string, doc interface{}) error {
 	case "study":
 		if study, ok := doc.(*database.Study); ok {
 			bleveDoc := search.StudyDoc{
-				StudyAccession: study.Accession,
-				StudyTitle:     study.Title,
-				StudyAbstract:  study.Abstract,
-				StudyType:      study.Type,
+				StudyAccession: study.StudyAccession,
+				StudyTitle:     study.StudyTitle,
+				StudyAbstract:  study.StudyAbstract,
+				StudyType:      study.StudyType,
 				Organism:       study.Organism,
 			}
 			if err := qe.bleve.IndexStudy(bleveDoc); err != nil {
@@ -386,15 +386,15 @@ func (qe *QueryEngine) IndexDocument(docType string, doc interface{}) error {
 
 			// Generate and store embedding if available
 			if qe.embedder != nil && qe.vectors != nil {
-				text := study.Title + " " + study.Abstract + " " + study.Organism
+				text := study.StudyTitle + " " + study.StudyAbstract + " " + study.Organism
 				embedding, err := qe.embedder.EmbedText(text)
 				if err == nil {
 					pv := &vectors.ProjectVector{
-						ProjectID: study.Accession,
-						Title:     study.Title,
-						Abstract:  study.Abstract,
+						ProjectID: study.StudyAccession,
+						Title:     study.StudyTitle,
+						Abstract:  study.StudyAbstract,
 						Organism:  study.Organism,
-						StudyType: study.Type,
+						StudyType: study.StudyType,
 						Embedding: embedding,
 					}
 					if err := qe.vectors.InsertProjectVector(pv); err != nil {
@@ -407,7 +407,7 @@ func (qe *QueryEngine) IndexDocument(docType string, doc interface{}) error {
 	case "experiment":
 		if exp, ok := doc.(*database.Experiment); ok {
 			bleveDoc := search.ExperimentDoc{
-				ExperimentAccession: exp.Accession,
+				ExperimentAccession: exp.ExperimentAccession,
 				Title:               exp.Title,
 				LibraryStrategy:     exp.LibraryStrategy,
 				Platform:            exp.Platform,
@@ -421,7 +421,7 @@ func (qe *QueryEngine) IndexDocument(docType string, doc interface{}) error {
 	case "sample":
 		if sample, ok := doc.(*database.Sample); ok {
 			bleveDoc := search.SampleDoc{
-				SampleAccession: sample.Accession,
+				SampleAccession: sample.SampleAccession,
 				Organism:        sample.Organism,
 				ScientificName:  sample.ScientificName,
 				Tissue:          sample.Tissue,
@@ -438,7 +438,7 @@ func (qe *QueryEngine) IndexDocument(docType string, doc interface{}) error {
 				embedding, err := qe.embedder.EmbedText(text)
 				if err == nil {
 					sv := &vectors.SampleVector{
-						SampleID:    sample.Accession,
+						SampleID:    sample.SampleAccession,
 						Description: sample.Description,
 						Organism:    sample.Organism,
 						Tissue:      sample.Tissue,

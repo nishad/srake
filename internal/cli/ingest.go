@@ -260,7 +260,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		// Start ingestion
 		fmt.Printf("\n🚀 Starting filtered ingestion...\n")
 		fmt.Println("   This may take a while for large files.")
-		fmt.Println("   Press Ctrl+C to cancel.\n")
+		fmt.Println("   Press Ctrl+C to cancel.")
 
 		startTime := time.Now()
 
@@ -319,7 +319,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		// Start ingestion
 		fmt.Printf("\n🚀 Starting ingestion...\n")
 		fmt.Println("   This may take a while for large files.")
-		fmt.Println("   Press Ctrl+C to cancel.\n")
+		fmt.Println("   Press Ctrl+C to cancel.")
 
 		startTime := time.Now()
 
@@ -494,7 +494,7 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		// Start ingestion
 		fmt.Printf("\n🚀 Starting filtered ingestion...\n")
 		fmt.Println("   This may take a while for large files.")
-		fmt.Println("   Press Ctrl+C to cancel.\n")
+		fmt.Println("   Press Ctrl+C to cancel.")
 
 		startTime := time.Now()
 
@@ -550,7 +550,7 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		// Start ingestion
 		fmt.Printf("\n🚀 Starting ingestion...\n")
 		fmt.Println("   This may take a while for large files.")
-		fmt.Println("   Press Ctrl+C to cancel.\n")
+		fmt.Println("   Press Ctrl+C to cancel.")
 
 		startTime := time.Now()
 

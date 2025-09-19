@@ -11,7 +11,7 @@ import (
 
 func main() {
 	// Example: Process SRA metadata from URL
-	db, err := database.Open("example.db")
+	db, err := database.Initialize("example.db")
 	if err != nil {
 		log.Fatal(err)
 	}
