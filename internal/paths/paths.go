@@ -48,11 +48,37 @@ func GetDatabasePath() string {
 }
 
 // GetIndexPath returns the path to the search index
+// Default: adjacent to database for easy backup/migration
 func GetIndexPath() string {
 	if path := os.Getenv("SRAKE_INDEX_PATH"); path != "" {
 		return path
 	}
-	return filepath.Join(GetPaths().CacheDir, "index", "srake.bleve")
+
+	// Get database path and place index adjacent to it
+	dbPath := GetDatabasePath()
+	dir := filepath.Dir(dbPath)
+	dbName := filepath.Base(dbPath)
+	dbNameNoExt := dbName[:len(dbName)-len(filepath.Ext(dbName))]
+
+	// Return path like: /data/myproject/srake.bleve (next to srake.db)
+	return filepath.Join(dir, dbNameNoExt+".bleve")
+}
+
+// GetEmbeddingsPath returns the path to the embeddings directory
+// Default: adjacent to database for easy backup/migration
+func GetEmbeddingsPath() string {
+	if path := os.Getenv("SRAKE_EMBEDDINGS_PATH"); path != "" {
+		return path
+	}
+
+	// Get database path and place embeddings adjacent to it
+	dbPath := GetDatabasePath()
+	dir := filepath.Dir(dbPath)
+	dbName := filepath.Base(dbPath)
+	dbNameNoExt := dbName[:len(dbName)-len(filepath.Ext(dbName))]
+
+	// Return path like: /data/myproject/srake.embeddings (next to srake.db)
+	return filepath.Join(dir, dbNameNoExt+".embeddings")
 }
 
 // GetModelsPath returns the path to the models directory
