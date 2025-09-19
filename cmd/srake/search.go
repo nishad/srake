@@ -110,6 +110,17 @@ var (
 	searchKNN         int
 )
 
+func init() {
+	// Search command flags
+	searchCmd.Flags().StringVarP(&searchOrganism, "organism", "o", "", "Filter by organism")
+	searchCmd.Flags().StringVar(&searchPlatform, "platform", "", "Filter by platform")
+	searchCmd.Flags().StringVar(&searchLibraryStrategy, "library-strategy", "", "Filter by library strategy")
+	searchCmd.Flags().IntVarP(&searchLimit, "limit", "l", 100, "Maximum results to return")
+	searchCmd.Flags().StringVarP(&searchFormat, "format", "f", "table", "Output format (table|json|csv|tsv)")
+	searchCmd.Flags().StringVar(&searchOutput, "output", "", "Save results to file")
+	searchCmd.Flags().BoolVar(&searchNoHeader, "no-header", false, "Omit header in output")
+}
+
 func runSearch(cmd *cobra.Command, args []string) error {
 	query := ""
 	if len(args) > 0 {

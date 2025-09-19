@@ -29,6 +29,13 @@ var (
 	metadataOutput string
 )
 
+func init() {
+	// Metadata command flags
+	metadataCmd.Flags().StringVarP(&metadataFormat, "format", "f", "table", "Output format (table|json|yaml)")
+	metadataCmd.Flags().StringVar(&metadataFields, "fields", "", "Comma-separated list of fields")
+	metadataCmd.Flags().BoolVar(&metadataExpand, "expand", false, "Expand nested structures")
+}
+
 func runMetadata(cmd *cobra.Command, args []string) error {
 	accessions := args
 

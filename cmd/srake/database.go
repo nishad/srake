@@ -27,6 +27,11 @@ var dbInfoCmd = &cobra.Command{
 	RunE:  runDBInfo,
 }
 
+func init() {
+	// Add subcommands to db
+	dbCmd.AddCommand(dbInfoCmd)
+}
+
 func runDBInfo(cmd *cobra.Command, args []string) error {
 	dbPath := serverDBPath
 	if dbPath == "" {

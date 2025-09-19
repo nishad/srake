@@ -47,6 +47,7 @@ var (
 	cleanSearch   bool
 	cleanDownload bool
 	cleanIndex    bool
+	yes           bool  // Auto-confirm flag
 )
 
 func init() {

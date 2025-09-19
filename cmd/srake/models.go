@@ -79,6 +79,16 @@ var modelsDownloadCmd = &cobra.Command{
 
 var downloadVariant string
 
+func init() {
+	// Models download command flags
+	modelsDownloadCmd.Flags().StringVar(&downloadVariant, "variant", "", "Model variant to download (quantized|fp16|full)")
+
+	// Add subcommands to models
+	modelsCmd.AddCommand(modelsListCmd)
+	modelsCmd.AddCommand(modelsDownloadCmd)
+	modelsCmd.AddCommand(modelsTestCmd)
+}
+
 func runModelsDownload(cmd *cobra.Command, args []string) error {
 	modelID := args[0]
 
