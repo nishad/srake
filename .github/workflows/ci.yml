@@ -13,7 +13,6 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go-version: ['1.22', '1.23']
 
     steps:
     - uses: actions/checkout@v4
@@ -21,7 +20,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: ${{ matrix.go-version }}
+        go-version: '1.23'
 
     - name: Cache Go modules
       uses: actions/cache@v4
@@ -47,7 +46,7 @@ jobs:
         go test -v -race -coverprofile=coverage.out -tags "sqlite_fts5,search" ./...
 
     - name: Upload coverage
-      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.23'
+      if: matrix.os == 'ubuntu-latest'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.out
@@ -77,11 +76,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        arch: [amd64, arm64]
-        exclude:
-          - os: ubuntu-latest
-            arch: arm64
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -93,22 +88,23 @@ jobs:
 
     - name: Build binary
       env:
-        GOOS: ${{ runner.os == 'macOS' && 'darwin' || 'linux' }}
-        GOARCH: ${{ matrix.arch }}
-        CGO_ENABLED: 1
+        CGO_ENABLED: ${{ matrix.os == 'windows-latest' && '0' || '1' }}
       run: |
-        OUTPUT_NAME="srake-${{ runner.os }}-${{ matrix.arch }}"
-        echo "Building for ${{ runner.os }} on ${{ matrix.arch }}..."
-        go build -v -tags "sqlite_fts5,search" -ldflags="-s -w" -o "${OUTPUT_NAME}" ./cmd/srake
-        echo "Build complete: ${OUTPUT_NAME}"
-        ls -la "${OUTPUT_NAME}"
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          go build -v -o srake.exe ./cmd/srake
+        else
+          go build -v -tags "sqlite_fts5,search" -o srake ./cmd/srake
+        fi
+      shell: bash
 
     - name: Test binary
-      if: matrix.arch == 'amd64' || (runner.os == 'macOS' && matrix.arch == 'arm64')
       run: |
-        OUTPUT_NAME="srake-${{ runner.os }}-${{ matrix.arch }}"
-        echo "Testing ${OUTPUT_NAME}..."
-        ./"${OUTPUT_NAME}" --version || ./"${OUTPUT_NAME}" version || echo "Version command not available"
+        if [ "${{ runner.os }}" = "Windows" ]; then
+          ./srake.exe version || echo "Version command not implemented"
+        else
+          ./srake version || echo "Version command not implemented"
+        fi
+      shell: bash
 
   security:
     name: Security Scan

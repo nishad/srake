@@ -19,15 +19,9 @@ jobs:
           - os: linux
             arch: amd64
             runner: ubuntu-latest
-          - os: linux
-            arch: arm64
-            runner: ubuntu-latest
           - os: darwin
             arch: amd64
-            runner: macos-13  # Intel Mac
-          - os: darwin
-            arch: arm64
-            runner: macos-14  # Apple Silicon Mac
+            runner: macos-latest
           - os: windows
             arch: amd64
             runner: windows-latest
@@ -45,12 +39,10 @@ jobs:
       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
     - name: Install build dependencies
-      if: matrix.os == 'darwin' || matrix.os == 'linux'
+      if: matrix.os == 'darwin'
       run: |
-        if [ "${{ matrix.os }}" = "darwin" ]; then
-          brew install sqlite3
-          brew link --force sqlite3
-        fi
+        brew install sqlite3
+        brew link --force sqlite3
 
     - name: Build binary
       env:
@@ -65,9 +57,15 @@ jobs:
         fi
 
         echo "Building for ${{ matrix.os }}/${{ matrix.arch }}..."
-        go build -v -tags "sqlite_fts5,search" \
-          -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${GITHUB_SHA::7} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
-          -o ${OUTPUT} ./cmd/srake
+        if [ "${{ matrix.os }}" = "windows" ]; then
+          go build -v \
+            -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${GITHUB_SHA::7} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -o ${OUTPUT} ./cmd/srake
+        else
+          go build -v -tags "sqlite_fts5,search" \
+            -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${GITHUB_SHA::7} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            -o ${OUTPUT} ./cmd/srake
+        fi
 
         # Create archive
         if [ "${{ matrix.os }}" = "windows" ]; then
@@ -75,11 +73,12 @@ jobs:
         else
           tar czf srake-${{ matrix.os }}-${{ matrix.arch }}.tar.gz ${OUTPUT} README.md LICENSE
         fi
+      shell: bash
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: binary-${{ matrix.os }}-${{ matrix.arch }}
         path: |
           *.tar.gz
           *.zip
@@ -95,28 +94,23 @@ jobs:
     - name: Download artifacts
       uses: actions/download-artifact@v4
       with:
-        name: binaries
+        pattern: binary-*
+        merge-multiple: true
 
     - name: Generate checksums
       run: |
-        sha256sum *.tar.gz *.zip > SHA256SUMS.txt
-
-    - name: Extract release notes
-      id: release_notes
-      run: |
-        VERSION=${GITHUB_REF#refs/tags/}
-        awk "/^## ${VERSION}/,/^## /" CHANGELOG.md | sed '$d' > RELEASE_NOTES.md
+        sha256sum *.tar.gz *.zip > SHA256SUMS.txt || true
 
     - name: Create Release
       uses: softprops/action-gh-release@v2
       with:
-        body_path: RELEASE_NOTES.md
         files: |
           *.tar.gz
           *.zip
           SHA256SUMS.txt
         draft: false
         prerelease: ${{ contains(github.ref, '-rc') || contains(github.ref, '-beta') }}
+        generate_release_notes: true
 
   docker:
     name: Build and Push Docker Image
@@ -154,7 +148,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}

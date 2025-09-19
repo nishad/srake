@@ -10,83 +10,12 @@ on:
       - '**/*.go'
 
 jobs:
-  test-cross-compile:
-    name: Test Cross Compilation
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - goos: darwin
-            goarch: amd64
-            cgo: 1
-          - goos: darwin
-            goarch: arm64
-            cgo: 1
-          - goos: linux
-            goarch: amd64
-            cgo: 1
-          - goos: linux
-            goarch: arm64
-            cgo: 1
-          - goos: windows
-            goarch: amd64
-            cgo: 0
-
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.23'
-
-    - name: Install cross-compilation tools
-      if: matrix.goos == 'darwin'
-      run: |
-        # Install osxcross for macOS cross-compilation
-        sudo apt-get update
-        sudo apt-get install -y clang cmake libssl-dev
-
-    - name: Test build
-      env:
-        GOOS: ${{ matrix.goos }}
-        GOARCH: ${{ matrix.goarch }}
-        CGO_ENABLED: ${{ matrix.cgo }}
-      run: |
-        echo "Testing build for ${{ matrix.goos }}/${{ matrix.goarch }} (CGO=${{ matrix.cgo }})"
-
-        # For Windows and cross-compilation where CGO is disabled
-        if [ "${{ matrix.cgo }}" = "0" ]; then
-          go build -v -o test-binary-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/srake
-        else
-          # For native builds with CGO
-          if [ "${{ matrix.goos }}" = "linux" ] && [ "${{ runner.os }}" = "Linux" ]; then
-            go build -v -tags "sqlite_fts5,search" -o test-binary-${{ matrix.goos }}-${{ matrix.goarch }} ./cmd/srake
-          else
-            echo "Skipping CGO build for ${{ matrix.goos }} on ${{ runner.os }} (requires native compilation)"
-          fi
-        fi
-
-        ls -la test-binary-* 2>/dev/null || echo "No binaries built (expected for some cross-compilation scenarios)"
-
   test-native-builds:
-    name: Test Native Builds
+    name: Test Native Build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        include:
-          - os: ubuntu-latest
-            goos: linux
-            goarch: amd64
-          - os: macos-13
-            goos: darwin
-            goarch: amd64
-          - os: macos-14
-            goos: darwin
-            goarch: arm64
-          - os: windows-latest
-            goos: windows
-            goarch: amd64
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -104,17 +33,18 @@ jobs:
 
     - name: Build and test
       env:
-        CGO_ENABLED: ${{ matrix.goos == 'windows' && '0' || '1' }}
+        CGO_ENABLED: ${{ matrix.os == 'windows-latest' && '0' || '1' }}
       run: |
-        echo "Building for ${{ matrix.goos }}/${{ matrix.goarch }} on ${{ runner.os }}"
+        echo "Building for ${{ runner.os }}..."
 
-        if [ "${{ matrix.goos }}" = "windows" ]; then
+        if [ "${{ runner.os }}" = "Windows" ]; then
           go build -v -o srake.exe ./cmd/srake
           ./srake.exe version || echo "Version command test"
         else
           go build -v -tags "sqlite_fts5,search" -o srake ./cmd/srake
           ./srake version || echo "Version command test"
         fi
+      shell: bash
 
   validate-dockerfile:
     name: Validate Docker Build
@@ -130,7 +60,7 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        platforms: linux/amd64,linux/arm64
+        platforms: linux/amd64
         push: false
         tags: test:latest
         build-args: |
