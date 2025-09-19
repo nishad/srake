@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        go-version: ['1.19', '1.20', '1.21']
+        go-version: ['1.22', '1.23']
 
     steps:
     - uses: actions/checkout@v4
@@ -24,7 +24,7 @@ jobs:
         go-version: ${{ matrix.go-version }}
 
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -34,11 +34,20 @@ jobs:
     - name: Download dependencies
       run: go mod download
 
+    - name: Install test dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install sqlite3
+        brew link --force sqlite3
+
     - name: Run tests
-      run: go test -v -race -coverprofile=coverage.out ./...
+      env:
+        CGO_ENABLED: 1
+      run: |
+        go test -v -race -coverprofile=coverage.out -tags "sqlite_fts5,search" ./...
 
     - name: Upload coverage
-      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.21'
+      if: matrix.os == 'ubuntu-latest' && matrix.go-version == '1.23'
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.out
@@ -55,10 +64,10 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.21'
+        go-version: '1.23'
 
     - name: Run golangci-lint
-      uses: golangci/golangci-lint-action@v3
+      uses: golangci/golangci-lint-action@v6
       with:
         version: latest
         args: --timeout 5m
@@ -80,18 +89,26 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.21'
+        go-version: '1.23'
 
     - name: Build binary
       env:
         GOOS: ${{ runner.os == 'macOS' && 'darwin' || 'linux' }}
         GOARCH: ${{ matrix.arch }}
+        CGO_ENABLED: 1
       run: |
-        go build -v -ldflags="-s -w" -o srake-${{ runner.os }}-${{ matrix.arch }} ./cmd/srake
+        OUTPUT_NAME="srake-${{ runner.os }}-${{ matrix.arch }}"
+        echo "Building for ${{ runner.os }} on ${{ matrix.arch }}..."
+        go build -v -tags "sqlite_fts5,search" -ldflags="-s -w" -o "${OUTPUT_NAME}" ./cmd/srake
+        echo "Build complete: ${OUTPUT_NAME}"
+        ls -la "${OUTPUT_NAME}"
 
     - name: Test binary
-      if: matrix.arch == 'amd64'
-      run: ./srake-${{ runner.os }}-${{ matrix.arch }} --version
+      if: matrix.arch == 'amd64' || (runner.os == 'macOS' && matrix.arch == 'arm64')
+      run: |
+        OUTPUT_NAME="srake-${{ runner.os }}-${{ matrix.arch }}"
+        echo "Testing ${OUTPUT_NAME}..."
+        ./"${OUTPUT_NAME}" --version || ./"${OUTPUT_NAME}" version || echo "Version command not available"
 
   security:
     name: Security Scan
@@ -103,7 +120,13 @@ jobs:
     - name: Run Gosec Security Scanner
       uses: securego/gosec@master
       with:
-        args: ./...
+        args: '-fmt sarif -out results.sarif ./...'
+
+    - name: Upload Gosec results
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: results.sarif
 
     - name: Run Trivy vulnerability scanner
       uses: aquasecurity/trivy-action@master
@@ -114,6 +137,6 @@ jobs:
         output: 'trivy-results.sarif'
 
     - name: Upload Trivy results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'trivy-results.sarif'

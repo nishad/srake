@@ -12,20 +12,25 @@ permissions:
 jobs:
   build:
     name: Build Release Assets
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     strategy:
       matrix:
         include:
           - os: linux
             arch: amd64
+            runner: ubuntu-latest
           - os: linux
             arch: arm64
+            runner: ubuntu-latest
           - os: darwin
             arch: amd64
+            runner: macos-13  # Intel Mac
           - os: darwin
             arch: arm64
+            runner: macos-14  # Apple Silicon Mac
           - os: windows
             arch: amd64
+            runner: windows-latest
 
     steps:
     - uses: actions/checkout@v4
@@ -33,24 +38,35 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.21'
+        go-version: '1.23'
 
     - name: Get version
       id: version
       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+    - name: Install build dependencies
+      if: matrix.os == 'darwin' || matrix.os == 'linux'
+      run: |
+        if [ "${{ matrix.os }}" = "darwin" ]; then
+          brew install sqlite3
+          brew link --force sqlite3
+        fi
 
     - name: Build binary
       env:
         GOOS: ${{ matrix.os }}
         GOARCH: ${{ matrix.arch }}
         VERSION: ${{ steps.version.outputs.VERSION }}
+        CGO_ENABLED: ${{ matrix.os == 'windows' && '0' || '1' }}
       run: |
         OUTPUT=srake-${{ matrix.os }}-${{ matrix.arch }}
         if [ "${{ matrix.os }}" = "windows" ]; then
           OUTPUT="${OUTPUT}.exe"
         fi
 
-        go build -v -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${GITHUB_SHA::7} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+        echo "Building for ${{ matrix.os }}/${{ matrix.arch }}..."
+        go build -v -tags "sqlite_fts5,search" \
+          -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${GITHUB_SHA::7} -X main.BuildDate=$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
           -o ${OUTPUT} ./cmd/srake
 
         # Create archive
@@ -61,7 +77,7 @@ jobs:
         fi
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: binaries
         path: |
@@ -77,7 +93,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Download artifacts
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: binaries
 
@@ -92,7 +108,7 @@ jobs:
         awk "/^## ${VERSION}/,/^## /" CHANGELOG.md | sed '$d' > RELEASE_NOTES.md
 
     - name: Create Release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         body_path: RELEASE_NOTES.md
         files: |
