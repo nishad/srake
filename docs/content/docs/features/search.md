@@ -5,7 +5,7 @@ weight: 10
 
 # Advanced Search Capabilities
 
-SRake provides powerful full-text search with advanced query syntax, comprehensive filtering, and aggregation capabilities that match or exceed leading SRA tools.
+SRAKE (SRA Knowledge Engine) provides powerful full-text search with advanced query syntax, comprehensive filtering, and aggregation capabilities that match or exceed leading SRA tools.
 
 ## Quick Start
 
@@ -27,7 +27,7 @@ srake search --organism "homo sapiens" --platform ILLUMINA
 
 ### Full-Text Search with Bleve
 
-SRake uses the [Bleve](https://blevesearch.com/) search engine for lightning-fast local search:
+SRAKE uses the [Bleve](https://blevesearch.com/) search engine for lightning-fast local search:
 
 - **No network dependency**: All searches run locally
 - **Sub-second response**: Most queries complete in <50ms

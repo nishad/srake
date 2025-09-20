@@ -1,7 +1,9 @@
 ---
-title: SRAKE - SRA Knowledge Engine 🍶🧬
+title: SRAKE - SRA Knowledge Engine
 layout: hextra-home
 ---
+
+<div class="hx:mx-auto hx:max-w-screen-xl hx:px-4 hx:py-8">
 
 {{< hextra/hero-badge >}}
   <div class="hx-w-2 hx-h-2 hx-rounded-full hx-bg-primary-400"></div>
@@ -9,26 +11,25 @@ layout: hextra-home
   {{< icon name="arrow-circle-right" attributes="height=14" >}}
 {{< /hextra/hero-badge >}}
 
-<div class="hx-mt-6 hx-mb-6">
+<div class="hx-mt-12 hx-mb-10">
 {{< hextra/hero-headline >}}
-  SRAKE: SRA Knowledge&nbsp;<br class="sm:hx-block hx-hidden" />Engine
+  SRA Knowledge Engine
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx-mb-12">
 {{< hextra/hero-subtitle >}}
-  Process NCBI SRA metadata archives with&nbsp;<br class="sm:hx-block hx-hidden" />
-  streaming, filtering, and resume capabilities&nbsp;<br class="sm:hx-block hx-hidden" />
-  <i>Pronounced like Japanese sake (酒)</i>
+  Process NCBI SRA metadata archives with streaming, filtering, and resume capabilities.<br />
+  <em style="font-size: 0.9em; opacity: 0.9;">Pronounced like Japanese sake (酒)</em>
 {{< /hextra/hero-subtitle >}}
 </div>
 
-<div class="hx-mb-6">
+<div class="hx-mt-10 hx-mb-16">
 {{< hextra/hero-button text="Get Started" link="docs/getting-started" >}}
 {{< hextra/hero-button text="View on GitHub" link="https://github.com/nishad/srake" style="secondary" >}}
 </div>
 
-<div class="hx-mt-6"></div>
+<div class="hx-mt-20 hx-mb-8"></div>
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
@@ -81,12 +82,12 @@ layout: hextra-home
   >}}
 {{< /hextra/feature-grid >}}
 
-## Quick Start with SRAKE {.hx-mt-12}
+## Quick Start with SRAKE {.hx-mt-16 .hx-mb-8}
 
 {{< tabs items="Install,Ingest,Index,Search,API" >}}
   {{< tab >}}
   ```bash
-  # Install SRAKE (SRA Knowledge Engine) using Go
+  # Using Go
   go install github.com/nishad/srake/cmd/srake@latest
 
   # Using Homebrew
@@ -99,7 +100,7 @@ layout: hextra-home
   {{< /tab >}}
   {{< tab >}}
   ```bash
-  # Auto-select and ingest with SRAKE
+  # Auto-select and ingest
   srake ingest --auto
 
   # With filters
@@ -111,7 +112,7 @@ layout: hextra-home
   {{< /tab >}}
   {{< tab >}}
   ```bash
-  # Build SRAKE search index
+  # Build search index
   srake index --build --progress
 
   # Build with vector embeddings
@@ -123,7 +124,7 @@ layout: hextra-home
   {{< /tab >}}
   {{< tab >}}
   ```bash
-  # Quality-controlled search with SRAKE
+  # Quality-controlled search
   srake search "breast cancer" \
     --similarity-threshold 0.7 \
     --show-confidence
@@ -151,7 +152,7 @@ layout: hextra-home
 {{< /tabs >}}
 
 
-## Learn More
+## Learn More {.hx-mt-16 .hx-mb-8}
 
 {{< cards >}}
   {{< card link="docs" title="Documentation" icon="book-open" subtitle="Complete guides and references" >}}
@@ -159,3 +160,5 @@ layout: hextra-home
   {{< card link="docs/features" title="Features" icon="sparkles" subtitle="Explore all capabilities" >}}
   {{< card link="docs/api" title="API Reference" subtitle="REST API and Go library" >}}
 {{< /cards >}}
+
+</div>

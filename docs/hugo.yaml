@@ -1,5 +1,5 @@
 # Hugo configuration file
-title: srake - SRA Metadata Processor
+title: SRAKE - SRA Knowledge Engine
 baseURL: "https://github.com/nishad/srake"
 languageCode: en-us
 
@@ -40,7 +40,7 @@ menu:
         icon: github
 
 params:
-  description: A blazing-fast, memory-efficient tool for processing and querying NCBI SRA metadata
+  description: SRAKE (SRA Knowledge Engine) - A blazing-fast, memory-efficient tool for processing and querying NCBI SRA metadata. Pronounced like Japanese sake (酒).
 
   navbar:
     displayTitle: true
@@ -53,7 +53,7 @@ params:
   footer:
     displayCopyright: true
     displayPoweredBy: true
-    copyright: "© 2025 srake contributors"
+    copyright: "© 2025 SRAKE contributors"
 
   editURL:
     enable: true

@@ -5,11 +5,13 @@ cascade:
   type: docs
 ---
 
-Welcome to the **srake** documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.
+Welcome to the **SRAKE (SRA Knowledge Engine)** documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.
 
-## What is srake?
+*SRAKE pronunciation: Like Japanese sake (酒) — "srah-keh"*
 
-srake is a tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, srake can process large compressed archives without intermediate storage.
+## What is SRAKE?
+
+SRAKE (SRA Knowledge Engine) is a comprehensive tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, SRAKE can process large compressed archives without intermediate storage.
 
 ## Key Features
 
@@ -32,10 +34,10 @@ srake is a tool for processing and querying NCBI SRA (Sequence Read Archive) met
 ## Quick Example
 
 ```bash
-# Install srake
+# Install SRAKE (SRA Knowledge Engine)
 go install github.com/nishad/srake/cmd/srake@latest
 
-# Ingest SRA metadata with filters
+# Ingest SRA metadata with SRAKE
 srake ingest --file archive.tar.gz \
   --taxon-ids 9606 \
   --platforms ILLUMINA \
@@ -44,6 +46,6 @@ srake ingest --file archive.tar.gz \
 # Search the database
 srake search "homo sapiens" --limit 10
 
-# Start API server
+# Start SRAKE API server
 srake server --port 8080
 ```

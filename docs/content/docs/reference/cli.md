@@ -5,9 +5,9 @@ prev: /docs/getting-started
 next: /docs/reference/api
 ---
 
-# CLI Reference
+# SRAKE CLI Reference
 
-Complete reference for all srake commands and options.
+Complete reference for all SRAKE (SRA Knowledge Engine) commands and options.
 
 ## Global Flags
 

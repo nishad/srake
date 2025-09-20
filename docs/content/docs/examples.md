@@ -7,7 +7,7 @@ next: /docs/api
 
 # Examples and Use Cases
 
-Real-world examples demonstrating common workflows with srake, including pipeline composition and automation patterns.
+Real-world examples demonstrating common workflows with SRAKE (SRA Knowledge Engine), including pipeline composition and automation patterns.
 
 ## Research Workflows
 

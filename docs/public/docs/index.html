@@ -1,24 +1,25 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr"><head><script src="/nishad/srake/livereload.js?mindelay=10&amp;v=2&amp;port=1313&amp;path=nishad/srake/livereload" data-no-instant defer></script>
+<html lang="en" dir="ltr"><head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="robots" content="noindex, nofollow" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="robots" content="index, follow" />
   <link rel="icon shortcut" href="/nishad/srake/favicon.ico" sizes="32x32" />
 <link rel="icon" href="/nishad/srake/favicon.svg" type="image/svg+xml" id="favicon-svg" />
 <link rel="icon" href="/nishad/srake/favicon-16x16.png" type="image/png" sizes="16x16" />
 <link rel="icon" href="/nishad/srake/favicon-32x32.png" type="image/png" sizes="32x32" />
 <link rel="apple-touch-icon" href="/nishad/srake/apple-touch-icon.png" sizes="180x180" />
 <link fetchpriority="low" href="/nishad/srake/site.webmanifest" rel="manifest" />
-<title>Documentation – srake - SRA Metadata Processor</title>
-  <meta name="description" content="Welcome to the srake documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.
-What is srake? srake is a tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, srake can process large compressed archives without intermediate storage.
-Key Features Getting StartedInstall and run srake in minutes Filtering SystemProcess only the data you need Resume CapabilityHandle interruptions gracefully API ReferenceREST API and Go library Features Performance: Efficient record processing Memory Management: Streaming architecture for large files Pipeline: HTTP → Gzip → Tar → XML → Database streaming Filtering: Filter by taxonomy, organism, platform, and more Resume Support: Recovery from interruptions Search: Full-text search with SQLite backend Quick Example # Install srake go install github.com/nishad/srake/cmd/srake@latest # Ingest SRA metadata with filters srake ingest --file archive.tar.gz \ --taxon-ids 9606 \ --platforms ILLUMINA \ --strategies RNA-Seq # Search the database srake search &#34;homo sapiens&#34; --limit 10 # Start API server srake server --port 8080 " /><link rel="canonical" href="http://localhost:1313/nishad/srake/docs/" itemprop="url" />
+<title>Documentation – SRAKE - SRA Knowledge Engine</title>
+  <meta name="description" content="Welcome to the SRAKE (SRA Knowledge Engine) documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.
+SRAKE pronunciation: Like Japanese sake (酒) — “srah-keh”
+What is SRAKE? SRAKE (SRA Knowledge Engine) is a comprehensive tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, SRAKE can process large compressed archives without intermediate storage.
+Key Features Getting StartedInstall and run srake in minutes Filtering SystemProcess only the data you need Resume CapabilityHandle interruptions gracefully API ReferenceREST API and Go library Features Performance: Efficient record processing Memory Management: Streaming architecture for large files Pipeline: HTTP → Gzip → Tar → XML → Database streaming Filtering: Filter by taxonomy, organism, platform, and more Resume Support: Recovery from interruptions Search: Full-text search with SQLite backend Quick Example # Install SRAKE (SRA Knowledge Engine) go install github.com/nishad/srake/cmd/srake@latest # Ingest SRA metadata with SRAKE srake ingest --file archive.tar.gz \ --taxon-ids 9606 \ --platforms ILLUMINA \ --strategies RNA-Seq # Search the database srake search &#34;homo sapiens&#34; --limit 10 # Start SRAKE API server srake server --port 8080 " /><link rel="canonical" href="https://github.com/nishad/srake/docs/" itemprop="url" />
 
 <meta property="og:title" content="Documentation">
 <meta
   property="og:description"
   content="
     
-      A blazing-fast, memory-efficient tool for processing and querying NCBI SRA metadata
+      SRAKE (SRA Knowledge Engine) - A blazing-fast, memory-efficient tool for processing and querying NCBI SRA metadata. Pronounced like Japanese sake (酒).
     
   ">
 <meta
@@ -26,24 +27,30 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
   content="
     website
   ">
-<meta property="og:url" content="http://localhost:1313/nishad/srake/docs/">
+<meta property="og:url" content="https://github.com/nishad/srake/docs/">
 
 
   <meta itemprop="name" content="Documentation">
-  <meta itemprop="description" content="Welcome to the srake documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.
-What is srake? srake is a tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, srake can process large compressed archives without intermediate storage.
-Key Features Getting StartedInstall and run srake in minutes Filtering SystemProcess only the data you need Resume CapabilityHandle interruptions gracefully API ReferenceREST API and Go library Features Performance: Efficient record processing Memory Management: Streaming architecture for large files Pipeline: HTTP → Gzip → Tar → XML → Database streaming Filtering: Filter by taxonomy, organism, platform, and more Resume Support: Recovery from interruptions Search: Full-text search with SQLite backend Quick Example # Install srake go install github.com/nishad/srake/cmd/srake@latest # Ingest SRA metadata with filters srake ingest --file archive.tar.gz \ --taxon-ids 9606 \ --platforms ILLUMINA \ --strategies RNA-Seq # Search the database srake search &#34;homo sapiens&#34; --limit 10 # Start API server srake server --port 8080">
-  <meta itemprop="wordCount" content="162">
+  <meta itemprop="description" content="Welcome to the SRAKE (SRA Knowledge Engine) documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.
+SRAKE pronunciation: Like Japanese sake (酒) — “srah-keh”
+What is SRAKE? SRAKE (SRA Knowledge Engine) is a comprehensive tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, SRAKE can process large compressed archives without intermediate storage.
+Key Features Getting StartedInstall and run srake in minutes Filtering SystemProcess only the data you need Resume CapabilityHandle interruptions gracefully API ReferenceREST API and Go library Features Performance: Efficient record processing Memory Management: Streaming architecture for large files Pipeline: HTTP → Gzip → Tar → XML → Database streaming Filtering: Filter by taxonomy, organism, platform, and more Resume Support: Recovery from interruptions Search: Full-text search with SQLite backend Quick Example # Install SRAKE (SRA Knowledge Engine) go install github.com/nishad/srake/cmd/srake@latest # Ingest SRA metadata with SRAKE srake ingest --file archive.tar.gz \ --taxon-ids 9606 \ --platforms ILLUMINA \ --strategies RNA-Seq # Search the database srake search &#34;homo sapiens&#34; --limit 10 # Start SRAKE API server srake server --port 8080">
+  <meta itemprop="wordCount" content="181">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Documentation">
-  <meta name="twitter:description" content="Welcome to the srake documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.
-What is srake? srake is a tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, srake can process large compressed archives without intermediate storage.
-Key Features Getting StartedInstall and run srake in minutes Filtering SystemProcess only the data you need Resume CapabilityHandle interruptions gracefully API ReferenceREST API and Go library Features Performance: Efficient record processing Memory Management: Streaming architecture for large files Pipeline: HTTP → Gzip → Tar → XML → Database streaming Filtering: Filter by taxonomy, organism, platform, and more Resume Support: Recovery from interruptions Search: Full-text search with SQLite backend Quick Example # Install srake go install github.com/nishad/srake/cmd/srake@latest # Ingest SRA metadata with filters srake ingest --file archive.tar.gz \ --taxon-ids 9606 \ --platforms ILLUMINA \ --strategies RNA-Seq # Search the database srake search &#34;homo sapiens&#34; --limit 10 # Start API server srake server --port 8080">
-<link href="/nishad/srake/css/compiled/main.css" rel="stylesheet" />
-    <link href="/nishad/srake/css/variables.css" rel="stylesheet" />
-    <link href="/nishad/srake/css/custom.css" rel="stylesheet" />
+  <meta name="twitter:description" content="Welcome to the SRAKE (SRA Knowledge Engine) documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.
+SRAKE pronunciation: Like Japanese sake (酒) — “srah-keh”
+What is SRAKE? SRAKE (SRA Knowledge Engine) is a comprehensive tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, SRAKE can process large compressed archives without intermediate storage.
+Key Features Getting StartedInstall and run srake in minutes Filtering SystemProcess only the data you need Resume CapabilityHandle interruptions gracefully API ReferenceREST API and Go library Features Performance: Efficient record processing Memory Management: Streaming architecture for large files Pipeline: HTTP → Gzip → Tar → XML → Database streaming Filtering: Filter by taxonomy, organism, platform, and more Resume Support: Recovery from interruptions Search: Full-text search with SQLite backend Quick Example # Install SRAKE (SRA Knowledge Engine) go install github.com/nishad/srake/cmd/srake@latest # Ingest SRA metadata with SRAKE srake ingest --file archive.tar.gz \ --taxon-ids 9606 \ --platforms ILLUMINA \ --strategies RNA-Seq # Search the database srake search &#34;homo sapiens&#34; --limit 10 # Start SRAKE API server srake server --port 8080">
+
+    <link rel="preload" href="/nishad/srake/css/compiled/main.min.860421afd86baea436520550e3f5b912c5d0ca8bfec32b073ac5871b3ae0ca74.css" as="style" integrity="sha256-hgQhr9hrrqQ2UgVQ4/W5EsXQyov&#43;wysHOsWHGzrgynQ=" />
+    <link href="/nishad/srake/css/compiled/main.min.860421afd86baea436520550e3f5b912c5d0ca8bfec32b073ac5871b3ae0ca74.css" rel="stylesheet" integrity="sha256-hgQhr9hrrqQ2UgVQ4/W5EsXQyov&#43;wysHOsWHGzrgynQ=" />
 
   
+
+
+
+
 
 
   <script>
@@ -83,7 +90,7 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
 
   <nav class="hextra-max-navbar-width hx:mx-auto hx:flex hx:items-center hx:justify-end hx:gap-2 hx:h-16 hx:px-6">
     <a class="hx:flex hx:items-center hx:hover:opacity-75 hx:ltr:mr-auto hx:rtl:ml-auto" href="/nishad/srake/">
-    <span class="hx:mr-2 hx:font-extrabold hx:inline hx:select-none" title="srake - SRA Metadata Processor">srake - SRA Metadata Processor</span>
+    <span class="hx:mr-2 hx:font-extrabold hx:inline hx:select-none" title="SRAKE - SRA Knowledge Engine">SRAKE - SRA Knowledge Engine</span>
 </a>
 <a
   title=""
@@ -173,7 +180,7 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
       hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:contrast-more:border hx:contrast-more:border-transparent hx:contrast-more:text-gray-900 hx:contrast-more:hover:border-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:dark:text-gray-50 hx:contrast-more:dark:hover:border-gray-50"
     href="/nishad/srake/about/"
     
-  >About
+  >About SRAKE
     </a></li>
           <li class="open"><a
     class="hx:flex hx:items-center hx:justify-between hx:gap-2 hx:cursor-pointer hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
@@ -188,7 +195,7 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
               <a
                 href="#what-is-srake"
                 class="hx:flex hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [word-break:break-word] hx:cursor-pointer [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] hx:contrast-more:border hx:gap-2 hx:before:opacity-25 hx:before:content-['#'] hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:text-gray-900 hx:contrast-more:dark:text-gray-50 hx:contrast-more:border-transparent hx:contrast-more:hover:border-gray-900 hx:contrast-more:dark:hover:border-gray-50"
-              >What is srake?</a>
+              >What is SRAKE?</a>
             </li>
           <li>
               <a
@@ -215,7 +222,7 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
       hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:contrast-more:border hx:contrast-more:border-transparent hx:contrast-more:text-gray-900 hx:contrast-more:hover:border-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:dark:text-gray-50 hx:contrast-more:dark:hover:border-gray-50"
     href="/nishad/srake/docs/getting-started/"
     
-  >Getting Started
+  >Getting Started with SRAKE
     </a>
               
             </li><li class="hx:flex hx:flex-col "><a
@@ -347,7 +354,7 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
       hx:text-gray-500 hx:hover:bg-gray-100 hx:hover:text-gray-900 hx:contrast-more:border hx:contrast-more:border-transparent hx:contrast-more:text-gray-900 hx:contrast-more:hover:border-gray-900 hx:dark:text-neutral-400 hx:dark:hover:bg-primary-100/5 hx:dark:hover:text-gray-50 hx:contrast-more:dark:text-gray-50 hx:contrast-more:dark:hover:border-gray-50"
     href="/nishad/srake/docs/getting-started/"
     
-  >Getting Started
+  >Getting Started with SRAKE
     </a></li>
           <li class=""><a
     class="hx:flex hx:items-center hx:justify-between hx:gap-2 hx:cursor-pointer hx:rounded-sm hx:px-2 hx:py-1.5 hx:text-sm hx:transition-colors [-webkit-tap-highlight-color:transparent] [-webkit-touch-callout:none] [word-break:break-word]
@@ -515,7 +522,7 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
 <nav class="hextra-toc hx:order-last hx:hidden hx:w-64 hx:shrink-0 hx:xl:block hx:print:hidden hx:px-4" aria-label="table of contents">
     <div class="hextra-scrollbar hx:sticky hx:top-16 hx:overflow-y-auto hx:pr-4 hx:pt-6 hx:text-sm [hyphens:auto] hx:max-h-[calc(100vh-var(--navbar-height)-env(safe-area-inset-bottom))] hx:ltr:-mr-4 hx:rtl:-ml-4"><p class="hx:mb-4 hx:font-semibold hx:tracking-tight">On this page</p><ul>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
-        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#what-is-srake">What is srake?
+        <a class="hx:font-medium hx:inline-block hx:text-gray-500 hx:hover:text-gray-900 hx:dark:text-gray-400 hx:dark:hover:text-gray-300 hx:contrast-more:text-gray-900 hx:contrast-more:underline hx:contrast-more:dark:text-gray-50 hx:w-full hx:break-words" href="#what-is-srake">What is SRAKE?
         </a>
       </li>
       <li class="hx:my-2 hx:scroll-my-6 hx:scroll-py-6">
@@ -549,9 +556,10 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
 
         <div class="content">
           <h1>Documentation</h1>
-          <p>Welcome to the <strong>srake</strong> documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.</p>
-<h2>What is srake?<span class="hx:absolute hx:-mt-20" id="what-is-srake"></span>
-    <a href="#what-is-srake" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>srake is a tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, srake can process large compressed archives without intermediate storage.</p>
+          <p>Welcome to the <strong>SRAKE (SRA Knowledge Engine)</strong> documentation! This guide will help you get started with processing NCBI SRA metadata efficiently.</p>
+<p><em>SRAKE pronunciation: Like Japanese sake (酒) — &ldquo;srah-keh&rdquo;</em></p>
+<h2>What is SRAKE?<span class="hx:absolute hx:-mt-20" id="what-is-srake"></span>
+    <a href="#what-is-srake" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><p>SRAKE (SRA Knowledge Engine) is a comprehensive tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a streaming architecture, SRAKE can process large compressed archives without intermediate storage.</p>
 <h2>Key Features<span class="hx:absolute hx:-mt-20" id="key-features"></span>
     <a href="#key-features" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><div class="hextra-cards hx:mt-4 hx:gap-4 hx:grid not-prose" style="--hextra-cards-grid-cols: 3;">
   <a
@@ -580,10 +588,10 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
 <h2>Quick Example<span class="hx:absolute hx:-mt-20" id="quick-example"></span>
     <a href="#quick-example" class="subheading-anchor" aria-label="Permalink for this section"></a></h2><div class="hextra-code-block hx:relative hx:mt-6 hx:first:mt-0 hx:group/code">
 
-<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Install srake</span>
+<div><div class="highlight"><pre tabindex="0" class="chroma"><code class="language-bash" data-lang="bash"><span class="line"><span class="cl"><span class="c1"># Install SRAKE (SRA Knowledge Engine)</span>
 </span></span><span class="line"><span class="cl">go install github.com/nishad/srake/cmd/srake@latest
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Ingest SRA metadata with filters</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Ingest SRA metadata with SRAKE</span>
 </span></span><span class="line"><span class="cl">srake ingest --file archive.tar.gz <span class="se">\
 </span></span></span><span class="line"><span class="cl"><span class="se"></span>  --taxon-ids <span class="m">9606</span> <span class="se">\
 </span></span></span><span class="line"><span class="cl"><span class="se"></span>  --platforms ILLUMINA <span class="se">\
@@ -592,7 +600,7 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
 </span></span><span class="line"><span class="cl"><span class="c1"># Search the database</span>
 </span></span><span class="line"><span class="cl">srake search <span class="s2">&#34;homo sapiens&#34;</span> --limit <span class="m">10</span>
 </span></span><span class="line"><span class="cl">
-</span></span><span class="line"><span class="cl"><span class="c1"># Start API server</span>
+</span></span><span class="line"><span class="cl"><span class="c1"># Start SRAKE API server</span>
 </span></span><span class="line"><span class="cl">srake server --port <span class="m">8080</span></span></span></code></pre></div></div><div class="hextra-code-copy-btn-container hx:opacity-0 hx:transition hx:group-hover/code:opacity-100 hx:flex hx:gap-1 hx:absolute hx:m-[11px] hx:right-0 hx:top-0">
   <button
     class="hextra-code-copy-btn hx:group/copybtn hx:cursor-pointer hx:transition-all hx:active:opacity-50 hx:bg-primary-700/5 hx:border hx:border-black/5 hx:text-gray-600 hx:hover:text-gray-900 hx:rounded-md hx:p-1.5 hx:dark:bg-primary-300/10 hx:dark:border-white/10 hx:dark:text-gray-400 hx:dark:hover:text-gray-50"
@@ -620,8 +628,8 @@ Key Features Getting StartedInstall and run srake in minutes Filtering SystemPro
   </a></div><div class="hx:mt-6 hx:text-xs">© 2025 Hextra Project.</div></div>
     </div></footer>
     
-    <script defer src="/nishad/srake/js/main.js" integrity=""></script>
-<script defer src="/nishad/srake/js/flexsearch.9f5b5908f93ae86f1ecd4b043b799f580c2d1654e703dd9357d568ac41b2547a.js" integrity="sha256-n1tZCPk66G8ezUsEO3mfWAwtFlTnA92TV9VorEGyVHo=" crossorigin="anonymous"></script>
-        <script defer src="/nishad/srake/en.search.js" integrity=""></script>
+    <script defer src="/nishad/srake/js/main.min.36ba569a8cb0c611631d31ad1b2297316a46dfe9233448bc3c8592c00af7839f.js" integrity="sha256-NrpWmoywxhFjHTGtGyKXMWpG3&#43;kjNEi8PIWSwAr3g58="></script>
+<script defer src="/nishad/srake/js/flexsearch.433e941a8a573ebb9931fc16fc75266ab6b93f569ac2fb4f3dc66882e0416f4c.js" integrity="sha256-Qz6UGopXPruZMfwW/HUmara5P1aawvtPPcZoguBBb0w=" crossorigin="anonymous"></script>
+        <script defer src="/nishad/srake/en.search.min.8a9d018d20c4418e2efb7f87b2bcea722e6e4618711c1025973826033cf0f29f.js" integrity="sha256-ip0BjSDEQY4u&#43;3&#43;Hsrzqci5uRhhxHBAllzgmAzzw8p8="></script>
   </body>
 </html>

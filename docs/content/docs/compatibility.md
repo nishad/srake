@@ -7,11 +7,11 @@ next: /docs/performance
 
 # Compatibility with Other Tools
 
-srake provides comprehensive functionality that matches and extends popular SRA metadata tools. This guide shows how srake commands map to equivalent operations in other tools.
+SRAKE (SRA Knowledge Engine) provides comprehensive functionality that matches and extends popular SRA metadata tools. This guide shows how SRAKE commands map to equivalent operations in other tools.
 
 ## Feature Comparison Matrix
 
-| Feature | srake | SRAdb | ffq | pysradb | MetaSRA |
+| Feature | SRAKE | SRAdb | ffq | pysradb | MetaSRA |
 |---------|-------|-------|-----|---------|---------|
 | **Local Database** | ✅ | ✅ | ❌ | ✅ | ❌ |
 | **Streaming Processing** | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -26,7 +26,7 @@ srake provides comprehensive functionality that matches and extends popular SRA 
 
 ## Command Equivalents
 
-### SRAdb (R Package) → srake
+### SRAdb (R Package) → SRAKE
 
 {{< tabs items="Conversion,Download,Search,Metadata" >}}
 
