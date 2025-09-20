@@ -1,0 +1,72 @@
+# Build stage for Go server
+FROM golang:1.25-alpine AS go-builder
+
+# Install build dependencies
+RUN apk add --no-cache git make gcc musl-dev sqlite-dev
+
+# Set working directory
+WORKDIR /build
+
+# Copy go mod files
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source code
+COPY . .
+
+# Build server binary
+ARG VERSION=dev
+ARG COMMIT=unknown
+ARG BUILD_DATE=unknown
+
+RUN CGO_ENABLED=1 GOOS=linux go build \
+    -tags "sqlite_fts5,search" \
+    -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
+    -o srake-server ./cmd/server
+
+# Build stage for Node/SvelteKit app
+FROM node:20-alpine AS web-builder
+
+# Set working directory
+WORKDIR /build
+
+# Copy web app files
+COPY web/package*.json ./
+RUN npm ci
+
+COPY web/ ./
+RUN npm run build
+
+# Runtime stage
+FROM alpine:latest
+
+# Install runtime dependencies
+RUN apk add --no-cache ca-certificates sqlite nodejs
+
+# Create app directory
+WORKDIR /app
+
+# Copy server binary from go-builder
+COPY --from=go-builder /build/srake-server /usr/local/bin/srake-server
+
+# Copy web build from web-builder
+COPY --from=web-builder /build/build ./web/build
+
+# Create data directory
+RUN mkdir -p /data
+
+# Set data volume
+VOLUME ["/data"]
+
+# Expose API port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/health || exit 1
+
+# Set entrypoint
+ENTRYPOINT ["srake-server"]
+
+# Default command
+CMD ["--host", "0.0.0.0", "--port", "8080", "--db", "/data/metadata.db"]

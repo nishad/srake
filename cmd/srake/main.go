@@ -26,14 +26,16 @@ var (
 // Root command
 var rootCmd = &cobra.Command{
 	Use:   "srake",
-	Short: "Search and download SRA metadata",
-	Long: colorize(colorBold, "srake") + ` - A fast, user-friendly tool for SRA metadata
+	Short: "SRAKE - SRA Knowledge Engine",
+	Long: colorize(colorBold, "SRAKE - SRA Knowledge Engine") + `
 
-Srake provides a unified interface for searching, downloading, and serving
+Pronounced like Japanese sake (酒) — "srah-keh"
+
+SRAKE provides a unified interface for searching, downloading, and serving
 SRA (Sequence Read Archive) metadata from NCBI.
 
 ENVIRONMENT VARIABLES:
-  SRAKE_DB_PATH          Path to the SRA metadata database
+  SRAKE_DB_PATH          Path to the SRAKE metadata database
   SRAKE_INDEX_PATH       Path to the search index directory
   SRAKE_CONFIG_DIR       Configuration directory (default: ~/.config/srake)
   SRAKE_DATA_DIR         Data directory (default: ~/.local/share/srake)

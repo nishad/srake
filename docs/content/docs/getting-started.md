@@ -1,14 +1,17 @@
 ---
-title: Getting Started
+title: Getting Started with SRAKE
 weight: 1
 prev: /docs
 next: /docs/features
 ---
 
+# Getting Started with SRAKE - SRA Knowledge Engine
+
+*SRAKE pronunciation: Like Japanese sake (酒) — "srah-keh"*
 
 ## Installation
 
-srake provides multiple installation methods to suit your needs:
+SRAKE (SRA Knowledge Engine) provides multiple installation methods to suit your needs:
 
 {{< tabs items="Go,Docker,Binary,Source" >}}
 
@@ -19,9 +22,9 @@ srake provides multiple installation methods to suit your needs:
   go install github.com/nishad/srake/cmd/srake@latest
   ```
 
-  Verify the installation:
+  Verify the SRAKE installation:
   ```bash
-  srake --version
+  srake --version  # SRAKE - SRA Knowledge Engine
   ```
   {{< /tab >}}
 

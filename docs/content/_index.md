@@ -1,5 +1,5 @@
 ---
-title: srake 🍶🧬
+title: SRAKE - SRA Knowledge Engine 🍶🧬
 layout: hextra-home
 ---
 
@@ -11,14 +11,15 @@ layout: hextra-home
 
 <div class="hx-mt-6 hx-mb-6">
 {{< hextra/hero-headline >}}
-  SRA Metadata&nbsp;<br class="sm:hx-block hx-hidden" />Processing Tool
+  SRAKE: SRA Knowledge&nbsp;<br class="sm:hx-block hx-hidden" />Engine
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx-mb-12">
 {{< hextra/hero-subtitle >}}
   Process NCBI SRA metadata archives with&nbsp;<br class="sm:hx-block hx-hidden" />
-  streaming, filtering, and resume capabilities
+  streaming, filtering, and resume capabilities&nbsp;<br class="sm:hx-block hx-hidden" />
+  <i>Pronounced like Japanese sake (酒)</i>
 {{< /hextra/hero-subtitle >}}
 </div>
 
@@ -80,12 +81,12 @@ layout: hextra-home
   >}}
 {{< /hextra/feature-grid >}}
 
-## Quick Start {.hx-mt-12}
+## Quick Start with SRAKE {.hx-mt-12}
 
 {{< tabs items="Install,Ingest,Index,Search,API" >}}
   {{< tab >}}
   ```bash
-  # Using Go
+  # Install SRAKE (SRA Knowledge Engine) using Go
   go install github.com/nishad/srake/cmd/srake@latest
 
   # Using Homebrew
@@ -98,7 +99,7 @@ layout: hextra-home
   {{< /tab >}}
   {{< tab >}}
   ```bash
-  # Auto-select and ingest
+  # Auto-select and ingest with SRAKE
   srake ingest --auto
 
   # With filters
@@ -110,7 +111,7 @@ layout: hextra-home
   {{< /tab >}}
   {{< tab >}}
   ```bash
-  # Build search index
+  # Build SRAKE search index
   srake index --build --progress
 
   # Build with vector embeddings
@@ -122,7 +123,7 @@ layout: hextra-home
   {{< /tab >}}
   {{< tab >}}
   ```bash
-  # Quality-controlled search
+  # Quality-controlled search with SRAKE
   srake search "breast cancer" \
     --similarity-threshold 0.7 \
     --show-confidence

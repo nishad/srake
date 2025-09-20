@@ -15,8 +15,8 @@ import (
 
 var serverCmd = &cobra.Command{
 	Use:   "server",
-	Short: "Start the API server",
-	Long: `Start the srake API server for programmatic access to SRA metadata.
+	Short: "Start the SRAKE API server",
+	Long: `Start the SRAKE (SRA Knowledge Engine) API server for programmatic access to SRA metadata.
 
 The server provides:
 - RESTful API endpoints for searching and retrieving metadata

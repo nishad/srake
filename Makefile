@@ -2,7 +2,10 @@
 
 # Variables
 BINARY_NAME := srake
+SERVER_BINARY := srake-server
 MAIN_PATH := ./cmd/srake
+SERVER_PATH := ./cmd/server
+WEB_DIR := web
 VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 COMMIT := $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 BUILD_DATE := $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
@@ -30,11 +33,26 @@ help:
 	@echo "Available targets:"
 	@grep -E '^##' Makefile | sed 's/## /  /'
 
-## build: Build the binary
+## build: Build the CLI binary
 build:
 	@echo "Building $(BINARY_NAME) with FTS5 support..."
 	$(GOBUILD) $(TAGS) $(LDFLAGS) -o $(BINARY_NAME) $(MAIN_PATH)
 	@echo "Build complete: ./$(BINARY_NAME)"
+
+## build-server: Build the server binary
+build-server:
+	@echo "Building $(SERVER_BINARY) with FTS5 support..."
+	$(GOBUILD) $(TAGS) $(LDFLAGS) -o $(SERVER_BINARY) $(SERVER_PATH)
+	@echo "Build complete: ./$(SERVER_BINARY)"
+
+## build-all: Build both CLI and server
+build-all: build build-server
+
+## build-web: Build the web frontend
+build-web:
+	@echo "Building web frontend..."
+	cd $(WEB_DIR) && npm install && npm run build
+	@echo "Web build complete"
 
 ## clean: Remove build artifacts
 clean:
@@ -106,9 +124,20 @@ tidy:
 run: build
 	./$(BINARY_NAME)
 
-## run-server: Run the server
-run-server: build
-	./$(BINARY_NAME) server
+## server: Run the API server
+server: build-server
+	./$(SERVER_BINARY) --port 8080
+
+## web-dev: Run web frontend in development mode
+web-dev:
+	cd $(WEB_DIR) && npm run dev
+
+## dev-all: Run both server and web frontend in development
+dev-all:
+	@echo "Starting development environment..."
+	@trap 'kill %1' INT; \
+	(cd $(WEB_DIR) && npm run dev) & \
+	./$(SERVER_BINARY) --port 8080
 
 ## run-download: Run download with auto mode
 run-download: build
@@ -122,6 +151,28 @@ docker:
 		--build-arg COMMIT=$(COMMIT) \
 		--build-arg BUILD_DATE=$(BUILD_DATE) .
 	@echo "Docker image built: $(BINARY_NAME):$(VERSION)"
+
+## docker-webapp: Build Docker webapp image
+docker-webapp:
+	@echo "Building Docker webapp image..."
+	docker build -f Dockerfile.webapp -t $(BINARY_NAME)-webapp:$(VERSION) \
+		--build-arg VERSION=$(VERSION) \
+		--build-arg COMMIT=$(COMMIT) \
+		--build-arg BUILD_DATE=$(BUILD_DATE) .
+	@echo "Docker webapp image built: $(BINARY_NAME)-webapp:$(VERSION)"
+
+## docker-compose-up: Start webapp with docker-compose
+docker-compose-up:
+	@echo "Starting webapp with docker-compose..."
+	VERSION=$(VERSION) COMMIT=$(COMMIT) BUILD_DATE=$(BUILD_DATE) \
+		docker-compose up --build -d
+	@echo "Webapp running at http://localhost:8080"
+
+## docker-compose-down: Stop webapp
+docker-compose-down:
+	@echo "Stopping webapp..."
+	docker-compose down
+	@echo "Webapp stopped"
 
 ## docker-run: Run Docker container
 docker-run: docker

@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  srake-webapp:
+    build:
+      context: .
+      dockerfile: Dockerfile.webapp
+      args:
+        VERSION: ${VERSION:-dev}
+        COMMIT: ${COMMIT:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
+    container_name: srake-webapp
+    ports:
+      - "8080:8080"
+    volumes:
+      - srake-data:/data
+      - ./data/metadata.db:/data/metadata.db:ro  # Mount existing database read-only
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    networks:
+      - srake-network
+    labels:
+      - "com.srake.description=SRAKE Web Application"
+      - "com.srake.version=${VERSION:-dev}"
+
+  # Optional: Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: srake-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - srake-webapp
+    networks:
+      - srake-network
+    restart: unless-stopped
+    profiles:
+      - production
+
+volumes:
+  srake-data:
+    driver: local
+
+networks:
+  srake-network:
+    driver: bridge

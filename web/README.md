@@ -1,38 +1,136 @@
-# sv
+# SRAKE Web Application - SRA Knowledge Engine Interface
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+A modern web interface for **SRAKE (SRA Knowledge Engine)**, the comprehensive SRA metadata search and analysis platform.
 
-## Creating a project
+*SRAKE pronunciation: Like Japanese sake (酒) — "srah-keh"*
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Features
 
-```sh
-# create a new project in the current directory
-npx sv create
+- **Search Interface**: Full-text and semantic search across SRA metadata
+- **Browse Collections**: Explore data by organism, platform, or strategy
+- **Study Details**: View comprehensive information about studies, experiments, samples, and runs
+- **Export Data**: Download search results in various formats (CSV, JSON, TSV)
+- **Real-time Statistics**: Dashboard with database statistics and metrics
+- **Advanced Filtering**: Filter by library strategy, platform, organism, and more
+- **Responsive Design**: Works on desktop and mobile devices
 
-# create a new project in my-app
-npx sv create my-app
+## Technology Stack
+
+- **Frontend**: SvelteKit 2.0 with Svelte 5
+- **UI Components**: Custom components with Tailwind CSS
+- **Icons**: Lucide icons
+- **API**: SRAKE RESTful API built with Go
+- **Database**: SQLite with FTS5 for full-text search
+- **Search**: SRAKE hybrid search engine with text and vector capabilities
+
+## Development
+
+### Prerequisites
+
+- Node.js 20+
+- Go 1.25+
+- SQLite 3
+
+### Setup
+
+1. Install dependencies:
+```bash
+cd web
+npm install
 ```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+2. Start the development server:
+```bash
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+3. In another terminal, start the API server:
+```bash
+cd ..
+make server
+```
 
-To create a production version of your app:
+4. Open http://localhost:5173 in your browser
 
-```sh
+### Build for Production
+
+```bash
 npm run build
 ```
 
-You can preview the production build with `npm run preview`.
+The built application will be in the `build` directory.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+## Docker Deployment
+
+### Using Docker Compose (Recommended)
+
+```bash
+# Start the webapp
+make docker-compose-up
+
+# Stop the webapp
+make docker-compose-down
+```
+
+### Manual Docker Build
+
+```bash
+# Build the SRAKE webapp image
+docker build -f Dockerfile.webapp -t srake-webapp:latest .
+
+# Run the SRAKE container
+docker run -p 8080:8080 -v $(pwd)/data:/data srake-webapp:latest
+```
+
+## SRAKE API Endpoints
+
+The SRAKE web application communicates with the following API endpoints:
+
+- `GET /api/v1/search` - Search SRA metadata
+- `GET /api/v1/stats` - Get database statistics
+- `GET /api/v1/health` - Health check
+- `GET /api/v1/studies/{id}` - Get study details
+- `GET /api/v1/samples/{id}` - Get sample details
+- `GET /api/v1/runs/{id}` - Get run details
+- `POST /api/v1/export` - Export search results
+- `GET /api/v1/aggregations/{field}` - Get field aggregations
+
+## Project Structure
+
+```
+web/
+├── src/
+│   ├── routes/          # SvelteKit pages
+│   │   ├── +page.svelte       # Dashboard
+│   │   ├── search/            # Search interface
+│   │   ├── browse/            # Browse collections
+│   │   ├── export/            # Export data
+│   │   └── settings/          # Settings page
+│   ├── lib/
+│   │   ├── api.ts            # API client
+│   │   ├── utils.ts          # Utility functions
+│   │   └── components/       # UI components
+│   └── app.html              # HTML template
+├── static/               # Static assets
+├── package.json         # Dependencies
+└── vite.config.js      # Vite configuration
+```
+
+## Configuration
+
+### Environment Variables
+
+- `PUBLIC_API_URL` - API base URL (default: `/api/v1`)
+- `NODE_ENV` - Environment (development/production)
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `npm test`
+5. Submit a pull request
+
+## License
+
+MIT License - see LICENSE file for details

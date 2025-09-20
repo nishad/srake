@@ -13,7 +13,7 @@ import (
 var dbCmd = &cobra.Command{
 	Use:   "db",
 	Short: "Database management",
-	Long:  `Manage the local SRA metadata database.`,
+	Long:  `Manage the local SRAKE (SRA Knowledge Engine) metadata database.`,
 	Example: `  srake db info
   srake db update
   srake db vacuum`,
@@ -23,7 +23,7 @@ var dbCmd = &cobra.Command{
 var dbInfoCmd = &cobra.Command{
 	Use:   "info",
 	Short: "Show database statistics",
-	Long:  `Display information about the local SRA metadata database.`,
+	Long:  `Display information about the local SRAKE metadata database.`,
 	RunE:  runDBInfo,
 }
 

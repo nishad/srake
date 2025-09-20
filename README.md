@@ -1,13 +1,41 @@
-# srake 🍶🧬
+# SRAKE - SRA Knowledge Engine 🍶🧬
 
-*Pronunciation: "ess-RAH-keh" — like Japanese sake (酒) • IPA: /ˈɛs.rɑː.kɛ/*
+*Pronunciation: Like Japanese sake (酒) — "srah-keh" • IPA: /srɑː.keɪ/*
 
 [![Go Version](https://img.shields.io/badge/go-%3E%3D1.19-blue.svg)](https://go.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Go Report Card](https://goreportcard.com/badge/github.com/nishad/srake)](https://goreportcard.com/report/github.com/nishad/srake)
 [![Release](https://img.shields.io/github/v/release/nishad/srake)](https://github.com/nishad/srake/releases)
 
-A blazing-fast, memory-efficient tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a zero-copy streaming architecture, srake can process multi-gigabyte compressed archives without intermediate storage, making it ideal for bioinformatics workflows and large-scale genomic data analysis.
+**SRAKE (SRA Knowledge Engine)** is a blazing-fast, memory-efficient tool for processing and querying NCBI SRA (Sequence Read Archive) metadata. Built with a zero-copy streaming architecture, SRAKE can process multi-gigabyte compressed archives without intermediate storage, making it ideal for bioinformatics workflows and large-scale genomic data analysis.
+
+## ⚠️ Important Notice: Pre-Alpha Software
+
+> **This is a hackathon project developed at [BioHackathon 2025, Mie, Japan](https://2025.biohackathon.org/)**
+>
+> **SRAKE (SRA Knowledge Engine) IS NOT PRODUCTION-READY**
+>
+> This project is currently in **pre-alpha stage** and is a work in progress. Significant portions of the codebase require proper review before finalizing the architecture.
+>
+> ### Critical Warnings:
+> - **DO NOT use SRAKE (SRA Knowledge Engine) for important research or production workflows**
+> - **DO NOT rely on outputs for critical decision-making without validation**
+> - All outputs require thorough evaluation by domain experts
+> - Many features may be changed, replaced, or removed entirely
+> - The tool has not been thoroughly evaluated or validated
+>
+> ### Current Status:
+> - Architecture is subject to major changes
+> - APIs and data formats are unstable
+> - Performance characteristics may vary significantly
+> - Search results and data processing may contain errors
+>
+> ### Contributing:
+> - Bug reports and feature requests are welcome
+> - We will continue development with comprehensive testing and evaluation
+> - Collaboration with domain experts is ongoing to validate functionality
+>
+> Until proper evaluation and stabilization are complete, please treat SRAKE (SRA Knowledge Engine) as an experimental tool for exploration and testing only.
 
 ## 🎯 Key Features
 
@@ -73,12 +101,12 @@ docker pull ghcr.io/nishad/srake:latest
 docker run -v $(pwd)/data:/data ghcr.io/nishad/srake:latest ingest --auto
 ```
 
-## 🚀 Quick Start
+## 🚀 Quick Start with SRAKE
 
 ### 1. Ingest SRA Metadata
 
 ```bash
-# Auto-select best option from NCBI (recommended for first run)
+# Auto-select best option from NCBI (recommended for first run with SRAKE)
 srake ingest --auto
 
 # Ingest latest daily update (incremental)
@@ -106,7 +134,7 @@ srake ingest --list
 ### 2. Build Search Index
 
 ```bash
-# Build search index (required before searching)
+# Build SRAKE search index (required before searching)
 srake index --build --progress
 
 # Build with vector embeddings for semantic search
@@ -116,7 +144,7 @@ srake index --build --with-embeddings
 srake index --stats
 ```
 
-### 3. Search SRA Metadata
+### 3. Search SRA Metadata with SRAKE
 
 ```bash
 # Simple organism search
@@ -687,16 +715,11 @@ MIT License - see [LICENSE](LICENSE) file for details.
 - The [Go](https://golang.org/) community for amazing tools and libraries
 - All [contributors](https://github.com/nishad/srake/graphs/contributors) who help improve srake
 
-## 🔒 Security
-
-For security vulnerabilities, please email security@[maintainer-domain] instead of using the issue tracker. We take security seriously and will respond promptly.
-
 ## 💬 Support
 
 - 📖 [Documentation](https://github.com/nishad/srake/wiki)
 - 🐛 [Issue Tracker](https://github.com/nishad/srake/issues)
 - 💬 [Discussions](https://github.com/nishad/srake/discussions)
-- 📧 Email: [maintainer-email]
 
 ## 📈 Stats
 
@@ -706,4 +729,4 @@ For security vulnerabilities, please email security@[maintainer-domain] instead 
 
 ---
 
-Made with ❤️ by the bioinformatics community
+Freshly brewed 🍶 at [BioHackathon 2025, Mie, Japan](https://2025.biohackathon.org/)
