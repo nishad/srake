@@ -25,7 +25,7 @@ RUN CGO_ENABLED=1 GOOS=linux go build \
     -o srake-server ./cmd/server
 
 # Build stage for Node/SvelteKit app
-FROM node:20-alpine AS web-builder
+FROM node:25-alpine AS web-builder
 
 # Set working directory
 WORKDIR /build
