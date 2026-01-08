@@ -37,7 +37,12 @@ func (s *Spinner) Start() {
 
 	// Check if output is to terminal and NO_COLOR is not set
 	if !isTerminal() || os.Getenv("NO_COLOR") != "" {
+		// For non-terminal output, just print message and mark as inactive
+		// so Stop() doesn't try to close the channel again
 		fmt.Fprintf(os.Stderr, "%s...\n", s.message)
+		s.mu.Lock()
+		s.active = false // Mark as inactive so Stop() is a no-op
+		s.mu.Unlock()
 		return
 	}
 
