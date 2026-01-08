@@ -68,8 +68,9 @@ func (b *IndexBuilder) ProcessDocumentType(ctx context.Context, docType string) 
 			}
 		}
 
-		// Send progress update
-		b.progressChan <- ProgressUpdate{
+		// Send progress update (non-blocking to avoid deadlock)
+		select {
+		case b.progressChan <- ProgressUpdate{
 			Type:      UpdateTypeBatchComplete,
 			Timestamp: time.Now(),
 			Data: map[string]interface{}{
@@ -79,6 +80,9 @@ func (b *IndexBuilder) ProcessDocumentType(ctx context.Context, docType string) 
 				"offset":    offset,
 				"total":     typeProgress.ProcessedDocs,
 			},
+		}:
+		default:
+			// Channel full, skip this update
 		}
 
 		// If we got fewer rows than batch size, we're done
@@ -184,6 +188,11 @@ func (b *IndexBuilder) processStudiesBatch(ctx context.Context, offset int64, li
 		b.progress.LastDocumentID = study.Accession
 	}
 
+	// Check for errors from row iteration
+	if err := rows.Err(); err != nil {
+		return count, fmt.Errorf("error iterating study rows: %w", err)
+	}
+
 	// Generate embeddings if enabled
 	if b.isEmbeddingEnabled() && len(texts) > 0 {
 		embeddings, err := b.generateBatchEmbeddings(texts)
@@ -264,6 +273,11 @@ func (b *IndexBuilder) processExperimentsBatch(ctx context.Context, offset int64
 
 		// Update last document ID
 		b.progress.LastDocumentID = exp.Accession
+	}
+
+	// Check for errors from row iteration
+	if err := rows.Err(); err != nil {
+		return count, fmt.Errorf("error iterating experiment rows: %w", err)
 	}
 
 	// Generate embeddings if enabled
@@ -348,6 +362,11 @@ func (b *IndexBuilder) processSamplesBatch(ctx context.Context, offset int64, li
 		b.progress.LastDocumentID = sample.Accession
 	}
 
+	// Check for errors from row iteration
+	if err := rows.Err(); err != nil {
+		return count, fmt.Errorf("error iterating sample rows: %w", err)
+	}
+
 	// Generate embeddings if enabled
 	if b.isEmbeddingEnabled() && len(texts) > 0 {
 		embeddings, err := b.generateBatchEmbeddings(texts)
@@ -427,6 +446,11 @@ func (b *IndexBuilder) processRunsBatch(ctx context.Context, offset int64, limit
 
 		// Update last document ID
 		b.progress.LastDocumentID = run.Accession
+	}
+
+	// Check for errors from row iteration
+	if err := rows.Err(); err != nil {
+		return count, fmt.Errorf("error iterating run rows: %w", err)
 	}
 
 	// Index the batch

@@ -152,6 +152,8 @@ func (b *IndexBuilder) Build(ctx context.Context) error {
 	}
 	b.state = StateRunning
 	b.startTime = time.Now()
+	// Create a new stopChan for this build (in case of resume)
+	b.stopChan = make(chan struct{})
 	b.mu.Unlock()
 
 	// Start progress monitor
@@ -162,6 +164,9 @@ func (b *IndexBuilder) Build(ctx context.Context) error {
 
 	// Execute build
 	err := b.executeBuild(ctx)
+
+	// Signal goroutines to stop
+	close(b.stopChan)
 
 	// Update final state
 	b.mu.Lock()
@@ -268,8 +273,20 @@ func (b *IndexBuilder) executeBuild(ctx context.Context) error {
 	// Progress will show documents processed so far
 	b.progress.TotalDocuments = 0
 
-	// Index each document type
-	docTypes := []string{"studies", "experiments", "samples", "runs"}
+	// Create FTS5 tables for Tier 3 (samples/runs) accession lookups
+	// This must happen before indexing so searches work immediately
+	ftsManager := database.NewFTS5Manager(b.db)
+	if err := ftsManager.CreateFTSTables(); err != nil {
+		return fmt.Errorf("failed to create FTS5 tables: %w", err)
+	}
+
+	// Index studies and experiments into Bleve (Tier 1 and Tier 2)
+	// Samples and runs use SQLite FTS5 (Tier 3) and don't need Bleve indexing
+	// This matches the TieredSearchBackend architecture where:
+	// - Tier 1: Studies with full-text + optional embeddings
+	// - Tier 2: Experiments with full-text
+	// - Tier 3: Samples/Runs with SQLite FTS5 for accession lookups
+	docTypes := []string{"studies", "experiments"}
 
 	for _, docType := range docTypes {
 		select {
