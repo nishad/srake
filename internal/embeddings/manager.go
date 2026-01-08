@@ -81,13 +81,34 @@ func (m *Manager) scanModels() error {
 	defer m.mu.Unlock()
 
 	// Walk through the models directory looking for model directories
+	// A model directory is identified by having:
+	// 1. config.json (HuggingFace convention), OR
+	// 2. tokenizer.json (ONNX transformers models), OR
+	// 3. model_info.json (our metadata file), OR
+	// 4. onnx/ subdirectory with model files
 	err := filepath.Walk(m.modelsDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return nil // Skip directories we can't read
 		}
 
-		// Look for config.json files which indicate a model directory
-		if info.Name() == "config.json" {
+		// Look for indicator files that suggest a model directory
+		isModelIndicator := info.Name() == "config.json" ||
+			info.Name() == "tokenizer.json" ||
+			info.Name() == "model_info.json"
+
+		// Also check for onnx directories containing .onnx files
+		if info.IsDir() && info.Name() == "onnx" {
+			parentPath := filepath.Dir(path)
+			// Check if parent is a model directory (not the models root)
+			if parentPath != m.modelsDir {
+				if modelInfo := m.loadModelInfo(parentPath); modelInfo != nil {
+					m.models[modelInfo.ID] = modelInfo
+				}
+			}
+			return nil
+		}
+
+		if isModelIndicator {
 			modelPath := filepath.Dir(path)
 			if modelInfo := m.loadModelInfo(modelPath); modelInfo != nil {
 				m.models[modelInfo.ID] = modelInfo

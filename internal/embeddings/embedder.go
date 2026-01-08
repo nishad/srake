@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/nishad/srake/internal/paths"
 )
 
 // Embedder is the main service for generating embeddings
@@ -32,7 +34,7 @@ type EmbedderConfig struct {
 // DefaultEmbedderConfig returns the default configuration
 func DefaultEmbedderConfig() *EmbedderConfig {
 	return &EmbedderConfig{
-		ModelsDir:    "~/.sra-tool/models",
+		ModelsDir:    paths.GetModelsPath(),
 		DefaultModel: "Xenova/SapBERT-from-PubMedBERT-fulltext",
 		BatchSize:    32,
 		MaxLength:    512,
