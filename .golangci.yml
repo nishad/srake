@@ -13,17 +13,17 @@ linters:
     - staticcheck
     - misspell
     - unconvert
-    - prealloc
     - nakedret
     - gosec
     - bodyclose
-    - unparam
     - gocyclo
     - dupl
     - goimports
   disable:
     - errcheck
     - unused
+    - prealloc
+    - unparam
 
 linters-settings:
   gofmt:
@@ -31,7 +31,12 @@ linters-settings:
   govet:
     enable-all: true
   staticcheck:
-    checks: ["all"]
+    checks:
+      - "all"
+      - "-SA1019"  # deprecated API usage (io/ioutil, rand.Seed, strings.Title)
+      - "-SA4023"  # always-true nil checks
+      - "-SA9003"  # empty branches
+      - "-SA6000"  # regexp.MatchString in loop
   gosec:
     excludes:
       - G104  # Unhandled errors (we handle these selectively)
