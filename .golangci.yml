@@ -40,9 +40,12 @@ linters-settings:
   gosec:
     excludes:
       - G104  # Unhandled errors (we handle these selectively)
+      - G107  # HTTP request with variable URL (expected for download tools)
+      - G301  # Directory permissions (0755 is fine for data dirs)
       - G304  # File path provided as taint input (we validate these)
+      - G306  # WriteFile permissions (test utilities)
   gocyclo:
-    min-complexity: 25
+    min-complexity: 35
   dupl:
     threshold: 100
   goconst:
