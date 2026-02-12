@@ -3,8 +3,6 @@ title: Resume
 weight: 2
 ---
 
-# Resume
-
 SRAKE tracks ingestion progress and can resume from the last checkpoint after interruption.
 
 ## How it works

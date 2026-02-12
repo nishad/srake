@@ -3,8 +3,6 @@ title: Examples
 weight: 5
 ---
 
-# Examples
-
 ## Ingest human RNA-Seq data
 
 ```bash

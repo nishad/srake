@@ -3,8 +3,6 @@ title: CLI Reference
 weight: 10
 ---
 
-# CLI Reference
-
 ## Global Flags
 
 Available for all commands:

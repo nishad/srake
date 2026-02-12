@@ -3,8 +3,6 @@ title: Filtering
 weight: 1
 ---
 
-# Filtering
-
 Filters are applied during ingestion to control which records are imported into the database. This reduces database size and processing time.
 
 ## Taxonomy filters

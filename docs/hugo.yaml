@@ -1,6 +1,6 @@
 # Hugo configuration file
-title: SRAKE - SRA Knowledge Engine
-baseURL: "https://github.com/nishad/srake"
+title: SRAKE
+baseURL: "https://nishad.github.io/srake/"
 languageCode: en-us
 
 # import hextra as module
@@ -23,27 +23,21 @@ menu:
     - name: Docs
       pageRef: /docs
       weight: 1
-    - name: Getting Started
-      pageRef: /docs/getting-started
+    - name: About
+      pageRef: /about
       weight: 2
-    - name: CLI Reference
-      pageRef: /docs/reference/cli
-      weight: 3
-    - name: API Reference
-      pageRef: /docs/api
-      weight: 4
     - name: Search
-      weight: 5
+      weight: 3
       params:
         type: search
     - name: GitHub
-      weight: 6
+      weight: 4
       url: "https://github.com/nishad/srake"
       params:
         icon: github
 
 params:
-  description: SRAKE (SRA Knowledge Engine) - Process and query NCBI SRA metadata locally with streaming ingestion, full-text search, and vector similarity.
+  description: SRAKE - Process and query NCBI SRA metadata locally with streaming ingestion, full-text search, and vector similarity.
 
   navbar:
     displayTitle: true

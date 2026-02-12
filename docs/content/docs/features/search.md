@@ -3,8 +3,6 @@ title: Search
 weight: 10
 ---
 
-# Search
-
 SRAKE provides multi-backend search over local SRA metadata.
 
 ## Search backends

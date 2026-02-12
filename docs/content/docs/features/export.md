@@ -3,8 +3,6 @@ title: SRAmetadb Export
 weight: 35
 ---
 
-# SRAmetadb Export
-
 Export the SRAKE database to the classic SRAmetadb.sqlite format for use with existing bioinformatics tools.
 
 ## Basic usage

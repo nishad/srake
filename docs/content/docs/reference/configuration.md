@@ -3,8 +3,6 @@ title: Configuration
 weight: 20
 ---
 
-# Configuration
-
 SRAKE follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html).
 
 ## Directory structure

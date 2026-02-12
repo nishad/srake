@@ -5,9 +5,7 @@ cascade:
   type: docs
 ---
 
-# SRAKE Documentation
-
-SRAKE (SRA Knowledge Engine) processes NCBI SRA metadata archives into a local SQLite database with full-text and vector search.
+SRAKE processes NCBI SRA metadata archives into a local SQLite database with full-text and vector search.
 
 {{< cards >}}
   {{< card link="getting-started" title="Getting Started" subtitle="Installation and first steps" >}}

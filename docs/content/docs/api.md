@@ -3,8 +3,6 @@ title: API Reference
 weight: 5
 ---
 
-# API Reference
-
 Start the server:
 
 ```bash

@@ -1,8 +1,6 @@
 ---
-title: About
+title: About SRAKE
 ---
-
-# About SRAKE
 
 SRAKE (SRA Knowledge Engine) is a command-line tool for ingesting, indexing, and querying NCBI Sequence Read Archive (SRA) metadata locally. Pronounced like Japanese sake (酒).
 

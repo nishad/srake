@@ -5,8 +5,6 @@ prev: /docs
 next: /docs/features
 ---
 
-# Getting Started
-
 ## Installation
 
 ### Build from source
