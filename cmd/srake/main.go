@@ -101,6 +101,7 @@ func init() {
 	rootCmd.AddCommand(metadataCmd)
 	rootCmd.AddCommand(modelsCmd)
 	rootCmd.AddCommand(embedCmd)
+	rootCmd.AddCommand(mcpCmd)
 }
 
 func main() {

@@ -31,7 +31,6 @@ type Config struct {
 	DatabasePath string
 	IndexPath    string
 	EnableCORS   bool
-	EnableMCP    bool // Enable Model Context Protocol endpoints
 }
 
 // NewServer creates a new API server instance
@@ -80,7 +79,7 @@ func NewServer(cfg *Config) (*Server, error) {
 	// Setup routes
 	log.Printf("[INIT] Setting up API routes")
 	routeStart := time.Now()
-	s.setupRoutes(cfg.EnableMCP)
+	s.setupRoutes()
 
 	// Setup middleware
 	if cfg.EnableCORS {
@@ -104,7 +103,7 @@ func NewServer(cfg *Config) (*Server, error) {
 }
 
 // setupRoutes configures all API routes
-func (s *Server) setupRoutes(enableMCP bool) {
+func (s *Server) setupRoutes() {
 	// API v1 routes
 	api := s.router.PathPrefix("/api/v1").Subrouter()
 
@@ -136,12 +135,6 @@ func (s *Server) setupRoutes(enableMCP bool) {
 
 	// Health check
 	api.HandleFunc("/health", s.handleHealth).Methods("GET")
-
-	// MCP endpoints (if enabled)
-	if enableMCP {
-		s.router.HandleFunc("/mcp", s.handleMCP).Methods("POST")
-		s.router.HandleFunc("/mcp/capabilities", s.handleMCPCapabilities).Methods("GET")
-	}
 
 	// Root endpoint
 	s.router.HandleFunc("/", s.handleRoot).Methods("GET")
@@ -256,20 +249,22 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check search service
+	searchStatus := "healthy"
 	if err := s.searchService.Health(ctx); err != nil {
 		health["status"] = "unhealthy"
-		health["search_service"] = err.Error()
-	} else {
-		health["search_service"] = "healthy"
+		searchStatus = err.Error()
 	}
+	health["search_service"] = searchStatus
+	health["search_index"] = searchStatus // For frontend compatibility
 
-	// Check metadata service
+	// Check metadata service (database)
+	dbStatus := "healthy"
 	if err := s.metadataService.Health(ctx); err != nil {
 		health["status"] = "unhealthy"
-		health["metadata_service"] = err.Error()
-	} else {
-		health["metadata_service"] = "healthy"
+		dbStatus = err.Error()
 	}
+	health["metadata_service"] = dbStatus
+	health["database"] = dbStatus // For frontend compatibility
 
 	status := http.StatusOK
 	if health["status"] != "healthy" {

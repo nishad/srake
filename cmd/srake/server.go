@@ -20,12 +20,13 @@ var serverCmd = &cobra.Command{
 
 The server provides:
 - RESTful API endpoints for searching and retrieving metadata
-- MCP (Model Context Protocol) support for AI assistants
 - Export functionality in multiple formats
-- CORS support for web applications`,
+- CORS support for web applications
+
+For MCP (Model Context Protocol) support, use 'srake mcp' instead.`,
 	Example: `  srake server
   srake server --port 3000
-  srake server --enable-cors --enable-mcp`,
+  srake server --enable-cors`,
 	RunE: runServer,
 }
 
@@ -35,7 +36,6 @@ var (
 	serverDBPath     string
 	serverIndexPath  string
 	serverEnableCORS bool
-	serverEnableMCP  bool
 )
 
 func init() {
@@ -45,7 +45,6 @@ func init() {
 	serverCmd.Flags().StringVar(&serverDBPath, "db", "", "Database path (default: uses SRAKE_DB_PATH)")
 	serverCmd.Flags().StringVar(&serverIndexPath, "index", "", "Index path (default: uses SRAKE_INDEX_PATH)")
 	serverCmd.Flags().BoolVar(&serverEnableCORS, "enable-cors", true, "Enable CORS for web access")
-	serverCmd.Flags().BoolVar(&serverEnableMCP, "enable-mcp", true, "Enable MCP (Model Context Protocol) endpoints")
 }
 
 func runServer(cmd *cobra.Command, args []string) error {
@@ -77,7 +76,6 @@ func runServer(cmd *cobra.Command, args []string) error {
 		DatabasePath: serverDBPath,
 		IndexPath:    serverIndexPath,
 		EnableCORS:   serverEnableCORS,
-		EnableMCP:    serverEnableMCP,
 	}
 
 	// Print initialization header
@@ -107,9 +105,6 @@ func runServer(cmd *cobra.Command, args []string) error {
 
 		if serverEnableCORS {
 			printInfo("CORS enabled for web access")
-		}
-		if serverEnableMCP {
-			printInfo("MCP endpoints enabled at /mcp")
 		}
 
 		printSuccess("\nServer ready at http://%s:%d", serverHost, serverPort)
