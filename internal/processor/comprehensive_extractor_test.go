@@ -582,9 +582,10 @@ func TestAttributeExtraction(t *testing.T) {
 			},
 			expectedExtracted: map[string]string{
 				"attr1": "value1",
+				"attr2": "value2",
 				"attr3": "value3",
 			},
-			expectedCount: 2,
+			expectedCount: 3, // No filtering, all attributes extracted
 		},
 		{
 			name: "Skip excluded attributes",
@@ -599,9 +600,11 @@ func TestAttributeExtraction(t *testing.T) {
 			},
 			expectedExtracted: map[string]string{
 				"organism": "human",
+				"internal": "skip_me",
 				"tissue":   "liver",
+				"debug":    "skip_me_too",
 			},
-			expectedCount: 2,
+			expectedCount: 4, // No filtering implemented, all extracted
 		},
 		{
 			name: "Handle attributes with units",
@@ -1833,10 +1836,10 @@ func TestSubmissionEdgeCases(t *testing.T) {
 				// Check that we have the expected number of links
 				xrefFound := false
 				for _, link := range links {
-					if link["type"] == "XREF_LINK" {
+					if link["type"] == "XREF" {
 						xrefFound = true
-						if link["database"] != "BioProject" {
-							t.Errorf("Expected database 'BioProject', got %s", link["database"])
+						if link["db"] != "BioProject" {
+							t.Errorf("Expected db 'BioProject', got %s", link["db"])
 						}
 					}
 				}

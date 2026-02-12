@@ -169,8 +169,8 @@ func createTestTarGz(t *testing.T) []byte {
 		{
 			name: "test_experiment.xml",
 			content: `<?xml version="1.0" encoding="UTF-8"?>
-<EXPERIMENT_PACKAGE accession="SRX001">
-	<EXPERIMENT>
+<EXPERIMENT_SET>
+	<EXPERIMENT accession="SRX001">
 		<TITLE>Test Experiment</TITLE>
 		<STUDY_REF accession="SRP001"/>
 		<DESIGN>
@@ -182,23 +182,25 @@ func createTestTarGz(t *testing.T) []byte {
 			</LIBRARY_DESCRIPTOR>
 		</DESIGN>
 		<PLATFORM>
-			<ILLUMINA>HiSeq 2000</ILLUMINA>
+			<ILLUMINA>
+				<INSTRUMENT_MODEL>HiSeq 2000</INSTRUMENT_MODEL>
+			</ILLUMINA>
 		</PLATFORM>
 	</EXPERIMENT>
-</EXPERIMENT_PACKAGE>`,
+</EXPERIMENT_SET>`,
 		},
 		{
 			name: "test_study.xml",
 			content: `<?xml version="1.0" encoding="UTF-8"?>
-<STUDY_PACKAGE accession="SRP001">
-	<STUDY>
+<STUDY_SET>
+	<STUDY accession="SRP001">
 		<DESCRIPTOR>
 			<STUDY_TITLE>Test Study</STUDY_TITLE>
 			<STUDY_ABSTRACT>This is a test study</STUDY_ABSTRACT>
 			<STUDY_TYPE existing_study_type="Transcriptome Analysis"/>
 		</DESCRIPTOR>
 	</STUDY>
-</STUDY_PACKAGE>`,
+</STUDY_SET>`,
 		},
 		{
 			name:    "test.txt",
