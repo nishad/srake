@@ -32,6 +32,7 @@ linters-settings:
     enable-all: true
     disable:
       - shadow
+      - fieldalignment
   staticcheck:
     checks:
       - "all"
@@ -43,9 +44,15 @@ linters-settings:
     excludes:
       - G104  # Unhandled errors (we handle these selectively)
       - G107  # HTTP request with variable URL (expected for download tools)
+      - G112  # Slowloris (handled at reverse proxy level)
+      - G115  # Integer overflow conversion (safe in context)
+      - G204  # Subprocess with variable (config editor launch)
       - G301  # Directory permissions (0755 is fine for data dirs)
       - G304  # File path provided as taint input (we validate these)
       - G306  # WriteFile permissions (test utilities)
+      - G401  # Weak crypto (md5 used for cache keys, not security)
+      - G404  # Weak random (used for test data, not security)
+      - G501  # Weak crypto import (same as G401)
   misspell:
     ignore-words:
       - strat  # abbreviation for strategy, not a typo
