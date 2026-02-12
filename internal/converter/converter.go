@@ -1,3 +1,6 @@
+// Package converter provides accession ID conversion between SRA, GEO,
+// BioProject, and BioSample identifier systems using local database
+// lookups and NCBI E-utilities as a fallback.
 package converter
 
 import (
@@ -20,16 +23,21 @@ type ConversionResult struct {
 	Error      string   `json:"error,omitempty" yaml:"error,omitempty" xml:"error,omitempty"`
 }
 
-// Converter handles accession conversions between different databases
+// Converter handles accession conversions between SRA, GEO, BioProject,
+// and BioSample identifier systems, caching results in memory.
 type Converter struct {
 	db         *database.DB
 	httpClient *http.Client
 	cache      map[string]*ConversionResult
 }
 
-// NewConverter creates a new converter instance
-func NewConverter(dbPath string) *Converter {
-	db, _ := database.Initialize(dbPath)
+// NewConverter creates a new converter instance.
+// Returns an error if the database cannot be initialized.
+func NewConverter(dbPath string) (*Converter, error) {
+	db, err := database.Initialize(dbPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to initialize converter database: %w", err)
+	}
 
 	return &Converter{
 		db: db,
@@ -37,17 +45,19 @@ func NewConverter(dbPath string) *Converter {
 			Timeout: 30 * time.Second,
 		},
 		cache: make(map[string]*ConversionResult),
-	}
+	}, nil
 }
 
-// Close closes the database connection
+// Close releases the underlying database connection.
 func (c *Converter) Close() {
 	if c.db != nil {
 		c.db.Close()
 	}
 }
 
-// Convert performs accession conversion
+// Convert translates an accession from one identifier system to another.
+// It first checks a local cache, then queries the local database, and falls
+// back to NCBI E-utilities for external identifiers.
 func (c *Converter) Convert(accession, targetType string) (*ConversionResult, error) {
 	// Normalize inputs
 	accession = strings.TrimSpace(strings.ToUpper(accession))
@@ -500,6 +510,17 @@ func (c *Converter) queryLocalDB(selectField, whereField, value string) ([]strin
 	table := c.determineTable(selectField, whereField)
 	if table == "" {
 		return nil, fmt.Errorf("cannot determine table for fields")
+	}
+
+	// Validate table and column names to prevent SQL injection
+	if err := database.ValidateIdentifier(selectField); err != nil {
+		return nil, fmt.Errorf("invalid select field: %w", err)
+	}
+	if err := database.ValidateIdentifier(whereField); err != nil {
+		return nil, fmt.Errorf("invalid where field: %w", err)
+	}
+	if err := database.ValidateIdentifier(table); err != nil {
+		return nil, fmt.Errorf("invalid table name: %w", err)
 	}
 
 	query := fmt.Sprintf("SELECT DISTINCT %s FROM %s WHERE %s = ?", selectField, table, whereField)

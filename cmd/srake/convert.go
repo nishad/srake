@@ -104,7 +104,10 @@ func runConvert(cmd *cobra.Command, args []string) error {
 	}
 
 	// Initialize converter
-	conv := converter.NewConverter(serverDBPath)
+	conv, err := converter.NewConverter(serverDBPath)
+	if err != nil {
+		return fmt.Errorf("failed to initialize converter: %w", err)
+	}
 	defer conv.Close()
 
 	// Convert each accession

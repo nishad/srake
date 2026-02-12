@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -172,6 +173,7 @@ func runGetRuns(cmd *cobra.Command, args []string) error {
 
 	// Collect results
 	runs := []RunInfo{}
+	var runSkipped int
 	for rows.Next() {
 		var run RunInfo
 		var published, platform, strategy *string
@@ -179,6 +181,7 @@ func runGetRuns(cmd *cobra.Command, args []string) error {
 		err := rows.Scan(&run.RunAccession, &run.Experiment, &run.TotalSpots,
 			&run.TotalBases, &published, &platform, &strategy)
 		if err != nil {
+			runSkipped++
 			continue
 		}
 
@@ -193,6 +196,9 @@ func runGetRuns(cmd *cobra.Command, args []string) error {
 		}
 
 		runs = append(runs, run)
+	}
+	if runSkipped > 0 {
+		log.Printf("Warning: skipped %d run rows during scan", runSkipped)
 	}
 
 	// Output results
@@ -264,6 +270,7 @@ func runGetSamples(cmd *cobra.Command, args []string) error {
 	}
 
 	samples := []SampleInfo{}
+	var sampleSkipped int
 	for rows.Next() {
 		var sample SampleInfo
 		var organism, sciName, desc *string
@@ -271,6 +278,7 @@ func runGetSamples(cmd *cobra.Command, args []string) error {
 
 		err := rows.Scan(&sample.SampleAccession, &organism, &sciName, &taxonID, &desc)
 		if err != nil {
+			sampleSkipped++
 			continue
 		}
 
@@ -288,6 +296,9 @@ func runGetSamples(cmd *cobra.Command, args []string) error {
 		}
 
 		samples = append(samples, sample)
+	}
+	if sampleSkipped > 0 {
+		log.Printf("Warning: skipped %d sample rows during scan", sampleSkipped)
 	}
 
 	// Output results
@@ -358,12 +369,14 @@ func runGetExperiments(cmd *cobra.Command, args []string) error {
 	}
 
 	experiments := []ExperimentInfo{}
+	var expSkipped int
 	for rows.Next() {
 		var exp ExperimentInfo
 		var title, strategy, source, platform, model *string
 
 		err := rows.Scan(&exp.ExperimentAccession, &title, &strategy, &source, &platform, &model)
 		if err != nil {
+			expSkipped++
 			continue
 		}
 
@@ -384,6 +397,9 @@ func runGetExperiments(cmd *cobra.Command, args []string) error {
 		}
 
 		experiments = append(experiments, exp)
+	}
+	if expSkipped > 0 {
+		log.Printf("Warning: skipped %d experiment rows during scan", expSkipped)
 	}
 
 	// Output results
@@ -464,12 +480,14 @@ func runGetStudies(cmd *cobra.Command, args []string) error {
 	}
 
 	studies := []StudyInfo{}
+	var studySkipped int
 	for rows.Next() {
 		var study StudyInfo
 		var title, abstract, studyType, organism *string
 
 		err := rows.Scan(&study.StudyAccession, &title, &abstract, &studyType, &organism)
 		if err != nil {
+			studySkipped++
 			continue
 		}
 
@@ -487,6 +505,9 @@ func runGetStudies(cmd *cobra.Command, args []string) error {
 		}
 
 		studies = append(studies, study)
+	}
+	if studySkipped > 0 {
+		log.Printf("Warning: skipped %d study rows during scan", studySkipped)
 	}
 
 	// Output results

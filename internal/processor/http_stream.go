@@ -1,3 +1,5 @@
+// Package processor provides streaming ingestion of SRA metadata from tar.gz
+// archives, supporting both HTTP URLs and local files.
 package processor
 
 import (
@@ -17,7 +19,7 @@ import (
 	"github.com/nishad/srake/internal/parser"
 )
 
-// Database interface for testing
+// Database defines the storage operations required by the stream processor.
 type Database interface {
 	InsertStudy(study *database.Study) error
 	InsertExperiment(exp *database.Experiment) error
@@ -456,6 +458,7 @@ func (sp *StreamProcessor) updateProgress(currentFile string) {
 
 	var percentComplete float64
 	var estimatedRemaining time.Duration
+	var bytesPerSecond float64
 
 	if sp.totalBytes > 0 {
 		percentComplete = float64(bytesProcessed) / float64(sp.totalBytes) * 100
@@ -465,7 +468,9 @@ func (sp *StreamProcessor) updateProgress(currentFile string) {
 		}
 	}
 
-	bytesPerSecond := float64(bytesProcessed) / elapsed.Seconds()
+	if elapsedSec := elapsed.Seconds(); elapsedSec > 0 {
+		bytesPerSecond = float64(bytesProcessed) / elapsedSec
+	}
 
 	sp.progressFunc(Progress{
 		BytesProcessed:         bytesProcessed,
@@ -503,11 +508,17 @@ func (sp *StreamProcessor) GetStats() map[string]interface{} {
 	bytesProcessed := sp.bytesProcessed.Load()
 	recordsProcessed := sp.recordsInserted.Load()
 
+	var bytesPerSecond, recordsPerSecond float64
+	if elapsedSec := elapsed.Seconds(); elapsedSec > 0 {
+		bytesPerSecond = float64(bytesProcessed) / elapsedSec
+		recordsPerSecond = float64(recordsProcessed) / elapsedSec
+	}
+
 	return map[string]interface{}{
 		"bytes_processed":    bytesProcessed,
 		"records_processed":  recordsProcessed,
 		"elapsed_time":       elapsed.String(),
-		"bytes_per_second":   float64(bytesProcessed) / elapsed.Seconds(),
-		"records_per_second": float64(recordsProcessed) / elapsed.Seconds(),
+		"bytes_per_second":   bytesPerSecond,
+		"records_per_second": recordsPerSecond,
 	}
 }

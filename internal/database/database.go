@@ -1,8 +1,11 @@
+// Package database provides SQLite-backed storage for SRA metadata records
+// including studies, experiments, samples, runs, submissions, and analyses.
 package database
 
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -232,8 +235,7 @@ func createTables(db *sql.DB) error {
 	return err
 }
 
-// Study operations
-
+// InsertStudy inserts or replaces a study record in the database.
 func (db *DB) InsertStudy(study *Study) error {
 	query := `
 		INSERT OR REPLACE INTO studies (
@@ -247,6 +249,8 @@ func (db *DB) InsertStudy(study *Study) error {
 	return err
 }
 
+// GetStudy retrieves a study by its accession identifier.
+// Returns an error if the study is not found.
 func (db *DB) GetStudy(accession string) (*Study, error) {
 	study := &Study{}
 	query := `
@@ -265,8 +269,7 @@ func (db *DB) GetStudy(accession string) (*Study, error) {
 	return study, err
 }
 
-// Experiment operations
-
+// InsertExperiment inserts or replaces an experiment record in the database.
 func (db *DB) InsertExperiment(exp *Experiment) error {
 	query := `
 		INSERT OR REPLACE INTO experiments (
@@ -282,6 +285,8 @@ func (db *DB) InsertExperiment(exp *Experiment) error {
 	return err
 }
 
+// GetExperiment retrieves an experiment by its accession identifier.
+// Returns an error if the experiment is not found.
 func (db *DB) GetExperiment(accession string) (*Experiment, error) {
 	exp := &Experiment{}
 	query := `
@@ -302,8 +307,7 @@ func (db *DB) GetExperiment(accession string) (*Experiment, error) {
 	return exp, err
 }
 
-// Sample operations
-
+// InsertSample inserts or replaces a sample record in the database.
 func (db *DB) InsertSample(sample *Sample) error {
 	query := `
 		INSERT OR REPLACE INTO samples (
@@ -319,6 +323,8 @@ func (db *DB) InsertSample(sample *Sample) error {
 	return err
 }
 
+// GetSample retrieves a sample by its accession identifier.
+// Returns an error if the sample is not found.
 func (db *DB) GetSample(accession string) (*Sample, error) {
 	sample := &Sample{}
 	query := `
@@ -340,8 +346,7 @@ func (db *DB) GetSample(accession string) (*Sample, error) {
 	return sample, err
 }
 
-// Run operations
-
+// InsertRun inserts or replaces a run record in the database.
 func (db *DB) InsertRun(run *Run) error {
 	query := `
 		INSERT OR REPLACE INTO runs (
@@ -355,6 +360,8 @@ func (db *DB) InsertRun(run *Run) error {
 	return err
 }
 
+// GetRun retrieves a run by its accession identifier.
+// Returns an error if the run is not found.
 func (db *DB) GetRun(accession string) (*Run, error) {
 	run := &Run{}
 	query := `
@@ -373,8 +380,7 @@ func (db *DB) GetRun(accession string) (*Run, error) {
 	return run, err
 }
 
-// Submission operations
-
+// InsertSubmission inserts or replaces a submission record in the database.
 func (db *DB) InsertSubmission(submission *Submission) error {
 	query := `
 		INSERT OR REPLACE INTO submissions (
@@ -392,6 +398,8 @@ func (db *DB) InsertSubmission(submission *Submission) error {
 	return err
 }
 
+// GetSubmission retrieves a submission by its accession identifier.
+// Returns an error if the submission is not found.
 func (db *DB) GetSubmission(accession string) (*Submission, error) {
 	submission := &Submission{}
 	query := `
@@ -414,8 +422,7 @@ func (db *DB) GetSubmission(accession string) (*Submission, error) {
 	return submission, err
 }
 
-// Analysis operations
-
+// InsertAnalysis inserts or replaces an analysis record in the database.
 func (db *DB) InsertAnalysis(analysis *Analysis) error {
 	query := `
 		INSERT OR REPLACE INTO analyses (
@@ -437,6 +444,8 @@ func (db *DB) InsertAnalysis(analysis *Analysis) error {
 	return err
 }
 
+// GetAnalysis retrieves an analysis by its accession identifier.
+// Returns an error if the analysis is not found.
 func (db *DB) GetAnalysis(accession string) (*Analysis, error) {
 	analysis := &Analysis{}
 	query := `
@@ -462,7 +471,7 @@ func (db *DB) GetAnalysis(accession string) (*Analysis, error) {
 	return analysis, err
 }
 
-// Search operations
+// SearchByOrganism returns samples matching the given organism name or scientific name.
 func (db *DB) SearchByOrganism(organism string, limit int) ([]Sample, error) {
 	query := `
 		SELECT sample_accession, experiment_accession, organism,
@@ -496,6 +505,7 @@ func (db *DB) SearchByOrganism(organism string, limit int) ([]Sample, error) {
 	return samples, nil
 }
 
+// SearchByLibraryStrategy returns experiments matching the given library strategy (e.g., RNA-Seq, WGS).
 func (db *DB) SearchByLibraryStrategy(strategy string, limit int) ([]Experiment, error) {
 	query := `
 		SELECT experiment_accession, study_accession, title,
@@ -528,7 +538,8 @@ func (db *DB) SearchByLibraryStrategy(strategy string, limit int) ([]Experiment,
 	return experiments, nil
 }
 
-// Simple full-text search across multiple tables
+// FullTextSearch performs a LIKE-based text search across studies and experiments,
+// returning results from both tables ranked by relevance.
 func (db *DB) FullTextSearch(query string) (interface{}, error) {
 	searchTerm := "%" + query + "%"
 
@@ -556,13 +567,18 @@ func (db *DB) FullTextSearch(query string) (interface{}, error) {
 	}
 	defer rows.Close()
 
+	var studySkipped int
 	for rows.Next() {
 		var result SearchResult
 		err := rows.Scan(&result.Type, &result.Accession, &result.Title, &result.Organism)
 		if err != nil {
+			studySkipped++
 			continue
 		}
 		results = append(results, result)
+	}
+	if studySkipped > 0 {
+		log.Printf("Warning: skipped %d study rows during search scan", studySkipped)
 	}
 
 	// Search experiments
@@ -578,19 +594,24 @@ func (db *DB) FullTextSearch(query string) (interface{}, error) {
 	}
 	defer rows2.Close()
 
+	var expSkipped int
 	for rows2.Next() {
 		var result SearchResult
 		err := rows2.Scan(&result.Type, &result.Accession, &result.Title, &result.Platform, &result.Strategy)
 		if err != nil {
+			expSkipped++
 			continue
 		}
 		results = append(results, result)
+	}
+	if expSkipped > 0 {
+		log.Printf("Warning: skipped %d experiment rows during search scan", expSkipped)
 	}
 
 	return results, nil
 }
 
-// Statistics
+// DatabaseStats holds aggregate counts for all core SRA tables.
 type DatabaseStats struct {
 	TotalStudies     int       `json:"total_studies"`
 	TotalExperiments int       `json:"total_experiments"`
@@ -599,21 +620,30 @@ type DatabaseStats struct {
 	LastUpdate       time.Time `json:"last_update"`
 }
 
+// GetStats returns live row counts for all core SRA tables.
 func (db *DB) GetStats() (*DatabaseStats, error) {
 	stats := &DatabaseStats{}
 
-	// Get counts
-	db.QueryRow("SELECT COUNT(*) FROM studies").Scan(&stats.TotalStudies)
-	db.QueryRow("SELECT COUNT(*) FROM experiments").Scan(&stats.TotalExperiments)
-	db.QueryRow("SELECT COUNT(*) FROM runs").Scan(&stats.TotalRuns)
-	db.QueryRow("SELECT COUNT(*) FROM samples").Scan(&stats.TotalSamples)
+	// Get counts with proper error handling
+	if err := db.QueryRow("SELECT COUNT(*) FROM studies").Scan(&stats.TotalStudies); err != nil {
+		return nil, fmt.Errorf("failed to count studies: %w", err)
+	}
+	if err := db.QueryRow("SELECT COUNT(*) FROM experiments").Scan(&stats.TotalExperiments); err != nil {
+		return nil, fmt.Errorf("failed to count experiments: %w", err)
+	}
+	if err := db.QueryRow("SELECT COUNT(*) FROM runs").Scan(&stats.TotalRuns); err != nil {
+		return nil, fmt.Errorf("failed to count runs: %w", err)
+	}
+	if err := db.QueryRow("SELECT COUNT(*) FROM samples").Scan(&stats.TotalSamples); err != nil {
+		return nil, fmt.Errorf("failed to count samples: %w", err)
+	}
 
 	stats.LastUpdate = time.Now()
 
 	return stats, nil
 }
 
-// Batch operations for performance
+// BatchInsertExperiments inserts multiple experiments in a single transaction for performance.
 func (db *DB) BatchInsertExperiments(experiments []Experiment) error {
 	tx, err := db.Begin()
 	if err != nil {
@@ -855,11 +885,19 @@ func (db *DB) Ping() error {
 	return db.DB.Ping()
 }
 
-// CountTable counts rows in a table
+// CountTable counts rows in a table.
+// The table name is validated against the AllowedTables whitelist
+// to prevent SQL injection attacks.
 func (db *DB) CountTable(table string) (int64, error) {
+	// Validate table name against whitelist to prevent SQL injection
+	safeTable, err := SafeTableName(table)
+	if err != nil {
+		return 0, fmt.Errorf("CountTable: %w", err)
+	}
+
 	var count int64
-	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", table)
-	err := db.QueryRow(query).Scan(&count)
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s", safeTable)
+	err = db.QueryRow(query).Scan(&count)
 	return count, err
 }
 
@@ -981,13 +1019,32 @@ func (db *DB) ScanRun(scanner interface{}, run *Run) error {
 	return fmt.Errorf("ScanRun not implemented - use GetRun method")
 }
 
-// GetStudiesBatch retrieves a batch of studies
+// GetStudiesBatch retrieves a batch of studies with pagination
 func (db *DB) GetStudiesBatch(offset, limit int) ([]*Study, error) {
-	// Use the existing GetStudy method approach for now
-	return nil, fmt.Errorf("GetStudiesBatch not implemented")
+	query := `
+		SELECT study_accession, study_title, study_abstract, study_type, organism
+		FROM studies
+		LIMIT ? OFFSET ?
+	`
+	rows, err := db.Query(query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var studies []*Study
+	for rows.Next() {
+		s := &Study{}
+		err := rows.Scan(&s.StudyAccession, &s.StudyTitle, &s.StudyAbstract, &s.StudyType, &s.Organism)
+		if err != nil {
+			continue
+		}
+		studies = append(studies, s)
+	}
+	return studies, rows.Err()
 }
 
-// DatabaseInfo holds database statistics
+// DatabaseInfo holds database file size and cached table row counts.
 type DatabaseInfo struct {
 	Size        int64
 	Studies     int64

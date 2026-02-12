@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/binary"
 	"fmt"
+	"log"
 	"math"
 	"path/filepath"
 
@@ -269,12 +270,14 @@ func (vs *VectorStore) searchSimilarProjects(embedding []float32, excludeID stri
 	defer rows.Close()
 
 	var results []SimilarityResult
+	var skipped int
 	for rows.Next() {
 		var projectID, title, organism string
 		var embeddingBlob []byte
 
 		err := rows.Scan(&projectID, &title, &organism, &embeddingBlob)
 		if err != nil {
+			skipped++
 			continue
 		}
 
@@ -288,6 +291,9 @@ func (vs *VectorStore) searchSimilarProjects(embedding []float32, excludeID stri
 			Distance: distance,
 			Score:    1 - distance, // Convert distance to similarity score
 		})
+	}
+	if skipped > 0 {
+		log.Printf("Warning: skipped %d project rows during similarity search", skipped)
 	}
 
 	// Sort by distance (ascending) and limit
@@ -325,12 +331,14 @@ func (vs *VectorStore) FindSimilarSamples(sampleID string, limit int) ([]Similar
 	defer rows.Close()
 
 	var results []SimilarityResult
+	var sampleSkipped int
 	for rows.Next() {
 		var sampleID, description, organism string
 		var embeddingBlob []byte
 
 		err := rows.Scan(&sampleID, &description, &organism, &embeddingBlob)
 		if err != nil {
+			sampleSkipped++
 			continue
 		}
 
@@ -344,6 +352,9 @@ func (vs *VectorStore) FindSimilarSamples(sampleID string, limit int) ([]Similar
 			Distance: distance,
 			Score:    1 - distance,
 		})
+	}
+	if sampleSkipped > 0 {
+		log.Printf("Warning: skipped %d sample rows during similarity search", sampleSkipped)
 	}
 
 	// Sort by distance and limit

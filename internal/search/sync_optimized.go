@@ -13,6 +13,27 @@ import (
 	"time"
 )
 
+// allowedSyncTables is the whitelist of tables that can be synced.
+// This prevents SQL injection by ensuring only known tables are queried.
+var allowedSyncTables = map[string]bool{
+	"studies":     true,
+	"experiments": true,
+	"samples":     true,
+	"runs":        true,
+	"study":       true, // Alternate naming convention
+	"experiment":  true,
+	"sample":      true,
+	"run":         true,
+}
+
+// validateSyncTable checks if a table name is allowed for syncing.
+func validateSyncTable(table string) error {
+	if !allowedSyncTables[table] {
+		return fmt.Errorf("invalid sync table name: %q", table)
+	}
+	return nil
+}
+
 // OptimizedSyncer provides high-performance synchronization
 type OptimizedSyncer struct {
 	*Syncer
@@ -93,8 +114,14 @@ func (o *OptimizedSyncer) ParallelFullSync(ctx context.Context) error {
 	return totalErr
 }
 
-// streamTable streams table data to workers
+// streamTable streams table data to workers.
+// The table name is validated against allowedSyncTables to prevent SQL injection.
 func (o *OptimizedSyncer) streamTable(ctx context.Context, table string, workChan chan<- workItem) error {
+	// Validate table name to prevent SQL injection
+	if err := validateSyncTable(table); err != nil {
+		return fmt.Errorf("streamTable: %w", err)
+	}
+
 	query := fmt.Sprintf("SELECT * FROM %s", table)
 	rows, err := o.db.QueryContext(ctx, query)
 	if err != nil {
@@ -103,10 +130,12 @@ func (o *OptimizedSyncer) streamTable(ctx context.Context, table string, workCha
 	defer rows.Close()
 
 	batch := make([]interface{}, 0, o.config.Search.BatchSize)
+	var scanSkipped int
 
 	for rows.Next() {
 		doc, err := o.scanTableRow(table, rows)
 		if err != nil {
+			scanSkipped++
 			continue
 		}
 
@@ -125,6 +154,10 @@ func (o *OptimizedSyncer) streamTable(ctx context.Context, table string, workCha
 	// Send remaining batch
 	if len(batch) > 0 {
 		workChan <- workItem{table: table, batch: batch}
+	}
+
+	if scanSkipped > 0 {
+		log.Printf("Warning: skipped %d rows during %s table sync", scanSkipped, table)
 	}
 
 	return nil
@@ -152,8 +185,14 @@ func (o *OptimizedSyncer) IncrementalSync(ctx context.Context) error {
 	return nil
 }
 
-// syncTableIncremental syncs only changed records
+// syncTableIncremental syncs only changed records.
+// The table name is validated against allowedSyncTables to prevent SQL injection.
 func (o *OptimizedSyncer) syncTableIncremental(ctx context.Context, table string) (int, error) {
+	// Validate table name to prevent SQL injection
+	if err := validateSyncTable(table); err != nil {
+		return 0, fmt.Errorf("syncTableIncremental: %w", err)
+	}
+
 	// Get records with checksums
 	query := fmt.Sprintf(`
 		SELECT *,
@@ -175,11 +214,13 @@ func (o *OptimizedSyncer) syncTableIncremental(ctx context.Context, table string
 	defer rows.Close()
 
 	var updated int
+	var incrementalSkipped int
 	batch := make([]interface{}, 0, 100)
 
 	for rows.Next() {
 		doc, err := o.scanTableRow(table, rows)
 		if err != nil {
+			incrementalSkipped++
 			continue
 		}
 
@@ -216,6 +257,10 @@ func (o *OptimizedSyncer) syncTableIncremental(ctx context.Context, table string
 		if err := o.processBatch(ctx, table, batch); err != nil {
 			return updated, err
 		}
+	}
+
+	if incrementalSkipped > 0 {
+		log.Printf("Warning: skipped %d rows during %s incremental sync", incrementalSkipped, table)
 	}
 
 	return updated, nil

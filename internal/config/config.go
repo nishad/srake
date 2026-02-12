@@ -224,14 +224,18 @@ func getSearchBackend() string {
 	return "tiered"
 }
 
-// expandPath expands ~ to home directory
+// expandPath expands ~ to home directory.
+// If the home directory cannot be determined, the path is returned unchanged.
 func expandPath(path string) string {
 	if len(path) == 0 {
 		return path
 	}
 
 	if path[0] == '~' {
-		homeDir, _ := os.UserHomeDir()
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return path
+		}
 		return filepath.Join(homeDir, path[1:])
 	}
 
