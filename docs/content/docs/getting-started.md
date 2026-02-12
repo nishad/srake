@@ -30,7 +30,7 @@ The `sqlite_fts5` build tag is required for full-text search support.
 
 ## Quick Start
 
-{{< steps >}}
+{{% steps %}}
 
 ### Ingest SRA metadata
 
@@ -87,7 +87,7 @@ curl "http://localhost:8080/api/v1/search?q=cancer&limit=10"
 curl "http://localhost:8080/api/v1/stats"
 ```
 
-{{< /steps >}}
+{{% /steps %}}
 
 ## Data paths
 
