@@ -38,6 +38,9 @@ test_large_extraction.go
 *_test_*.go
 perf_test*.go
 
+# Hugo generated output
+docs/public/
+
 # Build artifacts
 /srake
 srake-test
@@ -120,4 +123,5 @@ sample_data/
 # Development/private docs that should stay local
 RELEASE_CHECKLIST.md
 RELEASE_READY.md
-CLI_COMPLIANCE_REPORT.md.srake/
+CLI_COMPLIANCE_REPORT.md
+.srake/
