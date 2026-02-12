@@ -5,6 +5,7 @@ package search
 
 import (
 	"fmt"
+
 	"github.com/blevesearch/bleve/v2"
 	"github.com/blevesearch/bleve/v2/mapping"
 )

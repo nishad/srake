@@ -19,9 +19,9 @@ import (
 // Handler serves the srake REST API, routing requests to the appropriate
 // database queries and search backend operations.
 type Handler struct {
-	db             *database.DB
-	searchBackend  search.SearchBackend
-	mux            *http.ServeMux
+	db            *database.DB
+	searchBackend search.SearchBackend
+	mux           *http.ServeMux
 }
 
 // NewHandler creates a new Handler with all API routes registered.
@@ -239,13 +239,13 @@ func (h *Handler) handleStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-		"total_documents":    stats.TotalStudies,
-		"indexed_documents":  stats.TotalSamples,
-		"total_studies":      stats.TotalStudies,
-		"total_samples":      stats.TotalSamples,
-		"total_runs":         stats.TotalRuns,
-		"total_experiments":  stats.TotalExperiments,
-		"last_updated":       time.Now().Format(time.RFC3339),
+		"total_documents":   stats.TotalStudies,
+		"indexed_documents": stats.TotalSamples,
+		"total_studies":     stats.TotalStudies,
+		"total_samples":     stats.TotalSamples,
+		"total_runs":        stats.TotalRuns,
+		"total_experiments": stats.TotalExperiments,
+		"last_updated":      time.Now().Format(time.RFC3339),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -456,7 +456,7 @@ func (h *Handler) handleAggregations(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := map[string]interface{}{
-		"field": field,
+		"field":  field,
 		"values": results,
 	}
 

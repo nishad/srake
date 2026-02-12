@@ -50,10 +50,10 @@ func TestRun() *database.Run {
 	return &database.Run{
 		RunAccession:        "SRR999999",
 		ExperimentAccession: "SRX999999",
-		TotalSpots:         1000000,
-		TotalBases:         300000000,
-		TotalSize:          50000000,
-		Published:          "2024-01-01",
+		TotalSpots:          1000000,
+		TotalBases:          300000000,
+		TotalSize:           50000000,
+		Published:           "2024-01-01",
 	}
 }
 
@@ -121,8 +121,8 @@ var (
 
 // Platforms commonly used in tests
 var (
-	PlatformIllumina  = "ILLUMINA"
-	PlatformPacBio    = "PACBIO_SMRT"
-	PlatformOxford    = "OXFORD_NANOPORE"
+	PlatformIllumina   = "ILLUMINA"
+	PlatformPacBio     = "PACBIO_SMRT"
+	PlatformOxford     = "OXFORD_NANOPORE"
 	PlatformIONTorrent = "ION_TORRENT"
 )

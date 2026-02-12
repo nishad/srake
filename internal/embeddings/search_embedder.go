@@ -2,6 +2,7 @@ package embeddings
 
 import (
 	"fmt"
+
 	"github.com/nishad/srake/internal/config"
 )
 

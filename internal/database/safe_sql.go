@@ -10,18 +10,18 @@ import (
 // Any table name not in this list will be rejected to prevent SQL injection.
 var AllowedTables = map[string]bool{
 	// Core entity tables
-	"studies":      true,
-	"experiments":  true,
-	"samples":      true,
-	"runs":         true,
-	"submissions":  true,
-	"analyses":     true,
+	"studies":     true,
+	"experiments": true,
+	"samples":     true,
+	"runs":        true,
+	"submissions": true,
+	"analyses":    true,
 
 	// Relationship tables
-	"sample_pool":         true,
-	"identifiers":         true,
-	"links":               true,
-	"experiment_samples":  true,
+	"sample_pool":        true,
+	"identifiers":        true,
+	"links":              true,
+	"experiment_samples": true,
 
 	// FTS5 virtual tables
 	"fts_accessions": true,
@@ -47,22 +47,22 @@ var AllowedColumns = map[string]bool{
 	"analysis_accession":   true,
 
 	// Common metadata columns
-	"title":          true,
-	"abstract":       true,
-	"description":    true,
-	"organism":        true,
-	"scientific_name": true,
-	"taxon_id":        true,
-	"platform":        true,
-	"instrument_model": true,
-	"library_strategy": true,
-	"library_source":   true,
+	"title":             true,
+	"abstract":          true,
+	"description":       true,
+	"organism":          true,
+	"scientific_name":   true,
+	"taxon_id":          true,
+	"platform":          true,
+	"instrument_model":  true,
+	"library_strategy":  true,
+	"library_source":    true,
 	"library_selection": true,
-	"library_layout":   true,
+	"library_layout":    true,
 
 	// Timestamp columns
-	"created_at":     true,
-	"updated_at":     true,
+	"created_at":      true,
+	"updated_at":      true,
 	"submission_date": true,
 	"first_public":    true,
 	"last_update":     true,

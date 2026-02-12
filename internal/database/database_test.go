@@ -191,10 +191,10 @@ func TestRunOperations(t *testing.T) {
 	run := &Run{
 		RunAccession:        "SRR000001",
 		ExperimentAccession: "SRX000001",
-		TotalSpots:         100000000,
-		TotalBases:         30000000000,
-		TotalSize:          5000000000,
-		Published:          "2023-01-15",
+		TotalSpots:          100000000,
+		TotalBases:          30000000000,
+		TotalSize:           5000000000,
+		Published:           "2023-01-15",
 	}
 
 	err := db.InsertRun(run)

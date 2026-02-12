@@ -209,8 +209,8 @@ func TestRunEndpoint(t *testing.T) {
 	run := &database.Run{
 		RunAccession:        "SRR000001",
 		ExperimentAccession: "SRX000001",
-		TotalSpots:         1000000,
-		TotalBases:         300000000,
+		TotalSpots:          1000000,
+		TotalBases:          300000000,
 	}
 	if err := server.db.InsertRun(run); err != nil {
 		t.Fatalf("failed to insert test run: %v", err)

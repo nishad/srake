@@ -310,7 +310,7 @@ func TestIsValidAccession(t *testing.T) {
 		{"ERP000001", []string{"SRP", "ERP", "DRP"}, true},
 		{"DRP000001", []string{"SRP", "ERP", "DRP"}, true},
 		{"INVALID", []string{"SRP"}, false},
-		{"SRP1", []string{"SRP"}, false},       // too short
+		{"SRP1", []string{"SRP"}, false},          // too short
 		{"SRP1234567890", []string{"SRP"}, false}, // too long
 	}
 
