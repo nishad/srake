@@ -25,14 +25,18 @@ func (ce *ComprehensiveExtractor) ExtractSubmission(ctx context.Context, submiss
 // extractSubmissionData extracts data from a Submission
 func (ce *ComprehensiveExtractor) extractSubmissionData(submission parser.Submission) *database.Submission {
 	dbSubmission := &database.Submission{
-		SubmissionAccession: submission.Accession,
-		Alias:               submission.Alias,
-		CenterName:          submission.CenterName,
-		BrokerName:          submission.BrokerName,
-		LabName:             submission.LabName,
-		Title:               submission.Title,
-		SubmissionComment:   submission.SubmissionComment,
-		Metadata:            "{}",
+		SubmissionAccession:  submission.Accession,
+		Alias:                submission.Alias,
+		CenterName:           submission.CenterName,
+		BrokerName:           submission.BrokerName,
+		LabName:              submission.LabName,
+		Title:                submission.Title,
+		SubmissionComment:    submission.SubmissionComment,
+		Metadata:             "{}",
+		Contacts:             "[]",
+		Actions:              "[]",
+		SubmissionLinks:      "[]",
+		SubmissionAttributes: "[]",
 	}
 
 	// Parse submission date
@@ -71,26 +75,29 @@ func (ce *ComprehensiveExtractor) extractSubmissionData(submission parser.Submis
 		for _, action := range submission.Actions.Actions {
 			actionMap := make(map[string]interface{})
 			if action.Add != nil {
-				actionMap["type"] = "ADD"
+				actionMap["action_type"] = "ADD"
 				actionMap["source"] = action.Add.Source
 				actionMap["schema"] = action.Add.Schema
 			} else if action.Modify != nil {
-				actionMap["type"] = "MODIFY"
+				actionMap["action_type"] = "MODIFY"
 				actionMap["source"] = action.Modify.Source
 				actionMap["schema"] = action.Modify.Schema
 			} else if action.Suppress != nil {
-				actionMap["type"] = "SUPPRESS"
+				actionMap["action_type"] = "SUPPRESS"
 				actionMap["target"] = action.Suppress.Target
 			} else if action.Hold != nil {
-				actionMap["type"] = "HOLD"
+				actionMap["action_type"] = "HOLD"
 				actionMap["target"] = action.Hold.Target
+				if action.Hold.HoldUntilDate != "" {
+					actionMap["hold_until_date"] = action.Hold.HoldUntilDate
+				}
 			} else if action.Release != nil {
-				actionMap["type"] = "RELEASE"
+				actionMap["action_type"] = "RELEASE"
 				actionMap["target"] = action.Release.Target
 			} else if action.Protect != nil {
-				actionMap["type"] = "PROTECT"
+				actionMap["action_type"] = "PROTECT"
 			} else if action.Validate != nil {
-				actionMap["type"] = "VALIDATE"
+				actionMap["action_type"] = "VALIDATE"
 			}
 			if len(actionMap) > 0 {
 				actions = append(actions, actionMap)

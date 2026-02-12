@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/xml"
 	"io"
+	"strconv"
+	"strings"
 
 	"github.com/nishad/srake/internal/database"
 	"github.com/nishad/srake/internal/parser"
@@ -123,6 +125,30 @@ func (ce *ComprehensiveExtractor) extractRunData(run parser.Run) *database.Run {
 		attrs := ce.extractAttributes(run.RunAttributes.Attributes)
 		dbRun.RunAttributes = marshalJSON(attrs)
 		metadata["attributes"] = attrs
+
+		// Extract known quality metrics from attributes
+		if ce.options.ExtractFromAttributes {
+			for _, attr := range run.RunAttributes.Attributes {
+				switch strings.ToLower(attr.Tag) {
+				case "quality_score_mean":
+					if val, err := strconv.ParseFloat(attr.Value, 64); err == nil {
+						dbRun.QualityScoreMean = val
+					}
+				case "quality_score_std":
+					if val, err := strconv.ParseFloat(attr.Value, 64); err == nil {
+						dbRun.QualityScoreStd = val
+					}
+				case "read_count_r1":
+					if val, err := strconv.ParseInt(attr.Value, 10, 64); err == nil {
+						dbRun.ReadCountR1 = val
+					}
+				case "read_count_r2":
+					if val, err := strconv.ParseInt(attr.Value, 10, 64); err == nil {
+						dbRun.ReadCountR2 = val
+					}
+				}
+			}
+		}
 	}
 
 	dbRun.Metadata = marshalJSON(metadata)

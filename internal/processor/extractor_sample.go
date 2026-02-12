@@ -88,6 +88,12 @@ func (ce *ComprehensiveExtractor) extractSampleData(sample parser.Sample) *datab
 		if ce.options.ExtractFromAttributes {
 			for _, attr := range sample.SampleAttributes.Attributes {
 				switch strings.ToLower(attr.Tag) {
+				case "tissue":
+					dbSample.Tissue = attr.Value
+				case "cell_type":
+					dbSample.CellType = attr.Value
+				case "cell_line":
+					dbSample.CellLine = attr.Value
 				case "strain":
 					dbSample.Strain = attr.Value
 				case "sex", "gender":

@@ -126,6 +126,19 @@ func (ce *ComprehensiveExtractor) extractExperimentData(exp parser.Experiment) *
 		}
 	}
 
+	// Extract targeted loci
+	if exp.Design.LibraryDescriptor.TargetedLoci != nil && len(exp.Design.LibraryDescriptor.TargetedLoci.Loci) > 0 {
+		var loci []map[string]string
+		for _, locus := range exp.Design.LibraryDescriptor.TargetedLoci.Loci {
+			locusInfo := map[string]string{
+				"name":        locus.LocusName,
+				"description": locus.Description,
+			}
+			loci = append(loci, locusInfo)
+		}
+		dbExp.TargetedLoci = marshalJSON(loci)
+	}
+
 	// Build metadata
 	metadata := map[string]interface{}{
 		"title":             exp.Title,
@@ -183,6 +196,7 @@ func extractPoolInfo(pool *parser.Pool) map[string]interface{} {
 
 	if len(members) > 0 {
 		info["members"] = members
+		info["member_count"] = len(members)
 	}
 
 	return info

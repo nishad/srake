@@ -125,6 +125,36 @@ func (ce *ComprehensiveExtractor) extractAnalysisData(analysis parser.Analysis) 
 	processingInfo := ce.extractProcessingInfo(analysis)
 	dbAnalysis.Processing = marshalJSON(processingInfo)
 
+	// Extract assembly reference for reference alignment
+	if analysis.AnalysisType.ReferenceAlignment != nil {
+		assemblyRef := ce.extractAssemblyRef(analysis.AnalysisType.ReferenceAlignment.Assembly)
+		dbAnalysis.AssemblyRef = marshalJSON(assemblyRef)
+
+		// Extract run labels
+		if analysis.AnalysisType.ReferenceAlignment.RunLabels != nil {
+			runLabels := []map[string]string{}
+			for _, rl := range analysis.AnalysisType.ReferenceAlignment.RunLabels.Runs {
+				runLabels = append(runLabels, map[string]string{
+					"accession":        rl.Accession,
+					"read_group_label": rl.ReadGroupLabel,
+				})
+			}
+			dbAnalysis.RunLabels = marshalJSON(runLabels)
+		}
+
+		// Extract seq labels
+		if analysis.AnalysisType.ReferenceAlignment.SeqLabels != nil {
+			seqLabels := []map[string]string{}
+			for _, sl := range analysis.AnalysisType.ReferenceAlignment.SeqLabels.Sequences {
+				seqLabels = append(seqLabels, map[string]string{
+					"accession": sl.Accession,
+					"seq_label": sl.SeqLabel,
+				})
+			}
+			dbAnalysis.SeqLabels = marshalJSON(seqLabels)
+		}
+	}
+
 	// Build metadata
 	metadata := map[string]interface{}{
 		"alias":           analysis.Alias,
@@ -136,6 +166,31 @@ func (ce *ComprehensiveExtractor) extractAnalysisData(analysis parser.Analysis) 
 
 	dbAnalysis.Metadata = marshalJSON(metadata)
 	return dbAnalysis
+}
+
+// extractAssemblyRef extracts assembly reference information
+func (ce *ComprehensiveExtractor) extractAssemblyRef(assembly parser.Assembly) map[string]interface{} {
+	ref := map[string]interface{}{}
+
+	if assembly.Standard != nil {
+		ref["type"] = "standard"
+		ref["ref_name"] = assembly.Standard.ShortName
+		if len(assembly.Standard.Names) > 0 {
+			names := []map[string]string{}
+			for _, n := range assembly.Standard.Names {
+				names = append(names, map[string]string{
+					"db": n.DB,
+					"id": n.ID,
+				})
+			}
+			ref["names"] = names
+		}
+	} else if assembly.Custom != nil {
+		ref["type"] = "CUSTOM"
+		ref["description"] = assembly.Custom.Description
+	}
+
+	return ref
 }
 
 // extractAnalysisTypeName determines the analysis type name
@@ -160,18 +215,30 @@ func (ce *ComprehensiveExtractor) extractProcessingInfo(analysis parser.Analysis
 		processingInfo["type"] = "de_novo_assembly"
 		programs := ce.extractPipeline(analysis.AnalysisType.DeNovoAssembly.Processing.Pipeline)
 		processingInfo["programs"] = programs
+		if len(programs) > 0 {
+			processingInfo["pipeline_name"] = programs[0]["name"]
+		}
 	} else if analysis.AnalysisType.ReferenceAlignment != nil {
 		processingInfo["type"] = "reference_alignment"
 		programs := ce.extractPipeline(analysis.AnalysisType.ReferenceAlignment.Processing.Pipeline)
 		processingInfo["programs"] = programs
+		if len(programs) > 0 {
+			processingInfo["pipeline_name"] = programs[0]["name"]
+		}
 	} else if analysis.AnalysisType.SequenceAnnotation != nil {
 		processingInfo["type"] = "sequence_annotation"
 		programs := ce.extractPipeline(analysis.AnalysisType.SequenceAnnotation.Processing.Pipeline)
 		processingInfo["programs"] = programs
+		if len(programs) > 0 {
+			processingInfo["pipeline_name"] = programs[0]["name"]
+		}
 	} else if analysis.AnalysisType.AbundanceMeasurement != nil {
 		processingInfo["type"] = "abundance_measurement"
 		programs := ce.extractPipeline(analysis.AnalysisType.AbundanceMeasurement.Processing.Pipeline)
 		processingInfo["programs"] = programs
+		if len(programs) > 0 {
+			processingInfo["pipeline_name"] = programs[0]["name"]
+		}
 	}
 
 	return processingInfo
