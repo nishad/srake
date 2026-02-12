@@ -23,12 +23,13 @@ MASTER_*.md
 !CHANGELOG.md
 !LICENSE
 
-# Test databases
+# Test databases and indexes
 *.db
 *.db-journal
 *.db-wal
 *.db.backup*
 *.db-shm
+*.bleve/
 data/
 
 # Test files
