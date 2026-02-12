@@ -6,7 +6,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/nishad/srake/internal/database"
 	"github.com/nishad/srake/internal/downloader"
+	"github.com/nishad/srake/internal/paths"
 	"github.com/spf13/cobra"
 )
 
@@ -165,7 +167,7 @@ func runDownload(cmd *cobra.Command, args []string) error {
 	}
 
 	// Summary
-	fmt.Printf("\n" + strings.Repeat("─", 60) + "\n")
+	fmt.Print("\n" + strings.Repeat("─", 60) + "\n")
 	printSuccess("Successfully downloaded: %d/%d files", successCount, len(expandedAccessions))
 
 	if len(failedAccessions) > 0 {
@@ -221,19 +223,109 @@ func expandAccessions(ctx context.Context, accessions []string) ([]string, error
 
 // Helper functions to get runs from database
 func getRunsForStudy(studyAccession string) ([]string, error) {
-	// This would query the database for all runs in a study
-	// For now, returning empty as placeholder
-	return []string{}, fmt.Errorf("study expansion not yet implemented")
+	db, err := database.Initialize(paths.GetDatabasePath())
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+	defer db.Close()
+
+	query := `
+		SELECT r.run_accession
+		FROM runs r
+		JOIN experiments e ON r.experiment_accession = e.experiment_accession
+		WHERE e.study_accession = ?
+		ORDER BY r.run_accession
+	`
+	rows, err := db.Query(query, studyAccession)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var runs []string
+	for rows.Next() {
+		var run string
+		if err := rows.Scan(&run); err != nil {
+			continue
+		}
+		runs = append(runs, run)
+	}
+
+	if len(runs) == 0 {
+		return nil, fmt.Errorf("no runs found for study %s", studyAccession)
+	}
+
+	return runs, nil
 }
 
 func getRunsForExperiment(expAccession string) ([]string, error) {
-	// This would query the database for all runs in an experiment
-	// For now, returning empty as placeholder
-	return []string{}, fmt.Errorf("experiment expansion not yet implemented")
+	db, err := database.Initialize(paths.GetDatabasePath())
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+	defer db.Close()
+
+	query := `
+		SELECT run_accession
+		FROM runs
+		WHERE experiment_accession = ?
+		ORDER BY run_accession
+	`
+	rows, err := db.Query(query, expAccession)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var runs []string
+	for rows.Next() {
+		var run string
+		if err := rows.Scan(&run); err != nil {
+			continue
+		}
+		runs = append(runs, run)
+	}
+
+	if len(runs) == 0 {
+		return nil, fmt.Errorf("no runs found for experiment %s", expAccession)
+	}
+
+	return runs, nil
 }
 
 func getRunsForSample(sampleAccession string) ([]string, error) {
-	// This would query the database for all runs for a sample
-	// For now, returning empty as placeholder
-	return []string{}, fmt.Errorf("sample expansion not yet implemented")
+	db, err := database.Initialize(paths.GetDatabasePath())
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+	defer db.Close()
+
+	// Samples are linked via experiments
+	query := `
+		SELECT r.run_accession
+		FROM runs r
+		JOIN experiments e ON r.experiment_accession = e.experiment_accession
+		WHERE e.sample_accession = ?
+		ORDER BY r.run_accession
+	`
+	rows, err := db.Query(query, sampleAccession)
+	if err != nil {
+		return nil, fmt.Errorf("query failed: %w", err)
+	}
+	defer rows.Close()
+
+	var runs []string
+	for rows.Next() {
+		var run string
+		if err := rows.Scan(&run); err != nil {
+			continue
+		}
+		runs = append(runs, run)
+	}
+
+	if len(runs) == 0 {
+		return nil, fmt.Errorf("no runs found for sample %s", sampleAccession)
+	}
+
+	return runs, nil
 }

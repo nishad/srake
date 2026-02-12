@@ -762,8 +762,102 @@ func buildSQLQuery(query string, filters map[string]string) string {
 
 // displayDatabaseResults displays results from database-only search
 func displayDatabaseResults(rows *sql.Rows) error {
-	// Implementation to display database results
-	// This will format the results similar to the existing display logic
+	columns, err := rows.Columns()
+	if err != nil {
+		return fmt.Errorf("failed to get columns: %v", err)
+	}
+
+	// Read all results
+	var results []map[string]interface{}
+	for rows.Next() {
+		// Create a slice of interface{} to hold column values
+		values := make([]interface{}, len(columns))
+		valuePtrs := make([]interface{}, len(columns))
+		for i := range values {
+			valuePtrs[i] = &values[i]
+		}
+
+		if err := rows.Scan(valuePtrs...); err != nil {
+			continue
+		}
+
+		// Convert to map
+		row := make(map[string]interface{})
+		for i, col := range columns {
+			val := values[i]
+			if b, ok := val.([]byte); ok {
+				row[col] = string(b)
+			} else {
+				row[col] = val
+			}
+		}
+		results = append(results, row)
+	}
+
+	if len(results) == 0 {
+		if !quiet {
+			fmt.Println("No results found")
+		}
+		return nil
+	}
+
+	// Format based on output format
+	switch searchFormat {
+	case "json":
+		encoder := json.NewEncoder(os.Stdout)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(results)
+
+	case "csv", "tsv":
+		delimiter := ','
+		if searchFormat == "tsv" {
+			delimiter = '\t'
+		}
+		writer := csv.NewWriter(os.Stdout)
+		writer.Comma = delimiter
+
+		// Write header
+		if !searchNoHeader {
+			displayCols := []string{"study_accession", "study_title", "organism", "study_type"}
+			writer.Write(displayCols)
+		}
+
+		// Write data
+		for _, row := range results {
+			record := []string{
+				fmt.Sprintf("%v", row["study_accession"]),
+				truncate(fmt.Sprintf("%v", row["study_title"]), 60),
+				fmt.Sprintf("%v", row["organism"]),
+				fmt.Sprintf("%v", row["study_type"]),
+			}
+			writer.Write(record)
+		}
+		writer.Flush()
+		return writer.Error()
+
+	default: // table
+		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+
+		if !searchNoHeader {
+			fmt.Fprintln(w, "ACCESSION\tTITLE\tORGANISM\tTYPE")
+			fmt.Fprintln(w, strings.Repeat("-", 10)+"\t"+strings.Repeat("-", 50)+"\t"+strings.Repeat("-", 20)+"\t"+strings.Repeat("-", 15))
+		}
+
+		for _, row := range results {
+			fmt.Fprintf(w, "%v\t%v\t%v\t%v\n",
+				row["study_accession"],
+				truncate(fmt.Sprintf("%v", row["study_title"]), 50),
+				truncate(fmt.Sprintf("%v", row["organism"]), 20),
+				row["study_type"],
+			)
+		}
+		w.Flush()
+	}
+
+	if !quiet {
+		fmt.Fprintf(os.Stderr, "\nFound %d results\n", len(results))
+	}
+
 	return nil
 }
 

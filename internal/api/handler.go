@@ -1,3 +1,5 @@
+// Package api provides HTTP handlers for the srake REST API, exposing
+// search, metadata retrieval, statistics, and export endpoints.
 package api
 
 import (
@@ -14,12 +16,15 @@ import (
 	"github.com/nishad/srake/internal/search"
 )
 
+// Handler serves the srake REST API, routing requests to the appropriate
+// database queries and search backend operations.
 type Handler struct {
 	db             *database.DB
 	searchBackend  search.SearchBackend
 	mux            *http.ServeMux
 }
 
+// NewHandler creates a new Handler with all API routes registered.
 func NewHandler(db *database.DB, cfg *config.Config) (*Handler, error) {
 	// Create search backend
 	searchBackend, err := search.CreateSearchBackend(cfg)
@@ -49,6 +54,7 @@ func NewHandler(db *database.DB, cfg *config.Config) (*Handler, error) {
 	return h, nil
 }
 
+// ServeHTTP dispatches incoming requests, adding CORS headers and handling OPTIONS preflight.
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Enable CORS for development
 	w.Header().Set("Access-Control-Allow-Origin", "*")
@@ -78,11 +84,24 @@ func (h *Handler) handleSearch(w http.ResponseWriter, r *http.Request) {
 	organism := q.Get("organism")
 	searchMode := q.Get("search_mode")
 
+	// Validate query length to prevent abuse
+	const maxQueryLength = 1000
+	if len(searchQuery) > maxQueryLength {
+		http.Error(w, "Query too long (max 1000 characters)", http.StatusBadRequest)
+		return
+	}
+
 	limit, _ := strconv.Atoi(q.Get("limit"))
 	if limit <= 0 {
 		limit = 20
 	}
+	if limit > 1000 {
+		limit = 1000
+	}
 	offset, _ := strconv.Atoi(q.Get("offset"))
+	if offset < 0 {
+		offset = 0
+	}
 
 	similarityThreshold, _ := strconv.ParseFloat(q.Get("similarity_threshold"), 32)
 	if similarityThreshold == 0 {
@@ -201,18 +220,23 @@ func (h *Handler) handleStats(w http.ResponseWriter, r *http.Request) {
 		TotalExperiments int64 `json:"total_experiments"`
 	}
 
-	// Get counts from database using raw SQL
-	row := h.db.QueryRow("SELECT COUNT(*) FROM studies")
-	row.Scan(&stats.TotalStudies)
-
-	row = h.db.QueryRow("SELECT COUNT(*) FROM samples")
-	row.Scan(&stats.TotalSamples)
-
-	row = h.db.QueryRow("SELECT COUNT(*) FROM runs")
-	row.Scan(&stats.TotalRuns)
-
-	row = h.db.QueryRow("SELECT COUNT(*) FROM experiments")
-	row.Scan(&stats.TotalExperiments)
+	// Get counts from database using raw SQL with proper error handling
+	if err := h.db.QueryRow("SELECT COUNT(*) FROM studies").Scan(&stats.TotalStudies); err != nil {
+		http.Error(w, fmt.Sprintf("Database error: %v", err), http.StatusInternalServerError)
+		return
+	}
+	if err := h.db.QueryRow("SELECT COUNT(*) FROM samples").Scan(&stats.TotalSamples); err != nil {
+		http.Error(w, fmt.Sprintf("Database error: %v", err), http.StatusInternalServerError)
+		return
+	}
+	if err := h.db.QueryRow("SELECT COUNT(*) FROM runs").Scan(&stats.TotalRuns); err != nil {
+		http.Error(w, fmt.Sprintf("Database error: %v", err), http.StatusInternalServerError)
+		return
+	}
+	if err := h.db.QueryRow("SELECT COUNT(*) FROM experiments").Scan(&stats.TotalExperiments); err != nil {
+		http.Error(w, fmt.Sprintf("Database error: %v", err), http.StatusInternalServerError)
+		return
+	}
 
 	response := map[string]interface{}{
 		"total_documents":    stats.TotalStudies,
@@ -425,6 +449,10 @@ func (h *Handler) handleAggregations(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		results = append(results, result)
+	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, fmt.Sprintf("Query error: %v", err), http.StatusInternalServerError)
+		return
 	}
 
 	response := map[string]interface{}{

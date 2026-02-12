@@ -129,19 +129,81 @@ func (m *Manager) determineSearchMode(opts SearchOptions) string {
 	return "text" // Bleve text search
 }
 
-// searchSQLite performs a search using SQLite FTS5
+// searchSQLite performs a search using SQLite FTS5 or LIKE fallback
 func (m *Manager) searchSQLite(query string, opts SearchOptions) (*SearchResult, error) {
 	start := time.Now()
 
-	// TODO: Implement SQLite FTS5 search
-	// This is a placeholder that will query the database directly
+	if m.sqlite == nil {
+		return nil, fmt.Errorf("database not initialized")
+	}
+
+	limit := opts.Limit
+	if limit <= 0 {
+		limit = 100
+	}
+	offset := opts.Offset
+
+	// Try FTS5 first via the FTS5Manager
+	ftsManager := database.NewFTS5Manager(m.sqlite)
+	ftsResults, err := ftsManager.SearchAccessions(query, limit)
+
+	var hits []Hit
+	if err != nil || len(ftsResults) == 0 {
+		// Fallback to LIKE search on studies table
+		likeQuery := "%" + query + "%"
+		rows, err := m.sqlite.Query(`
+			SELECT study_accession, study_title, study_abstract, organism, study_type
+			FROM studies
+			WHERE study_title LIKE ? OR study_abstract LIKE ? OR organism LIKE ?
+			ORDER BY study_accession
+			LIMIT ? OFFSET ?
+		`, likeQuery, likeQuery, likeQuery, limit, offset)
+		if err != nil {
+			return nil, fmt.Errorf("database search failed: %w", err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var accession, title, abstract, organism, studyType string
+			if err := rows.Scan(&accession, &title, &abstract, &organism, &studyType); err != nil {
+				continue
+			}
+			hits = append(hits, Hit{
+				ID:    accession,
+				Type:  "study",
+				Score: 1.0,
+				Fields: map[string]interface{}{
+					"study_accession": accession,
+					"study_title":     title,
+					"study_abstract":  abstract,
+					"organism":        organism,
+					"study_type":      studyType,
+				},
+			})
+		}
+	} else {
+		// Convert FTS5 results to hits
+		for _, r := range ftsResults {
+			hits = append(hits, Hit{
+				ID:    r.Accession,
+				Type:  r.Type,
+				Score: -r.Score, // BM25 scores are negative, lower is better
+				Fields: map[string]interface{}{
+					"accession": r.Accession,
+					"type":      r.Type,
+					"title":     r.Title,
+					"metadata":  r.Metadata,
+				},
+			})
+		}
+	}
 
 	result := &SearchResult{
 		Query:     query,
-		TotalHits: 0,
-		Hits:      []Hit{},
+		TotalHits: len(hits),
+		Hits:      hits,
 		TimeMs:    time.Since(start).Milliseconds(),
-		Mode:      "minimal",
+		Mode:      "database",
 	}
 
 	return result, nil
