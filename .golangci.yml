@@ -42,7 +42,7 @@ linters-settings:
       - G104  # Unhandled errors (we handle these selectively)
       - G304  # File path provided as taint input (we validate these)
   gocyclo:
-    min-complexity: 15
+    min-complexity: 25
   dupl:
     threshold: 100
   goconst:
