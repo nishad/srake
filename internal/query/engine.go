@@ -1,3 +1,5 @@
+// Package query provides a unified search engine that combines full-text (Bleve),
+// structured metadata (SQLite), and vector similarity search into a single interface.
 package query
 
 import (
@@ -12,7 +14,8 @@ import (
 	"github.com/nishad/srake/internal/vectors"
 )
 
-// QueryEngine provides a unified interface for all search operations
+// QueryEngine provides a unified interface combining Bleve full-text search,
+// SQLite metadata queries, and optional vector similarity search.
 type QueryEngine struct {
 	db       *database.DB
 	bleve    *search.BleveIndex
@@ -22,7 +25,8 @@ type QueryEngine struct {
 	mu       sync.RWMutex
 }
 
-// SearchOptions configures search behavior
+// SearchOptions configures search behavior including vector search, fuzzy matching,
+// filters, and result limits.
 type SearchOptions struct {
 	UseVectors      bool              `json:"use_vectors"`
 	UseFuzzy        bool              `json:"use_fuzzy"`
@@ -32,7 +36,7 @@ type SearchOptions struct {
 	VectorThreshold float32           `json:"vector_threshold"`
 }
 
-// SearchResults contains results from all search systems
+// SearchResults contains merged results from text, metadata, and vector search systems.
 type SearchResults struct {
 	TextMatches     []TextMatch                `json:"text_matches,omitempty"`
 	MetadataMatches []MetadataMatch            `json:"metadata_matches,omitempty"`
@@ -43,7 +47,7 @@ type SearchResults struct {
 	Query           string                     `json:"query"`
 }
 
-// TextMatch represents a full-text search result
+// TextMatch represents a single full-text search hit with its relevance score and highlighted fragments.
 type TextMatch struct {
 	ID        string                 `json:"id"`
 	Type      string                 `json:"type"`
@@ -53,20 +57,21 @@ type TextMatch struct {
 	Fields    map[string]interface{} `json:"fields"`
 }
 
-// MetadataMatch represents a structured metadata search result
+// MetadataMatch represents a result from structured metadata filtering (e.g., organism or library strategy).
 type MetadataMatch struct {
 	ID     string                 `json:"id"`
 	Type   string                 `json:"type"`
 	Fields map[string]interface{} `json:"fields"`
 }
 
-// Facet represents a search facet
+// Facet represents a term and its count within a search facet aggregation.
 type Facet struct {
 	Term  string `json:"term"`
 	Count int    `json:"count"`
 }
 
-// NewQueryEngine creates a new unified query engine
+// NewQueryEngine creates a new QueryEngine with database, Bleve, and optional
+// vector search backends initialized from the given data directory.
 func NewQueryEngine(dataDir string) (*QueryEngine, error) {
 	// Initialize database
 	dbPath := filepath.Join(dataDir, "metadata.db")
@@ -112,7 +117,8 @@ func NewQueryEngine(dataDir string) (*QueryEngine, error) {
 	}, nil
 }
 
-// Search performs a hybrid search across all systems
+// Search performs a hybrid search across Bleve, SQLite metadata, and optionally
+// vector similarity, merging and ranking results from all systems.
 func (qe *QueryEngine) Search(query string, opts SearchOptions) (*SearchResults, error) {
 	startTime := time.Now()
 
@@ -346,7 +352,7 @@ func (qe *QueryEngine) mergeAndRank(results *SearchResults, opts SearchOptions) 
 	return results
 }
 
-// FindSimilar finds similar studies or samples
+// FindSimilar finds studies or samples similar to the given accession using vector embeddings.
 func (qe *QueryEngine) FindSimilar(entityType, accession string, limit int) ([]vectors.SimilarityResult, error) {
 	if qe.vectors == nil {
 		return nil, fmt.Errorf("vector store not available")
@@ -362,7 +368,8 @@ func (qe *QueryEngine) FindSimilar(entityType, accession string, limit int) ([]v
 	}
 }
 
-// IndexDocument indexes a document in all relevant systems
+// IndexDocument indexes a document in Bleve and optionally generates and stores
+// a vector embedding. The docType must be "study", "experiment", or "sample".
 func (qe *QueryEngine) IndexDocument(docType string, doc interface{}) error {
 	qe.mu.Lock()
 	defer qe.mu.Unlock()
@@ -460,7 +467,8 @@ func (qe *QueryEngine) IndexDocument(docType string, doc interface{}) error {
 	return nil
 }
 
-// GetStats returns statistics about the query engine
+// GetStats returns statistics from all query engine subsystems including
+// database counts, Bleve document counts, vector store stats, and cache metrics.
 func (qe *QueryEngine) GetStats() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 
@@ -493,7 +501,8 @@ func (qe *QueryEngine) GetStats() (map[string]interface{}, error) {
 	return stats, nil
 }
 
-// Close closes all components of the query engine
+// Close releases all resources held by the query engine, including database
+// connections, search indexes, vector store, and embedder.
 func (qe *QueryEngine) Close() error {
 	var errors []error
 

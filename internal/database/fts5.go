@@ -389,8 +389,7 @@ func escapeFTSQuery(query string) string {
 	return result
 }
 
-// Result types
-
+// AccessionResult holds a single accession match from an FTS5 search, including its BM25 relevance score.
 type AccessionResult struct {
 	Accession string
 	Type      string
@@ -399,6 +398,7 @@ type AccessionResult struct {
 	Score     float64
 }
 
+// SampleResult holds a single sample match from an FTS5 search, including its BM25 relevance score.
 type SampleResult struct {
 	SampleAccession string
 	Description     string
@@ -407,6 +407,7 @@ type SampleResult struct {
 	Score           float64
 }
 
+// RunResult holds a single run match from an FTS5 search, including its BM25 relevance score.
 type RunResult struct {
 	RunAccession        string
 	ExperimentAccession string

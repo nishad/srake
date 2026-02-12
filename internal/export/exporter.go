@@ -1,3 +1,5 @@
+// Package export handles exporting SRA metadata from the internal database
+// into SRAdb-compatible SQLite database files, with optional gzip compression.
 package export
 
 import (
@@ -14,7 +16,8 @@ import (
 	"github.com/nishad/srake/internal/database"
 )
 
-// Config holds the export configuration
+// Config holds configuration for the export process, including source database
+// path, output path, batch size, and compression settings.
 type Config struct {
 	SourceDB     string
 	OutputPath   string
@@ -26,7 +29,7 @@ type Config struct {
 	Debug        bool
 }
 
-// Stats holds export statistics
+// Stats holds row counts and timing information for a completed export.
 type Stats struct {
 	Studies     int
 	Experiments int
@@ -37,7 +40,8 @@ type Stats struct {
 	Duration    time.Duration
 }
 
-// Exporter handles the export process
+// Exporter copies SRA metadata from a source database into an SRAdb-compatible
+// SQLite file, creating the schema, denormalized tables, and FTS indexes.
 type Exporter struct {
 	cfg      *Config
 	sourceDB *database.DB
@@ -108,7 +112,7 @@ func NewExporter(cfg *Config) (*Exporter, error) {
 	}, nil
 }
 
-// Close cleans up resources
+// Close releases all database connections and file handles held by the Exporter.
 func (e *Exporter) Close() {
 	if e.targetDB != nil {
 		e.targetDB.Close()
@@ -124,7 +128,8 @@ func (e *Exporter) Close() {
 	}
 }
 
-// Export performs the export process
+// Export executes the full export pipeline: creates the target schema, copies all
+// tables, builds the denormalized SRA table and FTS index, then finalizes the output file.
 func (e *Exporter) Export() (*Stats, error) {
 	startTime := time.Now()
 
