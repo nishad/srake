@@ -17,9 +17,9 @@ linters:
     - gosec
     - bodyclose
     - gocyclo
-    - dupl
     - goimports
   disable:
+    - dupl
     - errcheck
     - unused
     - prealloc
