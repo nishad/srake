@@ -6,6 +6,7 @@ require (
 	github.com/blevesearch/bleve/v2 v2.5.3
 	github.com/gorilla/mux v1.8.1
 	github.com/mattn/go-sqlite3 v1.14.32
+	github.com/modelcontextprotocol/go-sdk v1.3.0
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.9
 	github.com/sugarme/tokenizer v0.3.0
@@ -36,6 +37,7 @@ require (
 	github.com/emirpasic/gods v1.18.1 // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/jsonschema-go v0.4.2 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v0.0.0-20171115153421-f7279a603ede // indirect
 	github.com/mitchellh/colorstring v0.0.0-20190213212951-d06e56a500db // indirect
@@ -44,7 +46,9 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/schollz/progressbar/v2 v2.15.0 // indirect
 	github.com/sugarme/regexpset v0.0.0-20200920021344-4d4ec8eaf93c // indirect
+	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	go.etcd.io/bbolt v1.4.0 // indirect
+	golang.org/x/oauth2 v0.30.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.25.0 // indirect
 )
