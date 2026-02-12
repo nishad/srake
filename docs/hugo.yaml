@@ -26,33 +26,32 @@ menu:
     - name: Getting Started
       pageRef: /docs/getting-started
       weight: 2
+    - name: CLI Reference
+      pageRef: /docs/reference/cli
+      weight: 3
     - name: API Reference
       pageRef: /docs/api
-      weight: 3
-    - name: Search
       weight: 4
+    - name: Search
+      weight: 5
       params:
         type: search
     - name: GitHub
-      weight: 5
+      weight: 6
       url: "https://github.com/nishad/srake"
       params:
         icon: github
 
 params:
-  description: SRAKE (SRA Knowledge Engine) - A blazing-fast, memory-efficient tool for processing and querying NCBI SRA metadata. Pronounced like Japanese sake (酒).
+  description: SRAKE (SRA Knowledge Engine) - Process and query NCBI SRA metadata locally with streaming ingestion, full-text search, and vector similarity.
 
   navbar:
     displayTitle: true
     displayLogo: false
-    logo:
-      path: images/logo.svg
-      width: 40
-      height: 40
 
   footer:
     displayCopyright: true
-    displayPoweredBy: true
+    displayPoweredBy: false
     copyright: "© 2025 SRAKE contributors"
 
   editURL:
@@ -60,7 +59,6 @@ params:
     base: "https://github.com/nishad/srake/edit/main/docs/content"
 
   theme:
-    # light | dark | system
     default: system
     displayToggle: true
 
@@ -69,5 +67,4 @@ params:
     type: flexsearch
 
   page:
-    # full (100%) | normal | wide
     width: normal

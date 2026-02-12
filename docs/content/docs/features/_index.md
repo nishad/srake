@@ -3,21 +3,14 @@ title: Features
 weight: 2
 ---
 
-Explore the powerful features that make srake the fastest and most efficient SRA metadata processor.
+## [Search](search)
+Full-text search with Bleve, SQLite FTS5, and optional SapBERT vector similarity. Hybrid ranking, facets, and multiple output formats.
 
-## Core Features
+## [Filtering](filtering)
+Filter during ingestion by taxonomy, organism, platform, library strategy, date range, and sequencing metrics.
 
-### [Filtering System](filtering)
-Process only the data you need with smart filters for taxonomy, organism, platform, date ranges, and quality metrics.
+## [SRAmetadb Export](export)
+Export to classic SRAmetadb.sqlite format with FTS3 or FTS5 for compatibility with R and Python tools.
 
-### [Resume Capability](resume)
-Handle interruptions gracefully with automatic checkpoint system and progress tracking.
-
-### [SRAmetadb Export](export)
-Export to classic SRAmetadb.sqlite format for compatibility with existing bioinformatics tools and R packages.
-
-### [Performance](performance)
-Optimizations that enable processing 20,000+ records per second with minimal memory usage.
-
-### [Architecture](architecture)
-Zero-copy streaming design that processes multi-gigabyte files without intermediate storage.
+## [Resume](resume)
+Checkpoint system for resuming interrupted ingestion operations.
