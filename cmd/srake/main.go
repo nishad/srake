@@ -15,10 +15,10 @@ var (
 	quiet   bool
 	debug   bool // Debug flag
 
-	// Version information
-	version = "0.0.1-alpha"
-	commit  = "dev"
-	date    = "unknown"
+	// Version information (injected via ldflags)
+	Version   = "dev"
+	Commit    = "none"
+	BuildDate = "unknown"
 )
 
 // Helper functions are defined in helpers.go
@@ -45,7 +45,7 @@ ENVIRONMENT VARIABLES:
 
 The tool follows XDG Base Directory Specification and respects standard
 environment variables like XDG_CONFIG_HOME, XDG_DATA_HOME, and XDG_CACHE_HOME.`,
-	Version: fmt.Sprintf("%s (commit: %s, built: %s)", version, commit, date),
+	Version: fmt.Sprintf("%s (commit: %s, built: %s)", Version, Commit, BuildDate),
 	Example: `  srake search "homo sapiens"
   srake server --port 8080
   srake db info

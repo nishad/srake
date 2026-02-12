@@ -140,12 +140,12 @@ func runMCP(cmd *cobra.Command, args []string) error {
 		cancel()
 	}()
 
-	log.Printf("[MCP] Server starting (version %s, transport %s)", version, mcpTransport)
+	log.Printf("[MCP] Server starting (version %s, transport %s)", Version, mcpTransport)
 	switch mcpTransport {
 	case "stdio":
-		return mcpserver.Run(ctx, version, svc)
+		return mcpserver.Run(ctx, Version, svc)
 	case "http":
-		return mcpserver.RunHTTP(ctx, version, svc, mcpHost, mcpPort)
+		return mcpserver.RunHTTP(ctx, Version, svc, mcpHost, mcpPort)
 	default:
 		return fmt.Errorf("unsupported transport: %s (use stdio or http)", mcpTransport)
 	}
