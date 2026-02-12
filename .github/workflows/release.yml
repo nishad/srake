@@ -25,9 +25,6 @@ jobs:
           - os: darwin
             arch: arm64
             runner: macos-latest
-          - os: darwin
-            arch: amd64
-            runner: macos-13
 
     steps:
     - uses: actions/checkout@v4
@@ -41,39 +38,11 @@ jobs:
       id: version
       run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-    - name: Install cross-compile dependencies (linux/arm64)
+    - name: Install cross-compiler (linux/arm64)
       if: matrix.os == 'linux' && matrix.arch == 'arm64'
       run: |
         sudo apt-get update
-        sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-        sudo apt-get install -y libsqlite3-dev:arm64 || true
-        # Install arm64 sqlite3 from source if package not available
-        if ! dpkg -l libsqlite3-dev:arm64 2>/dev/null | grep -q '^ii'; then
-          sudo dpkg --add-architecture arm64
-          sudo apt-get update
-          sudo apt-get install -y libsqlite3-dev:arm64 || {
-            echo "Building sqlite3 for arm64 from source..."
-            wget -q https://www.sqlite.org/2024/sqlite-autoconf-3450000.tar.gz
-            tar xzf sqlite-autoconf-3450000.tar.gz
-            cd sqlite-autoconf-3450000
-            CC=aarch64-linux-gnu-gcc ./configure --host=aarch64-linux-gnu --prefix=/usr/aarch64-linux-gnu
-            make -j$(nproc)
-            sudo make install
-            cd ..
-          }
-        fi
-
-    - name: Install build dependencies (linux/amd64)
-      if: matrix.os == 'linux' && matrix.arch == 'amd64'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libsqlite3-dev
-
-    - name: Install build dependencies (macOS)
-      if: matrix.os == 'darwin'
-      run: |
-        brew install sqlite3
-        brew link --force sqlite3
+        sudo apt-get install -y gcc-aarch64-linux-gnu
 
     - name: Build binary
       env:
@@ -87,10 +56,6 @@ jobs:
         # Set cross-compile CC for linux/arm64
         if [ "${{ matrix.os }}" = "linux" ] && [ "${{ matrix.arch }}" = "arm64" ]; then
           export CC=aarch64-linux-gnu-gcc
-          export CXX=aarch64-linux-gnu-g++
-          export PKG_CONFIG_PATH=/usr/aarch64-linux-gnu/lib/pkgconfig
-          export CGO_LDFLAGS="-L/usr/aarch64-linux-gnu/lib"
-          export CGO_CFLAGS="-I/usr/aarch64-linux-gnu/include"
         fi
 
         echo "Building for ${{ matrix.os }}/${{ matrix.arch }}..."
