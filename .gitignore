@@ -43,6 +43,7 @@ docs/public/
 
 # Build artifacts
 /srake
+/srake-server
 srake-test
 *.exe
 *.dll
