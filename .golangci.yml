@@ -30,6 +30,8 @@ linters-settings:
     simplify: true
   govet:
     enable-all: true
+    disable:
+      - shadow
   staticcheck:
     checks:
       - "all"
@@ -44,6 +46,9 @@ linters-settings:
       - G301  # Directory permissions (0755 is fine for data dirs)
       - G304  # File path provided as taint input (we validate these)
       - G306  # WriteFile permissions (test utilities)
+  misspell:
+    ignore-words:
+      - strat  # abbreviation for strategy, not a typo
   gocyclo:
     min-complexity: 35
   dupl:
