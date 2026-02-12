@@ -1,14 +1,18 @@
+// Package service provides high-level business logic for querying and managing
+// SRA metadata, including study, experiment, sample, and run access.
 package service
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
 	"github.com/nishad/srake/internal/database"
 )
 
-// MetadataService handles metadata access for studies, experiments, samples, and runs
+// MetadataService provides read access to SRA metadata records across
+// studies, experiments, samples, and runs with pagination and relational lookups.
 type MetadataService struct {
 	db *database.DB
 }
@@ -20,7 +24,8 @@ func NewMetadataService(db *database.DB) *MetadataService {
 	}
 }
 
-// GetMetadata retrieves metadata for a specific accession
+// GetMetadata retrieves metadata for a specific accession, dispatching to the
+// appropriate record type (study, experiment, sample, or run) based on the request.
 func (m *MetadataService) GetMetadata(ctx context.Context, req *MetadataRequest) (*MetadataResponse, error) {
 	response := &MetadataResponse{
 		Type:      req.Type,
@@ -50,20 +55,14 @@ func (m *MetadataService) GetMetadata(ctx context.Context, req *MetadataRequest)
 
 // GetStudy retrieves a study by accession
 func (m *MetadataService) GetStudy(ctx context.Context, accession string) (*database.Study, error) {
-	query := `SELECT * FROM studies WHERE study_accession = ?`
-
-	var study database.Study
-	row := m.db.QueryRow(query, accession)
-	if err := m.db.ScanStudy(row, &study); err != nil {
-		return nil, fmt.Errorf("study not found: %s", accession)
-	}
-
-	return &study, nil
+	return m.db.GetStudy(accession)
 }
 
 // GetStudies retrieves multiple studies with pagination
 func (m *MetadataService) GetStudies(ctx context.Context, limit, offset int) ([]*database.Study, error) {
-	query := `SELECT * FROM studies ORDER BY study_accession LIMIT ? OFFSET ?`
+	query := `SELECT study_accession, study_title, study_abstract, study_type,
+			   organism, submission_date, COALESCE(metadata, '{}')
+		FROM studies ORDER BY study_accession LIMIT ? OFFSET ?`
 
 	rows, err := m.db.Query(query, limit, offset)
 	if err != nil {
@@ -74,7 +73,10 @@ func (m *MetadataService) GetStudies(ctx context.Context, limit, offset int) ([]
 	var studies []*database.Study
 	for rows.Next() {
 		var study database.Study
-		if err := m.db.ScanStudy(rows, &study); err != nil {
+		if err := rows.Scan(
+			&study.StudyAccession, &study.StudyTitle, &study.StudyAbstract,
+			&study.StudyType, &study.Organism, &study.SubmissionDate, &study.Metadata,
+		); err != nil {
 			continue
 		}
 		studies = append(studies, &study)
@@ -85,20 +87,15 @@ func (m *MetadataService) GetStudies(ctx context.Context, limit, offset int) ([]
 
 // GetExperiment retrieves an experiment by accession
 func (m *MetadataService) GetExperiment(ctx context.Context, accession string) (*database.Experiment, error) {
-	query := `SELECT * FROM experiments WHERE experiment_accession = ?`
-
-	var exp database.Experiment
-	row := m.db.QueryRow(query, accession)
-	if err := m.db.ScanExperiment(row, &exp); err != nil {
-		return nil, fmt.Errorf("experiment not found: %s", accession)
-	}
-
-	return &exp, nil
+	return m.db.GetExperiment(accession)
 }
 
 // GetExperimentsByStudy retrieves all experiments for a study
 func (m *MetadataService) GetExperimentsByStudy(ctx context.Context, studyAccession string) ([]*database.Experiment, error) {
-	query := `SELECT * FROM experiments WHERE study_accession = ? ORDER BY experiment_accession`
+	query := `SELECT experiment_accession, study_accession, title,
+			   library_strategy, library_source, platform,
+			   instrument_model, COALESCE(metadata, '{}')
+		FROM experiments WHERE study_accession = ? ORDER BY experiment_accession`
 
 	rows, err := m.db.Query(query, studyAccession)
 	if err != nil {
@@ -109,7 +106,11 @@ func (m *MetadataService) GetExperimentsByStudy(ctx context.Context, studyAccess
 	var experiments []*database.Experiment
 	for rows.Next() {
 		var exp database.Experiment
-		if err := m.db.ScanExperiment(rows, &exp); err != nil {
+		if err := rows.Scan(
+			&exp.ExperimentAccession, &exp.StudyAccession, &exp.Title,
+			&exp.LibraryStrategy, &exp.LibrarySource, &exp.Platform,
+			&exp.InstrumentModel, &exp.Metadata,
+		); err != nil {
 			continue
 		}
 		experiments = append(experiments, &exp)
@@ -120,23 +121,18 @@ func (m *MetadataService) GetExperimentsByStudy(ctx context.Context, studyAccess
 
 // GetSample retrieves a sample by accession
 func (m *MetadataService) GetSample(ctx context.Context, accession string) (*database.Sample, error) {
-	query := `SELECT * FROM samples WHERE sample_accession = ?`
-
-	var sample database.Sample
-	row := m.db.QueryRow(query, accession)
-	if err := m.db.ScanSample(row, &sample); err != nil {
-		return nil, fmt.Errorf("sample not found: %s", accession)
-	}
-
-	return &sample, nil
+	return m.db.GetSample(accession)
 }
 
-// GetSamplesByStudy retrieves all samples for a study
+// GetSamplesByStudy retrieves all samples for a study via the experiment_samples junction table
 func (m *MetadataService) GetSamplesByStudy(ctx context.Context, studyAccession string) ([]*database.Sample, error) {
 	query := `
-		SELECT s.* FROM samples s
-		JOIN experiment_samples es ON s.sample_accession = es.sample_accession
-		JOIN experiments e ON es.experiment_accession = e.experiment_accession
+		SELECT DISTINCT s.sample_accession, s.organism, s.scientific_name,
+			   s.taxon_id, s.tissue, s.cell_type, s.description,
+			   COALESCE(s.metadata, '{}')
+		FROM samples s
+		JOIN experiment_samples es ON es.sample_accession = s.sample_accession
+		JOIN experiments e ON e.experiment_accession = es.experiment_accession
 		WHERE e.study_accession = ?
 		ORDER BY s.sample_accession
 	`
@@ -148,18 +144,16 @@ func (m *MetadataService) GetSamplesByStudy(ctx context.Context, studyAccession 
 	defer rows.Close()
 
 	var samples []*database.Sample
-	seenSamples := make(map[string]bool)
-
 	for rows.Next() {
 		var sample database.Sample
-		if err := m.db.ScanSample(rows, &sample); err != nil {
+		if err := rows.Scan(
+			&sample.SampleAccession, &sample.Organism, &sample.ScientificName,
+			&sample.TaxonID, &sample.Tissue, &sample.CellType,
+			&sample.Description, &sample.Metadata,
+		); err != nil {
 			continue
 		}
-		// Deduplicate samples
-		if !seenSamples[sample.SampleAccession] {
-			samples = append(samples, &sample)
-			seenSamples[sample.SampleAccession] = true
-		}
+		samples = append(samples, &sample)
 	}
 
 	return samples, nil
@@ -167,20 +161,14 @@ func (m *MetadataService) GetSamplesByStudy(ctx context.Context, studyAccession 
 
 // GetRun retrieves a run by accession
 func (m *MetadataService) GetRun(ctx context.Context, accession string) (*database.Run, error) {
-	query := `SELECT * FROM runs WHERE run_accession = ?`
-
-	var run database.Run
-	row := m.db.QueryRow(query, accession)
-	if err := m.db.ScanRun(row, &run); err != nil {
-		return nil, fmt.Errorf("run not found: %s", accession)
-	}
-
-	return &run, nil
+	return m.db.GetRun(accession)
 }
 
 // GetRunsByExperiment retrieves all runs for an experiment
 func (m *MetadataService) GetRunsByExperiment(ctx context.Context, experimentAccession string) ([]*database.Run, error) {
-	query := `SELECT * FROM runs WHERE experiment_accession = ? ORDER BY run_accession`
+	query := `SELECT run_accession, experiment_accession, total_spots,
+			   total_bases, published, COALESCE(metadata, '{}')
+		FROM runs WHERE experiment_accession = ? ORDER BY run_accession`
 
 	rows, err := m.db.Query(query, experimentAccession)
 	if err != nil {
@@ -191,7 +179,10 @@ func (m *MetadataService) GetRunsByExperiment(ctx context.Context, experimentAcc
 	var runs []*database.Run
 	for rows.Next() {
 		var run database.Run
-		if err := m.db.ScanRun(rows, &run); err != nil {
+		if err := rows.Scan(
+			&run.RunAccession, &run.ExperimentAccession, &run.TotalSpots,
+			&run.TotalBases, &run.Published, &run.Metadata,
+		); err != nil {
 			continue
 		}
 		runs = append(runs, &run)
@@ -202,18 +193,29 @@ func (m *MetadataService) GetRunsByExperiment(ctx context.Context, experimentAcc
 
 // GetRunsByStudy retrieves all runs for a study
 func (m *MetadataService) GetRunsByStudy(ctx context.Context, studyAccession string, limit int) ([]*database.Run, error) {
-	query := `
-		SELECT r.* FROM runs r
-		JOIN experiments e ON r.experiment_accession = e.accession
-		WHERE e.study_accession = ?
-		ORDER BY r.accession
-	`
+	var rows *sql.Rows
+	var err error
 
 	if limit > 0 {
-		query += fmt.Sprintf(" LIMIT %d", limit)
+		query := `
+			SELECT r.run_accession, r.experiment_accession, r.total_spots,
+				   r.total_bases, r.published, COALESCE(r.metadata, '{}')
+			FROM runs r
+			JOIN experiments e ON r.experiment_accession = e.experiment_accession
+			WHERE e.study_accession = ?
+			ORDER BY r.run_accession
+			LIMIT ?`
+		rows, err = m.db.Query(query, studyAccession, limit)
+	} else {
+		query := `
+			SELECT r.run_accession, r.experiment_accession, r.total_spots,
+				   r.total_bases, r.published, COALESCE(r.metadata, '{}')
+			FROM runs r
+			JOIN experiments e ON r.experiment_accession = e.experiment_accession
+			WHERE e.study_accession = ?
+			ORDER BY r.run_accession`
+		rows, err = m.db.Query(query, studyAccession)
 	}
-
-	rows, err := m.db.Query(query, studyAccession)
 	if err != nil {
 		return nil, err
 	}
@@ -222,7 +224,10 @@ func (m *MetadataService) GetRunsByStudy(ctx context.Context, studyAccession str
 	var runs []*database.Run
 	for rows.Next() {
 		var run database.Run
-		if err := m.db.ScanRun(rows, &run); err != nil {
+		if err := rows.Scan(
+			&run.RunAccession, &run.ExperimentAccession, &run.TotalSpots,
+			&run.TotalBases, &run.Published, &run.Metadata,
+		); err != nil {
 			continue
 		}
 		runs = append(runs, &run)
@@ -231,7 +236,8 @@ func (m *MetadataService) GetRunsByStudy(ctx context.Context, studyAccession str
 	return runs, nil
 }
 
-// GetStudyMetadata retrieves complete metadata for a study including experiments, samples, and runs
+// GetStudyMetadata retrieves the complete metadata graph for a study,
+// including its experiments, samples, and up to 100 runs.
 func (m *MetadataService) GetStudyMetadata(ctx context.Context, studyAccession string) (map[string]interface{}, error) {
 	// Get study
 	study, err := m.GetStudy(ctx, studyAccession)
@@ -273,37 +279,50 @@ func (m *MetadataService) GetStudyMetadata(ctx context.Context, studyAccession s
 	return metadata, nil
 }
 
-// GetAccessionType determines the type of an accession (study, experiment, sample, or run)
+// GetAccessionType determines whether an accession refers to a study, experiment,
+// sample, or run by probing each table. Returns an error if the accession is not found.
 func (m *MetadataService) GetAccessionType(ctx context.Context, accession string) (string, error) {
 	// Check studies
-	if exists, _ := m.existsInTable("studies", accession); exists {
+	if exists, _ := m.existsInTable("studies", "study_accession", accession); exists {
 		return "study", nil
 	}
 
 	// Check experiments
-	if exists, _ := m.existsInTable("experiments", accession); exists {
+	if exists, _ := m.existsInTable("experiments", "experiment_accession", accession); exists {
 		return "experiment", nil
 	}
 
 	// Check samples
-	if exists, _ := m.existsInTable("samples", accession); exists {
+	if exists, _ := m.existsInTable("samples", "sample_accession", accession); exists {
 		return "sample", nil
 	}
 
 	// Check runs
-	if exists, _ := m.existsInTable("runs", accession); exists {
+	if exists, _ := m.existsInTable("runs", "run_accession", accession); exists {
 		return "run", nil
 	}
 
 	return "", fmt.Errorf("accession not found: %s", accession)
 }
 
-// existsInTable checks if an accession exists in a table
-func (m *MetadataService) existsInTable(table, accession string) (bool, error) {
-	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE accession = ?", table)
+// existsInTable checks if an accession exists in a table.
+// The table and column names are validated against the AllowedTables and AllowedColumns
+// whitelists to prevent SQL injection attacks.
+func (m *MetadataService) existsInTable(table, column, accession string) (bool, error) {
+	// Validate table and column names against whitelists to prevent SQL injection
+	safeTable, err := database.SafeTableName(table)
+	if err != nil {
+		return false, fmt.Errorf("existsInTable: %w", err)
+	}
+	safeColumn, err := database.SafeColumnName(column)
+	if err != nil {
+		return false, fmt.Errorf("existsInTable: %w", err)
+	}
+
+	query := fmt.Sprintf("SELECT COUNT(*) FROM %s WHERE %s = ?", safeTable, safeColumn)
 
 	var count int
-	err := m.db.QueryRow(query, accession).Scan(&count)
+	err = m.db.QueryRow(query, accession).Scan(&count)
 	if err != nil {
 		return false, err
 	}
@@ -311,7 +330,8 @@ func (m *MetadataService) existsInTable(table, accession string) (bool, error) {
 	return count > 0, nil
 }
 
-// Health checks if the service is operational
+// Health verifies the service is operational by checking the database connection
+// and executing a basic query.
 func (m *MetadataService) Health(ctx context.Context) error {
 	// Check database connection
 	if err := m.db.Ping(); err != nil {
@@ -328,7 +348,7 @@ func (m *MetadataService) Health(ctx context.Context) error {
 	return nil
 }
 
-// Close releases resources
+// Close releases any resources held by the MetadataService.
 func (m *MetadataService) Close() error {
 	// MetadataService doesn't hold any resources that need explicit cleanup
 	// The database connection is managed elsewhere
