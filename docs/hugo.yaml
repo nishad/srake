@@ -44,9 +44,8 @@ params:
     displayLogo: false
 
   footer:
-    displayCopyright: true
-    displayPoweredBy: false
-    copyright: "© 2025 SRAKE contributors"
+    displayCopyright: false
+    displayPoweredBy: true
 
   editURL:
     enable: true
