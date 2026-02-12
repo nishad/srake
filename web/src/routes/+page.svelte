@@ -13,21 +13,17 @@
   onMount(async () => {
     try {
       const rawStats = await ApiService.getStats();
-      // Transform backend response to frontend format
+      // Use the actual backend response
       stats = {
-        total_studies: rawStats.total_documents || 0,
-        total_samples: rawStats.indexed_documents || 0,
-        total_runs: rawStats.total_documents || 0,
-        total_experiments: Math.floor((rawStats.total_documents || 0) * 0.8),
-        last_update: rawStats.last_updated || new Date().toISOString()
+        total_documents: rawStats.total_documents || 0,
+        indexed_documents: rawStats.indexed_documents || 0,
+        last_updated: rawStats.last_updated || new Date().toISOString(),
+        top_platforms: rawStats.top_platforms || [],
+        top_strategies: rawStats.top_strategies || [],
+        top_organisms: rawStats.top_organisms || []
       };
-      // Add platform/strategy info if available
-      if (rawStats.top_platforms) {
-        stats.platforms = rawStats.top_platforms;
-      }
-      if (rawStats.top_strategies) {
-        stats.strategies = rawStats.top_strategies;
-      }
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Failed to load statistics';
     } finally {
       loading = false;
     }
@@ -74,45 +70,53 @@
     <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card.Root>
         <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <Card.Title class="text-sm font-medium">Total Studies</Card.Title>
+          <Card.Title class="text-sm font-medium">Total Records</Card.Title>
           <Database class="h-4 w-4 text-muted-foreground" />
         </Card.Header>
         <Card.Content>
-          <div class="text-2xl font-bold">{formatNumber(stats.total_studies)}</div>
+          <div class="text-2xl font-bold">{formatNumber(stats.total_documents)}</div>
           <p class="text-xs text-muted-foreground">Total documents in database</p>
         </Card.Content>
       </Card.Root>
 
       <Card.Root>
         <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <Card.Title class="text-sm font-medium">Total Samples</Card.Title>
-          <FlaskConical class="h-4 w-4 text-muted-foreground" />
-        </Card.Header>
-        <Card.Content>
-          <div class="text-2xl font-bold">{formatNumber(stats.total_samples)}</div>
-          <p class="text-xs text-muted-foreground">Indexed documents</p>
-        </Card.Content>
-      </Card.Root>
-
-      <Card.Root>
-        <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <Card.Title class="text-sm font-medium">Total Runs</Card.Title>
-          <Dna class="h-4 w-4 text-muted-foreground" />
-        </Card.Header>
-        <Card.Content>
-          <div class="text-2xl font-bold">{formatNumber(stats.total_runs)}</div>
-          <p class="text-xs text-muted-foreground">Sequencing runs</p>
-        </Card.Content>
-      </Card.Root>
-
-      <Card.Root>
-        <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-          <Card.Title class="text-sm font-medium">Total Experiments</Card.Title>
+          <Card.Title class="text-sm font-medium">Indexed</Card.Title>
           <FileSearch class="h-4 w-4 text-muted-foreground" />
         </Card.Header>
         <Card.Content>
-          <div class="text-2xl font-bold">{formatNumber(stats.total_experiments)}</div>
-          <p class="text-xs text-muted-foreground">Experimental datasets</p>
+          <div class="text-2xl font-bold">{formatNumber(stats.indexed_documents)}</div>
+          <p class="text-xs text-muted-foreground">Indexed for search</p>
+        </Card.Content>
+      </Card.Root>
+
+      <Card.Root>
+        <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card.Title class="text-sm font-medium">Top Platform</Card.Title>
+          <Dna class="h-4 w-4 text-muted-foreground" />
+        </Card.Header>
+        <Card.Content>
+          {#if stats.top_platforms && stats.top_platforms.length > 0}
+            <div class="text-2xl font-bold">{stats.top_platforms[0].name}</div>
+            <p class="text-xs text-muted-foreground">{formatNumber(stats.top_platforms[0].count)} experiments</p>
+          {:else}
+            <div class="text-2xl font-bold">-</div>
+          {/if}
+        </Card.Content>
+      </Card.Root>
+
+      <Card.Root>
+        <Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card.Title class="text-sm font-medium">Top Strategy</Card.Title>
+          <FlaskConical class="h-4 w-4 text-muted-foreground" />
+        </Card.Header>
+        <Card.Content>
+          {#if stats.top_strategies && stats.top_strategies.length > 0}
+            <div class="text-2xl font-bold">{stats.top_strategies[0].name}</div>
+            <p class="text-xs text-muted-foreground">{formatNumber(stats.top_strategies[0].count)} experiments</p>
+          {:else}
+            <div class="text-2xl font-bold">-</div>
+          {/if}
         </Card.Content>
       </Card.Root>
     </div>
@@ -166,9 +170,9 @@
       </Card.Content>
     </Card.Root>
 
-    {#if stats.last_update}
+    {#if stats.last_updated}
       <div class="text-center text-sm text-muted-foreground">
-        Database last updated: {new Date(stats.last_update).toLocaleDateString()}
+        Database last updated: {new Date(stats.last_updated).toLocaleDateString()}
       </div>
     {/if}
   {/if}

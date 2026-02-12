@@ -63,11 +63,14 @@ export class ApiService {
   }
 
   static async getStats(): Promise<{
-    total_studies: number;
-    total_samples: number;
-    total_runs: number;
-    total_experiments: number;
-    last_update: string;
+    total_documents: number;
+    indexed_documents: number;
+    index_size: number;
+    last_indexed?: string;
+    last_updated: string;
+    top_organisms?: Array<{ name: string; count: number }>;
+    top_platforms?: Array<{ name: string; count: number }>;
+    top_strategies?: Array<{ name: string; count: number }>;
   }> {
     const response = await fetch(`${API_BASE}/stats`);
     if (!response.ok) throw new Error('Failed to fetch statistics');
@@ -78,6 +81,9 @@ export class ApiService {
     status: string;
     database: string;
     search_index: string;
+    metadata_service?: string;
+    search_service?: string;
+    timestamp?: string;
   }> {
     const response = await fetch(`${API_BASE}/health`);
     if (!response.ok) throw new Error('Health check failed');
