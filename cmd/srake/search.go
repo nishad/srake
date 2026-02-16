@@ -724,40 +724,100 @@ func performDatabaseSearch(query string, filters map[string]string) error {
 	return displayDatabaseResults(rows)
 }
 
+// experimentFilterFields contains fields that live on the experiments table
+var experimentFilterFields = map[string]bool{
+	"platform":          true,
+	"library_strategy":  true,
+	"library_source":    true,
+	"instrument_model":  true,
+}
+
 // buildSQLQuery builds a SQL query for database-only search
 func buildSQLQuery(query string, filters map[string]string) string {
-	// Basic implementation - will be expanded
 	whereClause := []string{}
+	needExperiments := false
+	needSamples := false
 
-	if query != "" {
-		// Simple text search across key fields
-		whereClause = append(whereClause, fmt.Sprintf(
-			"(study_title LIKE '%%%s%%' OR study_abstract LIKE '%%%s%%' OR organism LIKE '%%%s%%')",
-			query, query, query))
-	}
-
-	for field, value := range filters {
-		// Map filter fields to database columns
-		dbField := field
-		switch field {
-		case "library_strategy", "library_source", "library_selection", "library_layout":
-			// These are in metadata JSON
-			whereClause = append(whereClause, fmt.Sprintf("json_extract(metadata, '$.%s') = '%s'", field, value))
-		case "platform", "instrument_model":
-			// Also in metadata
-			whereClause = append(whereClause, fmt.Sprintf("json_extract(metadata, '$.%s') = '%s'", field, value))
-		default:
-			whereClause = append(whereClause, fmt.Sprintf("%s = '%s'", dbField, value))
+	// Check which tables we need to join
+	for field := range filters {
+		if experimentFilterFields[field] {
+			needExperiments = true
 		}
 	}
 
-	sql := "SELECT * FROM studies"
-	if len(whereClause) > 0 {
-		sql += " WHERE " + strings.Join(whereClause, " AND ")
+	if query != "" {
+		escaped := strings.ReplaceAll(query, "'", "''")
+		parts := []string{
+			fmt.Sprintf("s.study_title LIKE '%%%s%%'", escaped),
+			fmt.Sprintf("s.study_abstract LIKE '%%%s%%'", escaped),
+		}
+		if needExperiments {
+			parts = append(parts, fmt.Sprintf("e.title LIKE '%%%s%%'", escaped))
+		}
+		whereClause = append(whereClause, "("+strings.Join(parts, " OR ")+")")
 	}
-	sql += fmt.Sprintf(" LIMIT %d OFFSET %d", searchLimit, searchOffset)
 
-	return sql
+	for field, value := range filters {
+		escaped := strings.ReplaceAll(value, "'", "''")
+		switch {
+		case experimentFilterFields[field]:
+			whereClause = append(whereClause, fmt.Sprintf("e.%s = '%s'", field, escaped))
+		case field == "organism":
+			// Organism lives on samples table with no experiment link in current data.
+			// Search samples directly instead.
+			needSamples = true
+		case field == "study_type":
+			whereClause = append(whereClause, fmt.Sprintf("s.study_type = '%s'", escaped))
+		case field == "submission_date_from":
+			whereClause = append(whereClause, fmt.Sprintf("s.submission_date >= '%s'", escaped))
+		case field == "submission_date_to":
+			whereClause = append(whereClause, fmt.Sprintf("s.submission_date <= '%s'", escaped))
+		default:
+			whereClause = append(whereClause, fmt.Sprintf("s.%s = '%s'", field, escaped))
+		}
+	}
+
+	// Build query with appropriate JOINs
+	var sqlBuf strings.Builder
+	if needSamples && !needExperiments {
+		// Organism-only filter: search samples table directly
+		sampleWhere := []string{}
+		if organism, ok := filters["organism"]; ok {
+			escaped := strings.ReplaceAll(organism, "'", "''")
+			sampleWhere = append(sampleWhere, fmt.Sprintf("scientific_name LIKE '%%%s%%'", escaped))
+		}
+		if query != "" {
+			escaped := strings.ReplaceAll(query, "'", "''")
+			sampleWhere = append(sampleWhere, fmt.Sprintf("(description LIKE '%%%s%%' OR scientific_name LIKE '%%%s%%')", escaped, escaped))
+		}
+		sqlBuf.WriteString(`SELECT sample_accession, description AS title, scientific_name AS organism, taxon_id AS study_type
+		FROM samples`)
+		if len(sampleWhere) > 0 {
+			sqlBuf.WriteString(" WHERE ")
+			sqlBuf.WriteString(strings.Join(sampleWhere, " AND "))
+		}
+	} else if needExperiments {
+		sqlBuf.WriteString(`SELECT DISTINCT
+			e.experiment_accession, e.title, e.platform,
+			e.library_strategy, e.instrument_model, e.study_accession`)
+		sqlBuf.WriteString(`
+		FROM experiments e
+		JOIN studies s ON e.study_accession = s.study_accession`)
+		if len(whereClause) > 0 {
+			sqlBuf.WriteString(" WHERE ")
+			sqlBuf.WriteString(strings.Join(whereClause, " AND "))
+		}
+	} else {
+		sqlBuf.WriteString(`SELECT s.study_accession, s.study_title, s.organism, s.study_type
+		FROM studies s`)
+		if len(whereClause) > 0 {
+			sqlBuf.WriteString(" WHERE ")
+			sqlBuf.WriteString(strings.Join(whereClause, " AND "))
+		}
+	}
+	sqlBuf.WriteString(fmt.Sprintf(" LIMIT %d OFFSET %d", searchLimit, searchOffset))
+
+	return sqlBuf.String()
 }
 
 // displayDatabaseResults displays results from database-only search
@@ -767,10 +827,21 @@ func displayDatabaseResults(rows *sql.Rows) error {
 		return fmt.Errorf("failed to get columns: %v", err)
 	}
 
+	// Detect result type from columns
+	isExperiment := false
+	isSample := false
+	for _, col := range columns {
+		if col == "experiment_accession" {
+			isExperiment = true
+		}
+		if col == "sample_accession" {
+			isSample = true
+		}
+	}
+
 	// Read all results
 	var results []map[string]interface{}
 	for rows.Next() {
-		// Create a slice of interface{} to hold column values
 		values := make([]interface{}, len(columns))
 		valuePtrs := make([]interface{}, len(columns))
 		for i := range values {
@@ -781,7 +852,6 @@ func displayDatabaseResults(rows *sql.Rows) error {
 			continue
 		}
 
-		// Convert to map
 		row := make(map[string]interface{})
 		for i, col := range columns {
 			val := values[i]
@@ -816,19 +886,13 @@ func displayDatabaseResults(rows *sql.Rows) error {
 		writer := csv.NewWriter(os.Stdout)
 		writer.Comma = delimiter
 
-		// Write header
 		if !searchNoHeader {
-			displayCols := []string{"study_accession", "study_title", "organism", "study_type"}
-			writer.Write(displayCols)
+			writer.Write(columns)
 		}
-
-		// Write data
 		for _, row := range results {
-			record := []string{
-				fmt.Sprintf("%v", row["study_accession"]),
-				truncate(fmt.Sprintf("%v", row["study_title"]), 60),
-				fmt.Sprintf("%v", row["organism"]),
-				fmt.Sprintf("%v", row["study_type"]),
+			record := make([]string, len(columns))
+			for i, col := range columns {
+				record[i] = fmt.Sprintf("%v", row[col])
 			}
 			writer.Write(record)
 		}
@@ -838,18 +902,52 @@ func displayDatabaseResults(rows *sql.Rows) error {
 	default: // table
 		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 
-		if !searchNoHeader {
-			fmt.Fprintln(w, "ACCESSION\tTITLE\tORGANISM\tTYPE")
-			fmt.Fprintln(w, strings.Repeat("-", 10)+"\t"+strings.Repeat("-", 50)+"\t"+strings.Repeat("-", 20)+"\t"+strings.Repeat("-", 15))
-		}
-
-		for _, row := range results {
-			fmt.Fprintf(w, "%v\t%v\t%v\t%v\n",
-				row["study_accession"],
-				truncate(fmt.Sprintf("%v", row["study_title"]), 50),
-				truncate(fmt.Sprintf("%v", row["organism"]), 20),
-				row["study_type"],
-			)
+		if isExperiment {
+			if !searchNoHeader {
+				fmt.Fprintln(w, "ACCESSION\tTITLE\tPLATFORM\tSTRATEGY\tSTUDY")
+				if isTerminal() && !noColor {
+					fmt.Fprintln(w, colorize(colorGray, strings.Repeat("─", 100)))
+				}
+			}
+			for _, row := range results {
+				fmt.Fprintf(w, "%v\t%v\t%v\t%v\t%v\n",
+					colorize(colorCyan, fmt.Sprintf("%v", row["experiment_accession"])),
+					truncate(fmt.Sprintf("%v", row["title"]), 40),
+					row["platform"],
+					row["library_strategy"],
+					row["study_accession"],
+				)
+			}
+		} else if isSample {
+			if !searchNoHeader {
+				fmt.Fprintln(w, "ACCESSION\tDESCRIPTION\tORGANISM\tTAXON_ID")
+				if isTerminal() && !noColor {
+					fmt.Fprintln(w, colorize(colorGray, strings.Repeat("─", 100)))
+				}
+			}
+			for _, row := range results {
+				fmt.Fprintf(w, "%v\t%v\t%v\t%v\n",
+					colorize(colorCyan, fmt.Sprintf("%v", row["sample_accession"])),
+					truncate(fmt.Sprintf("%v", row["title"]), 40),
+					truncate(fmt.Sprintf("%v", row["organism"]), 25),
+					row["study_type"],
+				)
+			}
+		} else {
+			if !searchNoHeader {
+				fmt.Fprintln(w, "ACCESSION\tTITLE\tORGANISM\tTYPE")
+				if isTerminal() && !noColor {
+					fmt.Fprintln(w, colorize(colorGray, strings.Repeat("─", 100)))
+				}
+			}
+			for _, row := range results {
+				fmt.Fprintf(w, "%v\t%v\t%v\t%v\n",
+					colorize(colorCyan, fmt.Sprintf("%v", row["study_accession"])),
+					truncate(fmt.Sprintf("%v", row["study_title"]), 50),
+					truncate(fmt.Sprintf("%v", row["organism"]), 20),
+					row["study_type"],
+				)
+			}
 		}
 		w.Flush()
 	}
