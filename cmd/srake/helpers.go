@@ -30,10 +30,17 @@ func isTerminal() bool {
 
 // Apply color if terminal output and color enabled
 func colorize(color, text string) string {
-	if !noColor && isTerminal() && os.Getenv("NO_COLOR") == "" {
+	// FORCE_COLOR overrides all other checks
+	if os.Getenv("FORCE_COLOR") != "" {
 		return color + text + colorReset
 	}
-	return text
+	if noColor || os.Getenv("NO_COLOR") != "" || os.Getenv("TERM") == "dumb" {
+		return text
+	}
+	if !isTerminal() {
+		return text
+	}
+	return color + text + colorReset
 }
 
 // Print error message in user-friendly format
@@ -46,7 +53,7 @@ func printError(format string, args ...interface{}) {
 func printSuccess(format string, args ...interface{}) {
 	if !quiet {
 		msg := fmt.Sprintf(format, args...)
-		fmt.Printf("%s %s\n", colorize(colorGreen, "✓"), msg)
+		fmt.Fprintf(os.Stderr, "%s %s\n", colorize(colorGreen, "✓"), msg)
 	}
 }
 
@@ -54,7 +61,7 @@ func printSuccess(format string, args ...interface{}) {
 func printInfo(format string, args ...interface{}) {
 	if !quiet {
 		msg := fmt.Sprintf(format, args...)
-		fmt.Printf("%s\n", colorize(colorCyan, msg))
+		fmt.Fprintf(os.Stderr, "%s\n", colorize(colorCyan, msg))
 	}
 }
 
@@ -113,7 +120,7 @@ type Spinner struct {
 func StartSpinner(message string) *Spinner {
 	if quiet || !isTerminal() {
 		// Just print the message without spinner in quiet mode or non-terminal
-		fmt.Printf("%s...", message)
+		fmt.Fprintf(os.Stderr, "%s...", message)
 		return &Spinner{
 			message: message,
 			stop:    make(chan bool),
@@ -136,7 +143,7 @@ func StartSpinner(message string) *Spinner {
 				s.done <- true
 				return
 			default:
-				fmt.Printf("\r%s %s %s", colorize(colorCyan, spinChars[i]), message, colorize(colorGray, "..."))
+				fmt.Fprintf(os.Stderr, "\r%s %s %s", colorize(colorCyan, spinChars[i]), message, colorize(colorGray, "..."))
 				i = (i + 1) % len(spinChars)
 				time.Sleep(100 * time.Millisecond)
 			}
@@ -150,9 +157,9 @@ func StartSpinner(message string) *Spinner {
 func (s *Spinner) Stop(success bool, resultMsg string) {
 	if quiet || !isTerminal() {
 		if success {
-			fmt.Println(" ✓")
+			fmt.Fprintln(os.Stderr, " ✓")
 		} else {
-			fmt.Println(" ✗")
+			fmt.Fprintln(os.Stderr, " ✗")
 		}
 		return
 	}
@@ -161,19 +168,19 @@ func (s *Spinner) Stop(success bool, resultMsg string) {
 	<-s.done
 
 	// Clear the line
-	fmt.Printf("\r%s", strings.Repeat(" ", len(s.message)+20))
+	fmt.Fprintf(os.Stderr, "\r%s", strings.Repeat(" ", len(s.message)+20))
 
 	// Print the final result
 	if success {
-		fmt.Printf("\r%s %s %s\n", colorize(colorGreen, "✓"), s.message, colorize(colorGray, resultMsg))
+		fmt.Fprintf(os.Stderr, "\r%s %s %s\n", colorize(colorGreen, "✓"), s.message, colorize(colorGray, resultMsg))
 	} else {
-		fmt.Printf("\r%s %s %s\n", colorize(colorRed, "✗"), s.message, colorize(colorGray, resultMsg))
+		fmt.Fprintf(os.Stderr, "\r%s %s %s\n", colorize(colorRed, "✗"), s.message, colorize(colorGray, resultMsg))
 	}
 }
 
 // PrintPhase prints a phase header
 func printPhase(phase string) {
 	if !quiet {
-		fmt.Printf("\n%s %s\n", colorize(colorBlue, "▶"), colorize(colorBold, phase))
+		fmt.Fprintf(os.Stderr, "\n%s %s\n", colorize(colorBlue, "▶"), colorize(colorBold, phase))
 	}
 }

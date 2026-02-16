@@ -11,6 +11,7 @@ import (
 var (
 	// Global flags
 	noColor bool
+	noInput bool
 	verbose bool
 	quiet   bool
 	debug   bool // Debug flag
@@ -42,6 +43,7 @@ ENVIRONMENT VARIABLES:
   SRAKE_CACHE_DIR        Cache directory (default: ~/.cache/srake)
   SRAKE_MODEL_VARIANT    Model variant for embeddings (full|quantized)
   NO_COLOR               Disable colored output
+  FORCE_COLOR            Force colored output even when not a TTY
 
 The tool follows XDG Base Directory Specification and respects standard
 environment variables like XDG_CONFIG_HOME, XDG_DATA_HOME, and XDG_CACHE_HOME.`,
@@ -51,9 +53,16 @@ environment variables like XDG_CONFIG_HOME, XDG_DATA_HOME, and XDG_CACHE_HOME.`,
   srake db info
   srake ingest --file metadata.tar.gz`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Check NO_COLOR environment variable
-		if os.Getenv("NO_COLOR") != "" {
-			noColor = true
+		// FORCE_COLOR takes priority — skip disabling color
+		if os.Getenv("FORCE_COLOR") == "" {
+			// Check NO_COLOR environment variable
+			if os.Getenv("NO_COLOR") != "" {
+				noColor = true
+			}
+			// Check TERM=dumb (no color support)
+			if os.Getenv("TERM") == "dumb" {
+				noColor = true
+			}
 		}
 	},
 }
@@ -87,8 +96,12 @@ environment variables like XDG_CONFIG_HOME, XDG_DATA_HOME, and XDG_CACHE_HOME.`,
 func init() {
 	// Global flags
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "Disable colored output")
+	rootCmd.PersistentFlags().BoolVar(&noInput, "no-input", false, "Disable interactive prompts (fail instead of prompt)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress non-error output")
+
+	// Enable shell completion command (bash, zsh, fish, powershell)
+	rootCmd.CompletionOptions.DisableDefaultCmd = false
 
 	// The ingest command for data ingestion
 	ingestCmd := cli.NewIngestCmd()

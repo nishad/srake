@@ -509,17 +509,17 @@ func outputTable(result *search.BleveSearchResult, query string, elapsed time.Du
 
 	// Summary
 	if !quiet {
-		fmt.Printf("\n%s\n", colorize(colorGray,
+		fmt.Fprintf(os.Stderr, "\n%s\n", colorize(colorGray,
 			fmt.Sprintf("Found %d results in %v (showing %d)",
 				result.Total, elapsed, len(result.Hits))))
 
 		// Show facets if requested
 		if searchFacets && len(result.Facets) > 0 {
-			fmt.Println("\n" + colorize(colorBold, "Facets:"))
+			fmt.Fprintln(os.Stderr, "\n"+colorize(colorBold, "Facets:"))
 			for facetName, facet := range result.Facets {
-				fmt.Printf("\n  %s:\n", colorize(colorBold, facetName))
+				fmt.Fprintf(os.Stderr, "\n  %s:\n", colorize(colorBold, facetName))
 				for _, term := range facet.Terms.Terms() {
-					fmt.Printf("    %s: %d\n", term.Term, term.Count)
+					fmt.Fprintf(os.Stderr, "    %s: %d\n", term.Term, term.Count)
 				}
 			}
 		}
@@ -866,7 +866,7 @@ func displayDatabaseResults(rows *sql.Rows) error {
 
 	if len(results) == 0 {
 		if !quiet {
-			fmt.Println("No results found")
+			fmt.Fprintln(os.Stderr, "No results found")
 		}
 		return nil
 	}
@@ -996,7 +996,7 @@ func formatAggregatedResults(results interface{}, query string, elapsed time.Dur
 		}
 		fmt.Printf("%d\n", bleveResult.Total)
 		if verbose {
-			fmt.Printf("# Query: %s, Time: %v\n", query, elapsed)
+			fmt.Fprintf(os.Stderr, "# Query: %s, Time: %v\n", query, elapsed)
 		}
 		return nil
 	}
@@ -1028,16 +1028,16 @@ func formatAggregatedResults(results interface{}, query string, elapsed time.Dur
 				return encoder.Encode(output)
 			}
 
-			// Table format
-			fmt.Println(colorize(colorBold, fmt.Sprintf("Aggregation by %s", searchAggregateBy)))
-			fmt.Println(strings.Repeat("─", 50))
+			// Table format — headers to stderr, data to stdout
+			fmt.Fprintln(os.Stderr, colorize(colorBold, fmt.Sprintf("Aggregation by %s", searchAggregateBy)))
+			fmt.Fprintln(os.Stderr, strings.Repeat("─", 50))
 
 			for key, count := range aggregation {
 				fmt.Printf("%-40s %d\n", key, count)
 			}
 
 			if !quiet {
-				fmt.Printf("\n%s\n", colorize(colorGray,
+				fmt.Fprintf(os.Stderr, "\n%s\n", colorize(colorGray,
 					fmt.Sprintf("Total: %d results in %v", bleveResult.Total, elapsed)))
 			}
 		} else {
@@ -1054,16 +1054,16 @@ func formatAggregatedResults(results interface{}, query string, elapsed time.Dur
 				return encoder.Encode(output)
 			}
 
-			// Table format
-			fmt.Println(colorize(colorBold, fmt.Sprintf("Aggregation by %s", searchAggregateBy)))
-			fmt.Println(strings.Repeat("─", 50))
+			// Table format — headers to stderr, data to stdout
+			fmt.Fprintln(os.Stderr, colorize(colorBold, fmt.Sprintf("Aggregation by %s", searchAggregateBy)))
+			fmt.Fprintln(os.Stderr, strings.Repeat("─", 50))
 
 			for _, term := range facet.Terms.Terms() {
 				fmt.Printf("%-40s %d\n", term.Term, term.Count)
 			}
 
 			if !quiet {
-				fmt.Printf("\n%s\n", colorize(colorGray,
+				fmt.Fprintf(os.Stderr, "\n%s\n", colorize(colorGray,
 					fmt.Sprintf("Total: %d results in %v", bleveResult.Total, elapsed)))
 			}
 		}

@@ -117,6 +117,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 
 	// Get global flags
 	yes, _ := cmd.Flags().GetBool("yes")
+	noInput, _ := cmd.Flags().GetBool("no-input")
 
 	// Resolve database path
 	if ingestDBPath == "" {
@@ -170,7 +171,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		// Check if it's a local file first
 		if _, err := os.Stat(ingestFile); err == nil {
 			// Local file exists, ingest it directly
-			return ingestLocalFile(ctx, ingestFile, ingestDBPath, ingestForce, ingestNoProgress, yes)
+			return ingestLocalFile(ctx, ingestFile, ingestDBPath, ingestForce, ingestNoProgress, yes, noInput)
 		}
 
 		// Not a local file, try to find it on NCBI
@@ -218,6 +219,9 @@ func runIngest(cmd *cobra.Command, args []string) error {
 
 			// Ask for confirmation (unless --yes flag is set)
 			if !yes {
+				if noInput {
+					return fmt.Errorf("database already contains data; use --yes or --force to skip confirmation")
+				}
 				fmt.Print("\nContinue anyway? [y/N]: ")
 				var response string
 				fmt.Scanln(&response)
@@ -418,7 +422,7 @@ func listAvailableFiles(ctx context.Context, manager *downloader.MetadataManager
 }
 
 // ingestLocalFile processes a local tar.gz file
-func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force bool, noProgress bool, yes bool) error {
+func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force bool, noProgress bool, yes bool, noInput bool) error {
 	// Get file info
 	stat, err := os.Stat(filePath)
 	if err != nil {
@@ -452,6 +456,9 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 
 			// Ask for confirmation (unless --yes flag is set)
 			if !yes {
+				if noInput {
+					return fmt.Errorf("database already contains data; use --yes or --force to skip confirmation")
+				}
 				fmt.Print("\nContinue anyway? [y/N]: ")
 				var response string
 				fmt.Scanln(&response)
@@ -652,7 +659,7 @@ func (pb *progressBar) Update(p processor.Progress) {
 	}
 
 	// Clear line and print progress
-	fmt.Printf("\r[%s] %.1f%% | %s / %s | %.1f MB/s | ETA: %s | Records: %d",
+	fmt.Fprintf(os.Stderr, "\r[%s] %.1f%% | %s / %s | %.1f MB/s | ETA: %s | Records: %d",
 		bar,
 		p.PercentComplete,
 		downloader.FormatSize(p.BytesProcessed),
@@ -663,7 +670,7 @@ func (pb *progressBar) Update(p processor.Progress) {
 }
 
 func (pb *progressBar) Finish() {
-	fmt.Println() // New line after progress bar
+	fmt.Fprintln(os.Stderr) // New line after progress bar
 }
 
 // Color functions for terminal output
