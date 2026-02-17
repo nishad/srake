@@ -35,9 +35,11 @@ type MetadataFile struct {
 type FileType string
 
 const (
-	FileTypeDaily   FileType = "daily"
-	FileTypeMonthly FileType = "monthly"
-	FileTypeUnknown FileType = "unknown"
+	FileTypeDaily      FileType = "daily"
+	FileTypeMonthly    FileType = "monthly"
+	FileTypeAccessions FileType = "accessions-tab"
+	FileTypeRunMembers FileType = "run-members-tab"
+	FileTypeUnknown    FileType = "unknown"
 )
 
 // MetadataManager discovers and manages metadata files from NCBI
@@ -96,11 +98,13 @@ func (mm *MetadataManager) parseDirectoryListing(html string) []MetadataFile {
 	var files []MetadataFile
 
 	// Regular expressions for parsing HTML table rows
-	// NCBI FTP uses Apache directory listing format
-	rowPattern := regexp.MustCompile(`<a href="([^"]+\.tar\.gz)"[^>]*>([^<]+)</a>\s+(\d{2}-\w{3}-\d{4}\s+\d{2}:\d{2})\s+(\d+[KMG]?)`)
+	// NCBI FTP uses Apache-style directory listing:
+	//   <a href="FILE">FILE</a>  YYYY-MM-DD HH:MM  SIZE
+	// where SIZE can be "5.9G", "15G", "3.6G", "29G", etc.
+	rowPattern := regexp.MustCompile(`<a href="([^"]+\.tar\.gz)"[^>]*>[^<]+</a>\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s+([\d.]+[KMGTP]?)`)
 
-	// Alternative pattern for different formatting
-	altPattern := regexp.MustCompile(`href="([^"]+\.tar\.gz)"[^>]*>.*?</a>.*?(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s+(\d+)`)
+	// Fallback pattern for dd-Mon-YYYY format
+	altPattern := regexp.MustCompile(`<a href="([^"]+\.tar\.gz)"[^>]*>[^<]+</a>\s+(\d{2}-\w{3}-\d{4}\s+\d{2}:\d{2})\s+([\d.]+[KMGTP]?)`)
 
 	// Find all matches
 	matches := rowPattern.FindAllStringSubmatch(html, -1)
@@ -155,6 +159,48 @@ func (mm *MetadataManager) parseDirectoryListing(html string) []MetadataFile {
 			Date:         date,
 			Type:         fileType,
 			IsCompressed: strings.HasSuffix(filename, ".gz"),
+		}
+
+		files = append(files, file)
+	}
+
+	// Second pass: match .tab files
+	tabRowPattern := regexp.MustCompile(`<a href="([^"]+\.tab)"[^>]*>[^<]+</a>\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2})\s+([\d.]+[KMGTP]?)`)
+	tabAltPattern := regexp.MustCompile(`<a href="([^"]+\.tab)"[^>]*>[^<]+</a>\s+(\d{2}-\w{3}-\d{4}\s+\d{2}:\d{2})\s+([\d.]+[KMGTP]?)`)
+
+	tabMatches := tabRowPattern.FindAllStringSubmatch(html, -1)
+	if len(tabMatches) == 0 {
+		tabMatches = tabAltPattern.FindAllStringSubmatch(html, -1)
+	}
+
+	for _, match := range tabMatches {
+		if len(match) < 4 {
+			continue
+		}
+
+		filename := match[1]
+
+		// Classify by known names
+		var fileType FileType
+		switch filename {
+		case "SRA_Accessions.tab":
+			fileType = FileTypeAccessions
+		case "SRA_Run_Members.tab":
+			fileType = FileTypeRunMembers
+		default:
+			continue // Skip unknown .tab files
+		}
+
+		date := parseModTime(match[2])
+		size := parseSize(match[3])
+
+		file := MetadataFile{
+			Name:         filename,
+			URL:          mm.baseURL + filename,
+			Size:         size,
+			Date:         date,
+			Type:         fileType,
+			IsCompressed: false,
 		}
 
 		files = append(files, file)

@@ -139,7 +139,7 @@ func runDownload(cmd *cobra.Command, args []string) error {
 
 	for i, acc := range expandedAccessions {
 		if !quiet {
-			fmt.Printf("\n[%d/%d] Downloading %s\n", i+1, len(expandedAccessions), acc)
+			fmt.Fprintf(os.Stderr, "\n[%d/%d] Downloading %s\n", i+1, len(expandedAccessions), acc)
 		}
 		printDebug("Attempting download: %s (source: %s, type: %s)", acc, downloadSource, downloadType)
 
@@ -158,16 +158,16 @@ func runDownload(cmd *cobra.Command, args []string) error {
 				printInfo("  MD5: %s", result.MD5)
 			}
 		} else {
-			fmt.Printf("Would download: %s\n", result.URL)
-			fmt.Printf("  Source: %s\n", result.Source)
-			fmt.Printf("  Size: %.2f MB\n", float64(result.Size)/(1024*1024))
+			fmt.Fprintf(os.Stderr, "Would download: %s\n", result.URL)
+			fmt.Fprintf(os.Stderr, "  Source: %s\n", result.Source)
+			fmt.Fprintf(os.Stderr, "  Size: %.2f MB\n", float64(result.Size)/(1024*1024))
 		}
 
 		successCount++
 	}
 
 	// Summary
-	fmt.Print("\n" + strings.Repeat("─", 60) + "\n")
+	fmt.Fprint(os.Stderr, "\n"+strings.Repeat("─", 60)+"\n")
 	printSuccess("Successfully downloaded: %d/%d files", successCount, len(expandedAccessions))
 
 	if len(failedAccessions) > 0 {

@@ -106,11 +106,16 @@ func init() {
 	// The ingest command for data ingestion
 	ingestCmd := cli.NewIngestCmd()
 
+	// Register download metadata subcommand under download
+	downloadMetadataCmd := cli.NewDownloadMetadataCmd()
+	downloadCmd.AddCommand(downloadMetadataCmd)
+
 	// Add commands to root
 	rootCmd.AddCommand(serverCmd)
 	rootCmd.AddCommand(searchCmd)
 	rootCmd.AddCommand(dbCmd)
 	rootCmd.AddCommand(ingestCmd)
+	rootCmd.AddCommand(downloadCmd)
 	rootCmd.AddCommand(metadataCmd)
 	rootCmd.AddCommand(modelsCmd)
 	rootCmd.AddCommand(embedCmd)
