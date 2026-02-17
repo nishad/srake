@@ -3,6 +3,7 @@ package processor
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -33,16 +34,18 @@ func NewFilteredProcessor(db Database, filters FilterOptions) (*FilteredProcesso
 
 // ProcessWithFilters processes data with filtering applied
 func (fp *FilteredProcessor) ProcessWithFilters(ctx context.Context, source string) error {
-	// Set up progress callback to include filter stats
-	fp.SetProgressFunc(func(p Progress) {
-		if fp.filters.Verbose {
-			fmt.Printf("Progress: %.1f%% | Matched: %d/%d | Skipped: %d\n",
-				p.PercentComplete,
-				fp.stats.TotalMatched,
-				fp.stats.TotalProcessed,
-				fp.stats.TotalSkipped)
-		}
-	})
+	// Only set a default progress func if the caller hasn't already registered one
+	if fp.progressFunc == nil {
+		fp.SetProgressFunc(func(p Progress) {
+			if fp.filters.Verbose {
+				fmt.Fprintf(os.Stderr, "Progress: %.1f%% | Matched: %d/%d | Skipped: %d\n",
+					p.PercentComplete,
+					fp.stats.TotalMatched,
+					fp.stats.TotalProcessed,
+					fp.stats.TotalSkipped)
+			}
+		})
+	}
 
 	// Start processing
 	var err error
@@ -50,11 +53,6 @@ func (fp *FilteredProcessor) ProcessWithFilters(ctx context.Context, source stri
 		err = fp.ProcessURL(ctx, source)
 	} else {
 		err = fp.ProcessFile(ctx, source)
-	}
-
-	// Print final statistics
-	if fp.filters.HasFilters() {
-		fmt.Println("\n" + fp.stats.GetSummary())
 	}
 
 	return err

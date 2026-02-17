@@ -105,6 +105,9 @@ Examples:
 	cmd.Flags().StringVar(&filterProfile, "filter-profile", "", "Load filter settings from YAML profile")
 	cmd.Flags().BoolVar(&skipStats, "skip-stats", false, "Skip updating database statistics after ingestion")
 
+	// Auto-confirm flag
+	cmd.Flags().Bool("yes", false, "Auto-confirm prompts without asking")
+
 	// Mark mutually exclusive flags
 	cmd.MarkFlagsMutuallyExclusive("auto", "daily", "monthly", "file", "list")
 
@@ -129,7 +132,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-sigChan
-		fmt.Println("\n📛 Ingestion interrupted, cleaning up...")
+		fmt.Fprintln(os.Stderr, "\n📛 Ingestion interrupted, cleaning up...")
 		cancel()
 	}()
 
@@ -147,21 +150,21 @@ func runIngest(cmd *cobra.Command, args []string) error {
 
 	switch {
 	case ingestAuto:
-		fmt.Println("🔍 Auto-selecting best file from NCBI...")
+		fmt.Fprintln(os.Stderr, "🔍 Auto-selecting best file from NCBI...")
 		targetFile, err = manager.AutoSelectFile(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to auto-select file: %w", err)
 		}
 
 	case ingestDaily:
-		fmt.Println("🔍 Finding latest daily update...")
+		fmt.Fprintln(os.Stderr, "🔍 Finding latest daily update...")
 		targetFile, err = manager.GetLatestFile(ctx, downloader.FileTypeDaily)
 		if err != nil {
 			return fmt.Errorf("failed to find daily file: %w", err)
 		}
 
 	case ingestMonthly:
-		fmt.Println("🔍 Finding latest monthly dataset...")
+		fmt.Fprintln(os.Stderr, "🔍 Finding latest monthly dataset...")
 		targetFile, err = manager.GetLatestFile(ctx, downloader.FileTypeMonthly)
 		if err != nil {
 			return fmt.Errorf("failed to find monthly file: %w", err)
@@ -175,7 +178,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		}
 
 		// Not a local file, try to find it on NCBI
-		fmt.Printf("🔍 Looking for file on NCBI: %s\n", ingestFile)
+		fmt.Fprintf(os.Stderr, "🔍 Looking for file on NCBI: %s\n", ingestFile)
 		targetFile, err = manager.GetFileByName(ctx, ingestFile)
 		if err != nil {
 			return fmt.Errorf("file not found on NCBI: %w", err)
@@ -183,7 +186,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 
 	default:
 		// Default to auto-select
-		fmt.Println("🔍 No option specified, auto-selecting from NCBI...")
+		fmt.Fprintln(os.Stderr, "🔍 No option specified, auto-selecting from NCBI...")
 		targetFile, err = manager.AutoSelectFile(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to auto-select file: %w", err)
@@ -191,15 +194,15 @@ func runIngest(cmd *cobra.Command, args []string) error {
 	}
 
 	// Display file information
-	fmt.Printf("\n📦 Selected file:\n")
-	fmt.Printf("   Name: %s\n", colorBold(targetFile.Name))
-	fmt.Printf("   Type: %s\n", colorize(string(targetFile.Type)))
-	fmt.Printf("   Size: %s\n", colorize(downloader.FormatSize(targetFile.Size)))
-	fmt.Printf("   Date: %s\n", targetFile.Date.Format("2006-01-02"))
-	fmt.Printf("   URL:  %s\n", targetFile.URL)
+	fmt.Fprintf(os.Stderr, "\n📦 Selected file:\n")
+	fmt.Fprintf(os.Stderr, "   Name: %s\n", colorBold(targetFile.Name))
+	fmt.Fprintf(os.Stderr, "   Type: %s\n", colorize(string(targetFile.Type)))
+	fmt.Fprintf(os.Stderr, "   Size: %s\n", colorize(downloader.FormatSize(targetFile.Size)))
+	fmt.Fprintf(os.Stderr, "   Date: %s\n", targetFile.Date.Format("2006-01-02"))
+	fmt.Fprintf(os.Stderr, "   URL:  %s\n", targetFile.URL)
 
 	// Initialize database
-	fmt.Printf("\n🗄️  Initializing database at %s...\n", ingestDBPath)
+	fmt.Fprintf(os.Stderr, "\n🗄️  Initializing database at %s...\n", ingestDBPath)
 	db, err := database.Initialize(ingestDBPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
@@ -210,27 +213,27 @@ func runIngest(cmd *cobra.Command, args []string) error {
 	if !ingestForce {
 		stats, _ := db.GetStats()
 		if stats.TotalExperiments > 0 || stats.TotalStudies > 0 {
-			fmt.Printf("\n⚠️  Database already contains data:\n")
-			fmt.Printf("   Studies:     %d\n", stats.TotalStudies)
-			fmt.Printf("   Experiments: %d\n", stats.TotalExperiments)
-			fmt.Printf("   Samples:     %d\n", stats.TotalSamples)
-			fmt.Printf("   Runs:        %d\n", stats.TotalRuns)
-			fmt.Printf("\nUse --force to overwrite existing data\n")
+			fmt.Fprintf(os.Stderr, "\n⚠️  Database already contains data:\n")
+			fmt.Fprintf(os.Stderr, "   Studies:     %d\n", stats.TotalStudies)
+			fmt.Fprintf(os.Stderr, "   Experiments: %d\n", stats.TotalExperiments)
+			fmt.Fprintf(os.Stderr, "   Samples:     %d\n", stats.TotalSamples)
+			fmt.Fprintf(os.Stderr, "   Runs:        %d\n", stats.TotalRuns)
+			fmt.Fprintf(os.Stderr, "\nUse --force to overwrite existing data\n")
 
 			// Ask for confirmation (unless --yes flag is set)
 			if !yes {
 				if noInput {
 					return fmt.Errorf("database already contains data; use --yes or --force to skip confirmation")
 				}
-				fmt.Print("\nContinue anyway? [y/N]: ")
+				fmt.Fprint(os.Stderr, "\nContinue anyway? [y/N]: ")
 				var response string
 				fmt.Scanln(&response)
 				if strings.ToLower(response) != "y" {
-					fmt.Println("Ingestion cancelled")
+					fmt.Fprintln(os.Stderr, "Ingestion cancelled")
 					return nil
 				}
 			} else {
-				fmt.Println("\n--yes flag set, continuing without confirmation")
+				fmt.Fprintln(os.Stderr, "\n--yes flag set, continuing without confirmation")
 			}
 		}
 	}
@@ -243,8 +246,8 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		}
 
 		// Display filter summary
-		fmt.Printf("\n🔍 Applying filters:\n")
-		fmt.Printf("   %s\n", filterOpts.String())
+		fmt.Fprintf(os.Stderr, "\n🔍 Applying filters:\n")
+		fmt.Fprintf(os.Stderr, "   %s\n", filterOpts.String())
 
 		// Create filtered processor
 		filteredProcessor, err := processor.NewFilteredProcessor(db, *filterOpts)
@@ -255,16 +258,17 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		// Set up progress reporting if not disabled
 		if !ingestNoProgress {
 			progressBar := newProgressBar(targetFile.Size)
+			filterStats := filteredProcessor.GetStats()
 			filteredProcessor.SetProgressFunc(func(p processor.Progress) {
-				progressBar.Update(p)
+				progressBar.UpdateFiltered(p, filterStats)
 			})
 			defer progressBar.Finish()
 		}
 
 		// Start ingestion
-		fmt.Printf("\n🚀 Starting filtered ingestion...\n")
-		fmt.Println("   This may take a while for large files.")
-		fmt.Println("   Press Ctrl+C to cancel.")
+		fmt.Fprintf(os.Stderr, "\n🚀 Starting filtered ingestion...\n")
+		fmt.Fprintln(os.Stderr, "   This may take a while for large files.")
+		fmt.Fprintln(os.Stderr, "   Press Ctrl+C to cancel.")
 
 		startTime := time.Now()
 
@@ -273,7 +277,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 
 		if err != nil {
 			if err == context.Canceled {
-				fmt.Println("\n❌ Ingestion cancelled by user")
+				fmt.Fprintln(os.Stderr, "\n❌ Ingestion cancelled by user")
 				return nil
 			}
 			return fmt.Errorf("ingestion failed: %w", err)
@@ -283,28 +287,28 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		elapsed := time.Since(startTime)
 		stats := filteredProcessor.StreamProcessor.GetStats()
 
-		fmt.Printf("\n✅ Ingestion completed successfully!\n\n")
-		fmt.Printf("📊 Statistics:\n")
-		fmt.Printf("   Time elapsed:      %s\n", downloader.FormatDuration(elapsed))
-		fmt.Printf("   Records processed: %v\n", stats["records_processed"])
-		fmt.Printf("   Bytes processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
-		fmt.Printf("   Speed:             %.2f MB/s\n", stats["bytes_per_second"].(float64)/(1024*1024))
-		fmt.Printf("   Records/second:    %.0f\n", stats["records_per_second"])
+		fmt.Fprintf(os.Stderr, "\n✅ Ingestion completed successfully!\n\n")
+		fmt.Fprintf(os.Stderr, "📊 Statistics:\n")
+		fmt.Fprintf(os.Stderr, "   Time elapsed:      %s\n", downloader.FormatDuration(elapsed))
+		fmt.Fprintf(os.Stderr, "   Records processed: %v\n", stats["records_processed"])
+		fmt.Fprintf(os.Stderr, "   Bytes processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
+		fmt.Fprintf(os.Stderr, "   Speed:             %.2f MB/s\n", stats["bytes_per_second"].(float64)/(1024*1024))
+		fmt.Fprintf(os.Stderr, "   Records/second:    %.0f\n", stats["records_per_second"])
 
 		// Display filter statistics if available
 		filterStats := filteredProcessor.GetStats()
 		if filterStats != nil {
-			fmt.Print("\n")
-			fmt.Print(filterStats.GetSummary())
+			fmt.Fprint(os.Stderr, "\n")
+			fmt.Fprint(os.Stderr, filterStats.GetSummary())
 		}
 
 		// Update database statistics after successful ingestion
 		if !skipStats {
-			fmt.Printf("\n📈 Updating database statistics...")
+			fmt.Fprintf(os.Stderr, "\n📈 Updating database statistics...")
 			if err := db.UpdateStatistics(); err != nil {
-				fmt.Printf(" ⚠️ Warning: Failed to update statistics: %v\n", err)
+				fmt.Fprintf(os.Stderr, " ⚠️ Warning: Failed to update statistics: %v\n", err)
 			} else {
-				fmt.Printf(" ✓\n")
+				fmt.Fprintf(os.Stderr, " ✓\n")
 			}
 		}
 	} else {
@@ -321,9 +325,9 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		}
 
 		// Start ingestion
-		fmt.Printf("\n🚀 Starting ingestion...\n")
-		fmt.Println("   This may take a while for large files.")
-		fmt.Println("   Press Ctrl+C to cancel.")
+		fmt.Fprintf(os.Stderr, "\n🚀 Starting ingestion...\n")
+		fmt.Fprintln(os.Stderr, "   This may take a while for large files.")
+		fmt.Fprintln(os.Stderr, "   Press Ctrl+C to cancel.")
 
 		startTime := time.Now()
 
@@ -332,7 +336,7 @@ func runIngest(cmd *cobra.Command, args []string) error {
 
 		if err != nil {
 			if err == context.Canceled {
-				fmt.Println("\n❌ Ingestion cancelled by user")
+				fmt.Fprintln(os.Stderr, "\n❌ Ingestion cancelled by user")
 				return nil
 			}
 			return fmt.Errorf("ingestion failed: %w", err)
@@ -342,29 +346,29 @@ func runIngest(cmd *cobra.Command, args []string) error {
 		elapsed := time.Since(startTime)
 		stats := streamProcessor.GetStats()
 
-		fmt.Printf("\n✅ Ingestion completed successfully!\n\n")
-		fmt.Printf("📊 Statistics:\n")
-		fmt.Printf("   Time elapsed:      %s\n", downloader.FormatDuration(elapsed))
-		fmt.Printf("   Records processed: %v\n", stats["records_processed"])
-		fmt.Printf("   Bytes processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
-		fmt.Printf("   Speed:             %.2f MB/s\n", stats["bytes_per_second"].(float64)/(1024*1024))
-		fmt.Printf("   Records/second:    %.0f\n", stats["records_per_second"])
+		fmt.Fprintf(os.Stderr, "\n✅ Ingestion completed successfully!\n\n")
+		fmt.Fprintf(os.Stderr, "📊 Statistics:\n")
+		fmt.Fprintf(os.Stderr, "   Time elapsed:      %s\n", downloader.FormatDuration(elapsed))
+		fmt.Fprintf(os.Stderr, "   Records processed: %v\n", stats["records_processed"])
+		fmt.Fprintf(os.Stderr, "   Bytes processed:   %s\n", downloader.FormatSize(stats["bytes_processed"].(int64)))
+		fmt.Fprintf(os.Stderr, "   Speed:             %.2f MB/s\n", stats["bytes_per_second"].(float64)/(1024*1024))
+		fmt.Fprintf(os.Stderr, "   Records/second:    %.0f\n", stats["records_per_second"])
 	}
 
 	// Get database statistics
 	dbStats, _ := db.GetStats()
-	fmt.Printf("\n📚 Database totals:\n")
-	fmt.Printf("   Studies:     %d\n", dbStats.TotalStudies)
-	fmt.Printf("   Experiments: %d\n", dbStats.TotalExperiments)
-	fmt.Printf("   Samples:     %d\n", dbStats.TotalSamples)
-	fmt.Printf("   Runs:        %d\n", dbStats.TotalRuns)
+	fmt.Fprintf(os.Stderr, "\n📚 Database totals:\n")
+	fmt.Fprintf(os.Stderr, "   Studies:     %d\n", dbStats.TotalStudies)
+	fmt.Fprintf(os.Stderr, "   Experiments: %d\n", dbStats.TotalExperiments)
+	fmt.Fprintf(os.Stderr, "   Samples:     %d\n", dbStats.TotalSamples)
+	fmt.Fprintf(os.Stderr, "   Runs:        %d\n", dbStats.TotalRuns)
 
 	return nil
 }
 
 // listAvailableFiles lists available files from NCBI
 func listAvailableFiles(ctx context.Context, manager *downloader.MetadataManager) error {
-	fmt.Println("🔍 Fetching available files from NCBI...")
+	fmt.Fprintln(os.Stderr, "🔍 Fetching available files from NCBI...")
 
 	files, err := manager.ListAvailableFiles(ctx)
 	if err != nil {
@@ -372,13 +376,13 @@ func listAvailableFiles(ctx context.Context, manager *downloader.MetadataManager
 	}
 
 	if len(files) == 0 {
-		fmt.Println("No files found")
+		fmt.Fprintln(os.Stderr, "No files found")
 		return nil
 	}
 
-	fmt.Printf("\n📋 Found %d files:\n\n", len(files))
+	fmt.Fprintf(os.Stderr, "\n📋 Found %d files:\n\n", len(files))
 
-	// Create table
+	// Create table — structured data stays on stdout
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 		colorBold("Name"),
@@ -411,12 +415,12 @@ func listAvailableFiles(ctx context.Context, manager *downloader.MetadataManager
 
 	w.Flush()
 
-	fmt.Printf("\n💡 Tips:\n")
-	fmt.Println("   • Monthly files contain the complete dataset")
-	fmt.Println("   • Daily files contain incremental updates")
-	fmt.Println("   • Use --auto to automatically select the best file")
-	fmt.Printf("\nTo ingest a specific file:\n")
-	fmt.Printf("   srake ingest --file %s\n", files[0].Name)
+	fmt.Fprintf(os.Stderr, "\n💡 Tips:\n")
+	fmt.Fprintln(os.Stderr, "   • Monthly files contain the complete dataset")
+	fmt.Fprintln(os.Stderr, "   • Daily files contain incremental updates")
+	fmt.Fprintln(os.Stderr, "   • Use --auto to automatically select the best file")
+	fmt.Fprintf(os.Stderr, "\nTo ingest a specific file:\n")
+	fmt.Fprintf(os.Stderr, "   srake ingest --file %s\n", files[0].Name)
 
 	return nil
 }
@@ -430,13 +434,13 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 	}
 
 	// Display file information
-	fmt.Printf("\n📦 Ingesting local archive:\n")
-	fmt.Printf("   Path: %s\n", colorBold(filePath))
-	fmt.Printf("   Size: %s\n", colorize(downloader.FormatSize(stat.Size())))
-	fmt.Printf("   Modified: %s\n", stat.ModTime().Format("2006-01-02 15:04:05"))
+	fmt.Fprintf(os.Stderr, "\n📦 Ingesting local archive:\n")
+	fmt.Fprintf(os.Stderr, "   Path: %s\n", colorBold(filePath))
+	fmt.Fprintf(os.Stderr, "   Size: %s\n", colorize(downloader.FormatSize(stat.Size())))
+	fmt.Fprintf(os.Stderr, "   Modified: %s\n", stat.ModTime().Format("2006-01-02 15:04:05"))
 
 	// Initialize database
-	fmt.Printf("\n🗄️  Initializing database at %s...\n", dbPath)
+	fmt.Fprintf(os.Stderr, "\n🗄️  Initializing database at %s...\n", dbPath)
 	db, err := database.Initialize(dbPath)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
@@ -447,27 +451,27 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 	if !force {
 		stats, _ := db.GetStats()
 		if stats.TotalExperiments > 0 || stats.TotalStudies > 0 {
-			fmt.Printf("\n⚠️  Database already contains data:\n")
-			fmt.Printf("   Studies:     %d\n", stats.TotalStudies)
-			fmt.Printf("   Experiments: %d\n", stats.TotalExperiments)
-			fmt.Printf("   Samples:     %d\n", stats.TotalSamples)
-			fmt.Printf("   Runs:        %d\n", stats.TotalRuns)
-			fmt.Printf("\nUse --force to overwrite existing data\n")
+			fmt.Fprintf(os.Stderr, "\n⚠️  Database already contains data:\n")
+			fmt.Fprintf(os.Stderr, "   Studies:     %d\n", stats.TotalStudies)
+			fmt.Fprintf(os.Stderr, "   Experiments: %d\n", stats.TotalExperiments)
+			fmt.Fprintf(os.Stderr, "   Samples:     %d\n", stats.TotalSamples)
+			fmt.Fprintf(os.Stderr, "   Runs:        %d\n", stats.TotalRuns)
+			fmt.Fprintf(os.Stderr, "\nUse --force to overwrite existing data\n")
 
 			// Ask for confirmation (unless --yes flag is set)
 			if !yes {
 				if noInput {
 					return fmt.Errorf("database already contains data; use --yes or --force to skip confirmation")
 				}
-				fmt.Print("\nContinue anyway? [y/N]: ")
+				fmt.Fprint(os.Stderr, "\nContinue anyway? [y/N]: ")
 				var response string
 				fmt.Scanln(&response)
 				if strings.ToLower(response) != "y" {
-					fmt.Println("Ingestion cancelled")
+					fmt.Fprintln(os.Stderr, "Ingestion cancelled")
 					return nil
 				}
 			} else {
-				fmt.Println("\n--yes flag set, continuing without confirmation")
+				fmt.Fprintln(os.Stderr, "\n--yes flag set, continuing without confirmation")
 			}
 		}
 	}
@@ -480,8 +484,8 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		}
 
 		// Display filter summary
-		fmt.Printf("\n🔍 Applying filters:\n")
-		fmt.Printf("   %s\n", filterOpts.String())
+		fmt.Fprintf(os.Stderr, "\n🔍 Applying filters:\n")
+		fmt.Fprintf(os.Stderr, "   %s\n", filterOpts.String())
 
 		// Create filtered processor
 		filteredProcessor, err := processor.NewFilteredProcessor(db, *filterOpts)
@@ -492,16 +496,17 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		// Set up progress reporting if not disabled
 		if !noProgress {
 			progressBar := newProgressBar(stat.Size())
+			filterStats := filteredProcessor.GetStats()
 			filteredProcessor.SetProgressFunc(func(p processor.Progress) {
-				progressBar.Update(p)
+				progressBar.UpdateFiltered(p, filterStats)
 			})
 			defer progressBar.Finish()
 		}
 
 		// Start ingestion
-		fmt.Printf("\n🚀 Starting filtered ingestion...\n")
-		fmt.Println("   This may take a while for large files.")
-		fmt.Println("   Press Ctrl+C to cancel.")
+		fmt.Fprintf(os.Stderr, "\n🚀 Starting filtered ingestion...\n")
+		fmt.Fprintln(os.Stderr, "   This may take a while for large files.")
+		fmt.Fprintln(os.Stderr, "   Press Ctrl+C to cancel.")
 
 		startTime := time.Now()
 
@@ -510,7 +515,7 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 
 		if err != nil {
 			if err == context.Canceled {
-				fmt.Println("\n\n❌ Ingestion cancelled")
+				fmt.Fprintln(os.Stderr, "\n\n❌ Ingestion cancelled")
 			}
 			return err
 		}
@@ -519,27 +524,27 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		duration := time.Since(startTime)
 		stats := filteredProcessor.StreamProcessor.GetStats()
 
-		fmt.Printf("\n\n✅ Ingestion completed successfully!\n")
-		fmt.Printf("\n📊 Statistics:\n")
-		fmt.Printf("   Duration:    %s\n", downloader.FormatDuration(duration))
+		fmt.Fprintf(os.Stderr, "\n\n✅ Ingestion completed successfully!\n")
+		fmt.Fprintf(os.Stderr, "\n📊 Statistics:\n")
+		fmt.Fprintf(os.Stderr, "   Duration:    %s\n", downloader.FormatDuration(duration))
 
 		// Safely get statistics with nil checks
 		if bytesProcessed, ok := stats["bytes_processed"].(int64); ok {
-			fmt.Printf("   Processed:   %s\n", downloader.FormatSize(bytesProcessed))
+			fmt.Fprintf(os.Stderr, "   Processed:   %s\n", downloader.FormatSize(bytesProcessed))
 			if duration.Seconds() > 0 {
-				fmt.Printf("   Speed:       %.1f MB/s\n", float64(bytesProcessed)/duration.Seconds()/(1024*1024))
+				fmt.Fprintf(os.Stderr, "   Speed:       %.1f MB/s\n", float64(bytesProcessed)/duration.Seconds()/(1024*1024))
 			}
 		}
 		if recordsInserted, ok := stats["records_inserted"].(int64); ok {
-			fmt.Printf("   Records:     %d\n", recordsInserted)
+			fmt.Fprintf(os.Stderr, "   Records:     %d\n", recordsInserted)
 		}
-		fmt.Printf("   Database:    %s\n", dbPath)
+		fmt.Fprintf(os.Stderr, "   Database:    %s\n", dbPath)
 
 		// Display filter statistics
 		filterStats := filteredProcessor.GetStats()
 		if filterStats != nil {
-			fmt.Print("\n")
-			fmt.Print(filterStats.GetSummary())
+			fmt.Fprint(os.Stderr, "\n")
+			fmt.Fprint(os.Stderr, filterStats.GetSummary())
 		}
 	} else {
 		// No filters, use standard processor
@@ -555,9 +560,9 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		}
 
 		// Start ingestion
-		fmt.Printf("\n🚀 Starting ingestion...\n")
-		fmt.Println("   This may take a while for large files.")
-		fmt.Println("   Press Ctrl+C to cancel.")
+		fmt.Fprintf(os.Stderr, "\n🚀 Starting ingestion...\n")
+		fmt.Fprintln(os.Stderr, "   This may take a while for large files.")
+		fmt.Fprintln(os.Stderr, "   Press Ctrl+C to cancel.")
 
 		startTime := time.Now()
 
@@ -566,7 +571,7 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 
 		if err != nil {
 			if err == context.Canceled {
-				fmt.Println("\n\n❌ Ingestion cancelled")
+				fmt.Fprintln(os.Stderr, "\n\n❌ Ingestion cancelled")
 			}
 			return err
 		}
@@ -575,45 +580,45 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 		duration := time.Since(startTime)
 		stats := streamProcessor.GetStats()
 
-		fmt.Printf("\n\n✅ Ingestion completed successfully!\n")
-		fmt.Printf("\n📊 Statistics:\n")
-		fmt.Printf("   Duration:    %s\n", downloader.FormatDuration(duration))
+		fmt.Fprintf(os.Stderr, "\n\n✅ Ingestion completed successfully!\n")
+		fmt.Fprintf(os.Stderr, "\n📊 Statistics:\n")
+		fmt.Fprintf(os.Stderr, "   Duration:    %s\n", downloader.FormatDuration(duration))
 
 		// Safely get statistics with nil checks
 		if bytesProcessed, ok := stats["bytes_processed"].(int64); ok {
-			fmt.Printf("   Processed:   %s\n", downloader.FormatSize(bytesProcessed))
+			fmt.Fprintf(os.Stderr, "   Processed:   %s\n", downloader.FormatSize(bytesProcessed))
 			if duration.Seconds() > 0 {
-				fmt.Printf("   Speed:       %.1f MB/s\n", float64(bytesProcessed)/duration.Seconds()/(1024*1024))
+				fmt.Fprintf(os.Stderr, "   Speed:       %.1f MB/s\n", float64(bytesProcessed)/duration.Seconds()/(1024*1024))
 			}
 		}
 		if recordsInserted, ok := stats["records_inserted"].(int64); ok {
-			fmt.Printf("   Records:     %d\n", recordsInserted)
+			fmt.Fprintf(os.Stderr, "   Records:     %d\n", recordsInserted)
 		}
-		fmt.Printf("   Database:    %s\n", dbPath)
+		fmt.Fprintf(os.Stderr, "   Database:    %s\n", dbPath)
 	}
 
 	// Update database statistics after successful ingestion
 	if !skipStats {
-		fmt.Printf("\n📈 Updating database statistics...")
+		fmt.Fprintf(os.Stderr, "\n📈 Updating database statistics...")
 		if err := db.UpdateStatistics(); err != nil {
-			fmt.Printf(" ⚠️ Warning: Failed to update statistics: %v\n", err)
+			fmt.Fprintf(os.Stderr, " ⚠️ Warning: Failed to update statistics: %v\n", err)
 		} else {
-			fmt.Printf(" ✓\n")
+			fmt.Fprintf(os.Stderr, " ✓\n")
 		}
 	}
 
 	// Get database stats
 	dbStats, _ := db.GetStats()
-	fmt.Printf("\n📈 Database Contents:\n")
-	fmt.Printf("   Studies:     %d\n", dbStats.TotalStudies)
-	fmt.Printf("   Experiments: %d\n", dbStats.TotalExperiments)
-	fmt.Printf("   Samples:     %d\n", dbStats.TotalSamples)
-	fmt.Printf("   Runs:        %d\n", dbStats.TotalRuns)
+	fmt.Fprintf(os.Stderr, "\n📈 Database Contents:\n")
+	fmt.Fprintf(os.Stderr, "   Studies:     %d\n", dbStats.TotalStudies)
+	fmt.Fprintf(os.Stderr, "   Experiments: %d\n", dbStats.TotalExperiments)
+	fmt.Fprintf(os.Stderr, "   Samples:     %d\n", dbStats.TotalSamples)
+	fmt.Fprintf(os.Stderr, "   Runs:        %d\n", dbStats.TotalRuns)
 
-	fmt.Printf("\n💡 Next steps:\n")
-	fmt.Printf("   • Search records: srake search 'your query'\n")
-	fmt.Printf("   • Start API server: srake server\n")
-	fmt.Printf("   • View database info: srake db info\n")
+	fmt.Fprintf(os.Stderr, "\n💡 Next steps:\n")
+	fmt.Fprintf(os.Stderr, "   • Search records: srake search 'your query'\n")
+	fmt.Fprintf(os.Stderr, "   • Start API server: srake server\n")
+	fmt.Fprintf(os.Stderr, "   • View database info: srake db info\n")
 
 	return nil
 }
@@ -667,6 +672,43 @@ func (pb *progressBar) Update(p processor.Progress) {
 		speedMB,
 		remainingStr,
 		p.RecordsProcessed)
+}
+
+func (pb *progressBar) UpdateFiltered(p processor.Progress, stats *processor.FilterStats) {
+	// Update at most once per second
+	if time.Since(pb.lastUpdate) < time.Second {
+		return
+	}
+	pb.lastUpdate = time.Now()
+
+	// Calculate progress bar
+	barWidth := 40
+	filled := int(p.PercentComplete * float64(barWidth) / 100)
+	if filled > barWidth {
+		filled = barWidth
+	}
+
+	bar := strings.Repeat("█", filled) + strings.Repeat("░", barWidth-filled)
+
+	// Format speed
+	speedMB := p.BytesPerSecond / (1024 * 1024)
+
+	// Format remaining time
+	remainingStr := "calculating..."
+	if p.EstimatedTimeRemaining > 0 {
+		remainingStr = downloader.FormatDuration(p.EstimatedTimeRemaining)
+	}
+
+	// Clear line and print progress with filter stats
+	fmt.Fprintf(os.Stderr, "\r[%s] %.1f%% | %s / %s | %.1f MB/s | ETA: %s | Matched: %d | Skipped: %d",
+		bar,
+		p.PercentComplete,
+		downloader.FormatSize(p.BytesProcessed),
+		downloader.FormatSize(pb.totalBytes),
+		speedMB,
+		remainingStr,
+		stats.TotalMatched,
+		stats.TotalSkipped)
 }
 
 func (pb *progressBar) Finish() {
@@ -754,7 +796,7 @@ func buildFilterOptions() (*processor.FilterOptions, error) {
 	// Load profile if specified
 	if filterProfile != "" {
 		// TODO: Implement YAML profile loading
-		fmt.Printf("⚠️  Filter profiles not yet implemented, using command-line flags only\n")
+		fmt.Fprintf(os.Stderr, "⚠️  Filter profiles not yet implemented, using command-line flags only\n")
 	}
 
 	// Validate the options
