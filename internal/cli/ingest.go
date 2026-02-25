@@ -681,8 +681,8 @@ func (pb *progressBar) UpdateFiltered(p processor.Progress, stats *processor.Fil
 	}
 	pb.lastUpdate = time.Now()
 
-	// Calculate progress bar
-	barWidth := 40
+	// Compact progress bar (20 chars)
+	barWidth := 20
 	filled := int(p.PercentComplete * float64(barWidth) / 100)
 	if filled > barWidth {
 		filled = barWidth
@@ -690,29 +690,90 @@ func (pb *progressBar) UpdateFiltered(p processor.Progress, stats *processor.Fil
 
 	bar := strings.Repeat("█", filled) + strings.Repeat("░", barWidth-filled)
 
-	// Format speed
-	speedMB := p.BytesPerSecond / (1024 * 1024)
-
-	// Format remaining time
-	remainingStr := "calculating..."
-	if p.EstimatedTimeRemaining > 0 {
-		remainingStr = downloader.FormatDuration(p.EstimatedTimeRemaining)
+	// Match rate
+	matched := stats.TotalMatched
+	processed := stats.TotalProcessed
+	rate := float64(0)
+	if processed > 0 {
+		rate = float64(matched) * 100 / float64(processed)
 	}
 
-	// Clear line and print progress with filter stats
-	fmt.Fprintf(os.Stderr, "\r[%s] %.1f%% | %s / %s | %.1f MB/s | ETA: %s | Matched: %d | Skipped: %d",
+	// ETA
+	etaStr := "..."
+	if p.EstimatedTimeRemaining > 0 {
+		etaStr = shortDuration(p.EstimatedTimeRemaining)
+	}
+
+	line := fmt.Sprintf("\r[%s] %.1f%% | %s/%s | %sMB/s | ETA %s | %s/%s matched (%.1f%%)",
 		bar,
 		p.PercentComplete,
-		downloader.FormatSize(p.BytesProcessed),
-		downloader.FormatSize(pb.totalBytes),
-		speedMB,
-		remainingStr,
-		stats.TotalMatched,
-		stats.TotalSkipped)
+		formatCompactSize(p.BytesProcessed),
+		formatCompactSize(pb.totalBytes),
+		formatCompactSize(int64(p.BytesPerSecond)),
+		etaStr,
+		formatCount(matched),
+		formatCount(processed),
+		rate,
+	)
+
+	// Erase to end of line: ANSI \033[K unless NO_COLOR is set
+	if os.Getenv("NO_COLOR") == "" {
+		fmt.Fprintf(os.Stderr, "%s\033[K", line)
+	} else {
+		fmt.Fprint(os.Stderr, line)
+	}
 }
 
 func (pb *progressBar) Finish() {
 	fmt.Fprintln(os.Stderr) // New line after progress bar
+}
+
+// formatCount formats an integer count in compact human-readable form:
+// 0, 999, 1.2k, 52k, 1.3M
+func formatCount(n int64) string {
+	switch {
+	case n < 1000:
+		return fmt.Sprintf("%d", n)
+	case n < 10000:
+		return fmt.Sprintf("%.1fk", float64(n)/1000)
+	case n < 1000000:
+		return fmt.Sprintf("%.0fk", float64(n)/1000)
+	case n < 10000000:
+		return fmt.Sprintf("%.1fM", float64(n)/1000000)
+	default:
+		return fmt.Sprintf("%.0fM", float64(n)/1000000)
+	}
+}
+
+// formatCompactSize formats bytes in compact form without spaces: 6.3GB, 14.0GB, 42MB
+func formatCompactSize(b int64) string {
+	const (
+		kb = 1024
+		mb = 1024 * kb
+		gb = 1024 * mb
+	)
+	switch {
+	case b >= gb:
+		return fmt.Sprintf("%.1fGB", float64(b)/float64(gb))
+	case b >= mb:
+		return fmt.Sprintf("%.0fMB", float64(b)/float64(mb))
+	case b >= kb:
+		return fmt.Sprintf("%.0fKB", float64(b)/float64(kb))
+	default:
+		return fmt.Sprintf("%dB", b)
+	}
+}
+
+// shortDuration formats a duration in compact form: 45s, 2.1m, 1.5h
+func shortDuration(d time.Duration) string {
+	switch {
+	case d < time.Minute:
+		return fmt.Sprintf("%.0fs", d.Seconds())
+	case d < time.Hour:
+		return fmt.Sprintf("%.1fm", d.Minutes())
+	default:
+		return fmt.Sprintf("%.1fh", d.Hours())
+	}
 }
 
 // Color functions for terminal output
