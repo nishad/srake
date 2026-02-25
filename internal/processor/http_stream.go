@@ -19,6 +19,15 @@ import (
 	"github.com/nishad/srake/internal/parser"
 )
 
+// RecordFilter allows injecting per-record filtering into StreamProcessor.
+// Each method returns true to include the record, false to skip it.
+type RecordFilter interface {
+	FilterStudy(study *parser.Study) bool
+	FilterExperiment(exp *parser.Experiment) bool
+	FilterSample(sample *parser.Sample) bool
+	FilterRun(run *parser.Run) bool
+}
+
 // Database defines the storage operations required by the stream processor.
 type Database interface {
 	InsertStudy(study *database.Study) error
@@ -49,6 +58,7 @@ type StreamProcessor struct {
 	db              Database
 	client          *http.Client
 	progressFunc    ProgressFunc
+	recordFilter    RecordFilter
 	bytesProcessed  atomic.Int64
 	totalBytes      int64
 	recordsInserted atomic.Int64
@@ -89,6 +99,11 @@ func NewStreamProcessor(db Database) *StreamProcessor {
 // SetProgressFunc sets the progress callback function
 func (sp *StreamProcessor) SetProgressFunc(f ProgressFunc) {
 	sp.progressFunc = f
+}
+
+// SetRecordFilter sets a filter that is consulted before inserting each record.
+func (sp *StreamProcessor) SetRecordFilter(rf RecordFilter) {
+	sp.recordFilter = rf
 }
 
 // ProcessURL streams and processes a tar.gz file from the given URL
@@ -240,11 +255,18 @@ func (sp *StreamProcessor) processExperiments(ctx context.Context, decoder *xml.
 	}
 
 	// Process each experiment in the set
-	for _, exp := range expSet.Experiments {
+	for i := range expSet.Experiments {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+		}
+
+		exp := &expSet.Experiments[i]
+
+		// Apply record filter if set
+		if sp.recordFilter != nil && !sp.recordFilter.FilterExperiment(exp) {
+			continue
 		}
 
 		// Extract platform and instrument
@@ -308,11 +330,18 @@ func (sp *StreamProcessor) processStudies(ctx context.Context, decoder *xml.Deco
 	}
 
 	// Process each study in the set
-	for _, study := range studySet.Studies {
+	for i := range studySet.Studies {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+		}
+
+		study := &studySet.Studies[i]
+
+		// Apply record filter if set
+		if sp.recordFilter != nil && !sp.recordFilter.FilterStudy(study) {
+			continue
 		}
 
 		// Extract study type
@@ -357,11 +386,18 @@ func (sp *StreamProcessor) processSamples(ctx context.Context, decoder *xml.Deco
 	}
 
 	// Process each sample in the set
-	for _, sample := range sampleSet.Samples {
+	for i := range sampleSet.Samples {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+		}
+
+		sample := &sampleSet.Samples[i]
+
+		// Apply record filter if set
+		if sp.recordFilter != nil && !sp.recordFilter.FilterSample(sample) {
+			continue
 		}
 
 		// Convert to database model
@@ -410,11 +446,18 @@ func (sp *StreamProcessor) processRuns(ctx context.Context, decoder *xml.Decoder
 	}
 
 	// Process each run in the set
-	for _, r := range runSet.Runs {
+	for i := range runSet.Runs {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
+		}
+
+		r := &runSet.Runs[i]
+
+		// Apply record filter if set
+		if sp.recordFilter != nil && !sp.recordFilter.FilterRun(r) {
+			continue
 		}
 
 		// Extract statistics safely

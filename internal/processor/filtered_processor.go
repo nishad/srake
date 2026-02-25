@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/nishad/srake/internal/database"
 	"github.com/nishad/srake/internal/parser"
 )
 
@@ -25,11 +24,16 @@ func NewFilteredProcessor(db Database, filters FilterOptions) (*FilteredProcesso
 		return nil, fmt.Errorf("invalid filter options: %w", err)
 	}
 
-	return &FilteredProcessor{
+	fp := &FilteredProcessor{
 		StreamProcessor: NewStreamProcessor(db),
 		filters:         filters,
 		stats:           NewFilterStats(),
-	}, nil
+	}
+
+	// Wire up the record filter so StreamProcessor calls our Filter* methods
+	fp.StreamProcessor.SetRecordFilter(fp)
+
+	return fp, nil
 }
 
 // ProcessWithFilters processes data with filtering applied
@@ -58,210 +62,130 @@ func (fp *FilteredProcessor) ProcessWithFilters(ctx context.Context, source stri
 	return err
 }
 
-// Override processing methods to apply filters
+// RecordFilter interface implementation — each method returns true to include
+// the record, false to skip it.
 
-// ProcessStudy applies filters to a study record
-func (fp *FilteredProcessor) ProcessStudy(study *parser.Study) error {
+// FilterStudy applies filters to a study record
+func (fp *FilteredProcessor) FilterStudy(study *parser.Study) bool {
 	fp.stats.TotalProcessed++
 
 	// Apply date filter for studies
 	if !fp.shouldProcessStudyByDate(study) {
 		fp.stats.SkippedByDate++
 		fp.stats.TotalSkipped++
-		return nil
+		return false
 	}
 
 	// Apply center filter
 	if !fp.shouldProcessByCenter(study.CenterName) {
 		fp.stats.SkippedByCenter++
 		fp.stats.TotalSkipped++
-		return nil
+		return false
 	}
 
 	// Apply study type filter
 	if len(fp.filters.StudyTypes) > 0 && study.Descriptor.StudyType != nil {
 		if !contains(fp.filters.StudyTypes, study.Descriptor.StudyType.ExistingStudyType) {
 			fp.stats.TotalSkipped++
-			return nil
+			return false
 		}
 	}
 
-	// If stats only mode, just count
+	fp.stats.TotalMatched++
+	fp.stats.UniqueStudies[study.Accession] = true
+
+	// If stats only mode, count the match but don't insert
 	if fp.filters.StatsOnly {
-		fp.stats.TotalMatched++
-		fp.stats.UniqueStudies[study.Accession] = true
-		return nil
+		return false
 	}
 
-	// Process the study
-	dbStudy := &database.Study{
-		StudyAccession: study.Accession,
-		StudyTitle:     study.Descriptor.StudyTitle,
-		StudyAbstract:  study.Descriptor.StudyAbstract,
-		StudyType:      getStudyType(study),
-	}
-
-	err := fp.db.InsertStudy(dbStudy)
-	if err == nil {
-		fp.stats.TotalMatched++
-		fp.stats.UniqueStudies[study.Accession] = true
-		fp.recordsInserted.Add(1)
-	}
-
-	return err
+	return true
 }
 
-// ProcessExperiment applies filters to an experiment record
-func (fp *FilteredProcessor) ProcessExperiment(exp *parser.Experiment) error {
+// FilterExperiment applies filters to an experiment record
+func (fp *FilteredProcessor) FilterExperiment(exp *parser.Experiment) bool {
 	fp.stats.TotalProcessed++
 
 	// Apply platform filter
 	if !fp.shouldProcessByPlatform(exp) {
 		fp.stats.SkippedByPlatform++
 		fp.stats.TotalSkipped++
-		return nil
+		return false
 	}
 
 	// Apply strategy filter
 	if !fp.shouldProcessByStrategy(exp) {
 		fp.stats.SkippedByStrategy++
 		fp.stats.TotalSkipped++
-		return nil
+		return false
 	}
 
 	// Apply instrument model filter
 	if !fp.shouldProcessByInstrument(exp) {
 		fp.stats.TotalSkipped++
-		return nil
+		return false
 	}
 
-	// If stats only mode, just count
+	fp.stats.TotalMatched++
+	fp.stats.UniqueExperiments[exp.Accession] = true
+
+	// If stats only mode, count the match but don't insert
 	if fp.filters.StatsOnly {
-		fp.stats.TotalMatched++
-		fp.stats.UniqueExperiments[exp.Accession] = true
-		return nil
+		return false
 	}
 
-	// Process the experiment
-	platform := extractPlatform(exp)
-	instrument := extractInstrumentModel(exp.Platform)
-
-	dbExp := &database.Experiment{
-		ExperimentAccession: exp.Accession,
-		StudyAccession:      exp.StudyRef.Accession,
-		Title:               exp.Title,
-		Platform:            platform,
-		InstrumentModel:     instrument,
-	}
-
-	if exp.Design.LibraryDescriptor.LibraryStrategy != "" {
-		dbExp.LibraryStrategy = exp.Design.LibraryDescriptor.LibraryStrategy
-		dbExp.LibrarySource = exp.Design.LibraryDescriptor.LibrarySource
-	}
-
-	err := fp.db.InsertExperiment(dbExp)
-	if err == nil {
-		fp.stats.TotalMatched++
-		fp.stats.UniqueExperiments[exp.Accession] = true
-		fp.recordsInserted.Add(1)
-	}
-
-	return err
+	return true
 }
 
-// ProcessSample applies filters to a sample record
-func (fp *FilteredProcessor) ProcessSample(sample *parser.Sample) error {
+// FilterSample applies filters to a sample record
+func (fp *FilteredProcessor) FilterSample(sample *parser.Sample) bool {
 	fp.stats.TotalProcessed++
 
 	// Apply taxonomy filter
 	if !fp.shouldProcessByTaxonomy(sample) {
 		fp.stats.SkippedByTaxonomy++
 		fp.stats.TotalSkipped++
-		return nil
+		return false
 	}
 
 	// Apply organism filter
 	if !fp.shouldProcessByOrganism(sample) {
 		fp.stats.SkippedByOrganism++
 		fp.stats.TotalSkipped++
-		return nil
+		return false
 	}
 
-	// If stats only mode, just count
+	fp.stats.TotalMatched++
+	fp.stats.UniqueSamples[sample.Accession] = true
+
+	// If stats only mode, count the match but don't insert
 	if fp.filters.StatsOnly {
-		fp.stats.TotalMatched++
-		fp.stats.UniqueSamples[sample.Accession] = true
-		return nil
+		return false
 	}
 
-	// Process the sample
-	dbSample := &database.Sample{
-		SampleAccession: sample.Accession,
-		Title:           sample.Title,
-		Organism:        sample.SampleName.ScientificName,
-		TaxonID:         sample.SampleName.TaxonID,
-		Description:     sample.Description,
-	}
-
-	// Extract additional attributes if available
-	if sample.SampleAttributes != nil {
-		for _, attr := range sample.SampleAttributes.Attributes {
-			switch strings.ToLower(attr.Tag) {
-			case "tissue":
-				dbSample.Tissue = attr.Value
-			case "cell_type", "cell type":
-				dbSample.CellType = attr.Value
-			}
-		}
-	}
-
-	err := fp.db.InsertSample(dbSample)
-	if err == nil {
-		fp.stats.TotalMatched++
-		fp.stats.UniqueSamples[sample.Accession] = true
-		fp.recordsInserted.Add(1)
-	}
-
-	return err
+	return true
 }
 
-// ProcessRun applies filters to a run record
-func (fp *FilteredProcessor) ProcessRun(run *parser.Run) error {
+// FilterRun applies filters to a run record
+func (fp *FilteredProcessor) FilterRun(run *parser.Run) bool {
 	fp.stats.TotalProcessed++
 
 	// Apply read count filter
 	if !fp.shouldProcessByReadCount(run) {
 		fp.stats.SkippedByReads++
 		fp.stats.TotalSkipped++
-		return nil
+		return false
 	}
 
-	// If stats only mode, just count
+	fp.stats.TotalMatched++
+	fp.stats.UniqueRuns[run.Accession] = true
+
+	// If stats only mode, count the match but don't insert
 	if fp.filters.StatsOnly {
-		fp.stats.TotalMatched++
-		fp.stats.UniqueRuns[run.Accession] = true
-		return nil
+		return false
 	}
 
-	// Process the run
-	dbRun := &database.Run{
-		RunAccession:        run.Accession,
-		ExperimentAccession: run.ExperimentRef.Accession,
-	}
-
-	if run.Statistics != nil {
-		dbRun.TotalSpots = run.Statistics.TotalSpots
-		dbRun.TotalBases = run.Statistics.TotalBases
-	}
-
-	err := fp.db.InsertRun(dbRun)
-	if err == nil {
-		fp.stats.TotalMatched++
-		fp.stats.UniqueRuns[run.Accession] = true
-		fp.recordsInserted.Add(1)
-	}
-
-	return err
+	return true
 }
 
 // Filter check methods
