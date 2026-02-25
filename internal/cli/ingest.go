@@ -704,7 +704,7 @@ func (pb *progressBar) UpdateFiltered(p processor.Progress, stats *processor.Fil
 		etaStr = shortDuration(p.EstimatedTimeRemaining)
 	}
 
-	line := fmt.Sprintf("\r[%s] %.1f%% | %s/%s | %sMB/s | ETA %s | %s/%s matched (%.1f%%)",
+	line := fmt.Sprintf("\r[%s] %.1f%% | %s/%s | %s/s | ETA %s | %s/%s matched (%.1f%%)",
 		bar,
 		p.PercentComplete,
 		formatCompactSize(p.BytesProcessed),
