@@ -23,8 +23,17 @@ func (db *DB) GetSQLDB() *sql.DB {
 	return db.DB
 }
 
+// Path returns the filesystem path the database was opened from.
+func (db *DB) Path() string {
+	return db.path
+}
+
 // Initialize creates and configures the database connection
 func Initialize(path string) (*DB, error) {
+	if path == "" {
+		return nil, fmt.Errorf("database path must not be empty")
+	}
+
 	db, err := sql.Open("sqlite3", path+"?_journal=WAL&_timeout=5000&_sync=NORMAL")
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)

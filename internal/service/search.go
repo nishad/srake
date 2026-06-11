@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/nishad/srake/internal/config"
@@ -15,12 +16,23 @@ type SearchService struct {
 	db         *database.DB
 	manager    *search.Manager
 	useVectors bool
+
+	// Stats cache
+	statsMu        sync.Mutex
+	statsCache     *SearchStats
+	statsTime      time.Time
+	statsComputing bool // true while a background computeSlowStats is in flight
 }
 
 // NewSearchService creates a new search service
 func NewSearchService(db *database.DB, indexPath string) (*SearchService, error) {
-	// Create config for search
+	// Create config for search. The backend factory re-opens the database from
+	// cfg.Database.Path, so it must point at the same file as the already-open
+	// db; otherwise an empty path opens a junk/empty database.
 	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Path: db.Path(),
+		},
 		Search: config.SearchConfig{
 			IndexPath: indexPath,
 			Enabled:   true,
@@ -134,90 +146,161 @@ func (s *SearchService) BuildIndex(ctx context.Context, batchSize int, withEmbed
 	return nil
 }
 
-// GetStats retrieves search statistics
+// GetStats retrieves search statistics.
+// Returns fast counts immediately; slow GROUP BY results are computed in background and cached.
 func (s *SearchService) GetStats(ctx context.Context) (*SearchStats, error) {
 	if s.manager == nil {
 		return nil, fmt.Errorf("search manager not initialized")
 	}
 
+	// Return cached stats if available (within 10 minutes)
+	s.statsMu.Lock()
+	if s.statsCache != nil && time.Since(s.statsTime) < 10*time.Minute {
+		cached := *s.statsCache
+		s.statsMu.Unlock()
+		return &cached, nil
+	}
+	s.statsMu.Unlock()
+
+	// Always compute fast counts synchronously
+	stats := s.computeFastStats()
+
+	// Reuse the previous cache's top lists while fresh ones are computed, and
+	// launch exactly one background computation even under concurrent callers.
+	s.statsMu.Lock()
+	if s.statsCache != nil {
+		stats.TopOrganisms = s.statsCache.TopOrganisms
+		stats.TopPlatforms = s.statsCache.TopPlatforms
+		stats.TopStrategies = s.statsCache.TopStrategies
+	}
+	if !s.statsComputing {
+		s.statsComputing = true
+		go s.computeSlowStats()
+	}
+	s.statsMu.Unlock()
+
+	return stats, nil
+}
+
+// computeFastStats returns entity counts from the cached statistics table,
+// falling back to a direct COUNT(*) only when the cache has not been populated.
+func (s *SearchService) computeFastStats() *SearchStats {
 	stats := &SearchStats{
-		TotalDocuments: 0,
-		IndexSize:      0,
-		LastUpdated:    time.Now(),
+		LastUpdated: time.Now(),
 	}
 
-	// Get database statistics from cached values
 	cachedStats, _ := s.db.GetStatistics()
 	studyCount := cachedStats["studies"]
 	experimentCount := cachedStats["experiments"]
 	sampleCount := cachedStats["samples"]
 	runCount := cachedStats["runs"]
 
+	if studyCount+experimentCount+sampleCount+runCount == 0 {
+		for _, tbl := range []struct {
+			name string
+			dest *int64
+		}{
+			{"studies", &studyCount},
+			{"experiments", &experimentCount},
+			{"samples", &sampleCount},
+			{"runs", &runCount},
+		} {
+			// #nosec G201 - table names come from this fixed list, not user input
+			_ = s.db.QueryRow("SELECT COUNT(*) FROM " + tbl.name).Scan(tbl.dest)
+		}
+	}
+
+	stats.TotalStudies = studyCount
+	stats.TotalExperiments = experimentCount
+	stats.TotalSamples = sampleCount
+	stats.TotalRuns = runCount
 	stats.TotalDocuments = studyCount + experimentCount + sampleCount + runCount
 
-	// Get top organisms
-	rows, err := s.db.Query(`
+	return stats
+}
+
+// computeSlowStats computes GROUP BY queries in the background and caches the
+// result. GetStats serializes invocations via the statsComputing flag, so at
+// most one runs at a time; this function clears that flag when it returns.
+func (s *SearchService) computeSlowStats() {
+	defer func() {
+		s.statsMu.Lock()
+		s.statsComputing = false
+		s.statsMu.Unlock()
+	}()
+
+	stats := s.computeFastStats()
+
+	// Top organisms: try samples table first (has organism data), fall back to studies
+	sampleFilter := ""
+	if stats.TotalSamples > 500000 {
+		sampleFilter = fmt.Sprintf(" AND rowid > %d", stats.TotalSamples-500000)
+	}
+	stats.TopOrganisms = s.queryTopItems(fmt.Sprintf(`
 		SELECT organism, COUNT(*) as count
-		FROM studies
-		WHERE organism IS NOT NULL AND organism != ''
+		FROM samples
+		WHERE organism IS NOT NULL AND organism != ''%s
 		GROUP BY organism
 		ORDER BY count DESC
 		LIMIT 10
-	`)
-	if err == nil {
-		defer rows.Close()
-		stats.TopOrganisms = make([]StatItem, 0)
-		for rows.Next() {
-			var item StatItem
-			if err := rows.Scan(&item.Name, &item.Count); err == nil {
-				stats.TopOrganisms = append(stats.TopOrganisms, item)
-			}
-		}
+	`, sampleFilter))
+	if len(stats.TopOrganisms) == 0 {
+		stats.TopOrganisms = s.queryTopItems(`
+			SELECT organism, COUNT(*) as count
+			FROM studies
+			WHERE organism IS NOT NULL AND organism != ''
+			GROUP BY organism
+			ORDER BY count DESC
+			LIMIT 10
+		`)
 	}
 
-	// Get top platforms
-	rows, err = s.db.Query(`
+	// For experiments: sample recent rows for fast GROUP BY
+	expFilter := ""
+	if stats.TotalExperiments > 500000 {
+		expFilter = fmt.Sprintf(" AND rowid > %d", stats.TotalExperiments-500000)
+	}
+
+	stats.TopPlatforms = s.queryTopItems(fmt.Sprintf(`
 		SELECT platform, COUNT(*) as count
 		FROM experiments
-		WHERE platform IS NOT NULL AND platform != ''
+		WHERE platform IS NOT NULL AND platform != ''%s
 		GROUP BY platform
 		ORDER BY count DESC
 		LIMIT 10
-	`)
-	if err == nil {
-		defer rows.Close()
-		stats.TopPlatforms = make([]StatItem, 0)
-		for rows.Next() {
-			var item StatItem
-			if err := rows.Scan(&item.Name, &item.Count); err == nil {
-				stats.TopPlatforms = append(stats.TopPlatforms, item)
-			}
-		}
-	}
+	`, expFilter))
 
-	// Get top library strategies
-	rows, err = s.db.Query(`
+	stats.TopStrategies = s.queryTopItems(fmt.Sprintf(`
 		SELECT library_strategy, COUNT(*) as count
 		FROM experiments
-		WHERE library_strategy IS NOT NULL AND library_strategy != ''
+		WHERE library_strategy IS NOT NULL AND library_strategy != ''%s
 		GROUP BY library_strategy
 		ORDER BY count DESC
 		LIMIT 10
-	`)
-	if err == nil {
-		defer rows.Close()
-		stats.TopStrategies = make([]StatItem, 0)
-		for rows.Next() {
-			var item StatItem
-			if err := rows.Scan(&item.Name, &item.Count); err == nil {
-				stats.TopStrategies = append(stats.TopStrategies, item)
-			}
+	`, expFilter))
+
+	// Cache the full result
+	s.statsMu.Lock()
+	s.statsCache = stats
+	s.statsTime = time.Now()
+	s.statsMu.Unlock()
+}
+
+// queryTopItems runs a GROUP BY query and returns the results as StatItems.
+func (s *SearchService) queryTopItems(query string) []StatItem {
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+	var items []StatItem
+	for rows.Next() {
+		var item StatItem
+		if err := rows.Scan(&item.Name, &item.Count); err == nil {
+			items = append(items, item)
 		}
 	}
-
-	// Index stats would come from manager if available
-
-	return stats, nil
+	return items
 }
 
 // Close cleans up the search service

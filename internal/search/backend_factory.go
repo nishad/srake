@@ -27,7 +27,7 @@ func CreateSearchBackend(cfg *config.Config) (SearchBackend, error) {
 	if cfg.Search.Backend == "tiered" {
 		tieredCfg := &TieredConfig{
 			IndexStudies:     true,
-			IndexExperiments: true,
+			IndexExperiments: false,
 			UseEmbeddings:    cfg.IsVectorEnabled(),
 			StudyBatchSize:   1000,
 			ExpBatchSize:     5000,

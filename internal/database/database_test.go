@@ -52,6 +52,15 @@ func TestInitializeInvalidPath(t *testing.T) {
 	}
 }
 
+func TestInitializeEmptyPath(t *testing.T) {
+	// An empty path must be rejected rather than creating a database file
+	// literally named after the connection query string.
+	_, err := Initialize("")
+	if err == nil {
+		t.Error("expected error for empty path, got nil")
+	}
+}
+
 func TestStudyOperations(t *testing.T) {
 	db, cleanup := setupTestDB(t)
 	defer cleanup()

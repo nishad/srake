@@ -25,9 +25,9 @@ const (
 )
 
 // TieredSearchBackend implements a tiered search strategy
-// Tier 1: Studies (Bleve + Vectors) - ~500K records
-// Tier 2: Experiments (Bleve) - ~2M records
-// Tier 3: Samples/Runs (SQLite FTS5) - ~34M records
+// Tier 1: Studies (Bleve + optional Vectors) - ~700K records
+// Tier 2: Experiments (SQLite FTS5) - ~38M records
+// Tier 3: Samples/Runs (SQLite FTS5) - ~80M records
 type TieredSearchBackend struct {
 	db       *database.DB
 	lazyIdx  *LazyIndex // Lazy-loaded Bleve index
@@ -85,7 +85,7 @@ func NewTieredSearchBackend(db *database.DB, cfg *TieredConfig) (*TieredSearchBa
 	if cfg == nil {
 		cfg = &TieredConfig{
 			IndexStudies:     true,
-			IndexExperiments: true,
+			IndexExperiments: false,
 			UseEmbeddings:    false,
 			StudyBatchSize:   1000,
 			ExpBatchSize:     5000,
@@ -216,7 +216,7 @@ func (t *TieredSearchBackend) searchByAccession(accession string, opts SearchOpt
 	for _, r := range results {
 		hit := Hit{
 			ID:    r.Accession,
-			Score: r.Score,
+			Score: -r.Score, // BM25 returns negative scores; negate so higher = more relevant
 			Fields: map[string]interface{}{
 				"type":     r.Type,
 				"title":    r.Title,
@@ -278,37 +278,35 @@ func (t *TieredSearchBackend) searchStudies(query string, opts SearchOptions) (*
 
 // searchTechnical searches technical metadata
 func (t *TieredSearchBackend) searchTechnical(query string, opts SearchOptions) (*SearchResult, error) {
-	// Build filters for technical search
-	filters := make(map[string]string)
+	ftsManager := database.NewFTS5Manager(t.db)
 
-	// Parse query for known technical terms
-	q := strings.ToUpper(query)
-	if strings.Contains(q, "ILLUMINA") {
-		filters["platform"] = "ILLUMINA"
-	}
-	if strings.Contains(q, "RNA-SEQ") {
-		filters["library_strategy"] = "RNA-Seq"
-	}
-
-	// Search with filters
-	bleveResult, err := t.lazyIdx.SearchWithFilters(query, filters, opts.Limit)
+	// Try FTS5 experiment search
+	expResults, err := ftsManager.SearchExperiments(query, opts.Limit)
 	if err != nil {
-		return nil, fmt.Errorf("filtered search failed: %w", err)
+		// Fall back to Bleve study search (studies have aggregated platforms/strategies)
+		return t.searchStudies(query, opts)
 	}
 
-	// Convert results
 	result := &SearchResult{
 		Query:     query,
-		TotalHits: int(bleveResult.Total),
-		Hits:      make([]Hit, 0, len(bleveResult.Hits)),
-		Mode:      "technical",
+		TotalHits: len(expResults),
+		Hits:      make([]Hit, 0, len(expResults)),
+		Mode:      "technical-fts5",
 	}
 
-	for _, hit := range bleveResult.Hits {
+	for _, exp := range expResults {
 		h := Hit{
-			ID:     hit.ID,
-			Score:  hit.Score,
-			Fields: hit.Fields,
+			ID:    exp.ExperimentAccession,
+			Type:  "experiment",
+			Score: -exp.Score, // BM25 returns negative scores, negate for ranking
+			Fields: map[string]interface{}{
+				"experiment_accession": exp.ExperimentAccession,
+				"study_accession":      exp.StudyAccession,
+				"title":                exp.Title,
+				"library_strategy":     exp.LibraryStrategy,
+				"platform":             exp.Platform,
+				"instrument_model":     exp.InstrumentModel,
+			},
 		}
 		result.Hits = append(result.Hits, h)
 	}

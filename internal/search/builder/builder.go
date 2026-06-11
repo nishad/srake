@@ -59,11 +59,13 @@ type IndexBuilder struct {
 	progressChan chan ProgressUpdate
 
 	// Metrics
-	startTime    time.Time
-	lastUpdate   time.Time
-	docsPerSec   float64
-	avgBatchTime time.Duration
-	memoryUsage  int64
+	startTime     time.Time
+	lastUpdate    time.Time
+	docsPerSec    float64
+	avgBatchTime  time.Duration
+	memoryUsage   int64
+	statusMessage string
+	currentType   string
 }
 
 // NewIndexBuilder creates a new index builder
@@ -267,26 +269,55 @@ func (b *IndexBuilder) GetState() BuildState {
 	return b.state
 }
 
+// GetStatusMessage returns the current status message
+func (b *IndexBuilder) GetStatusMessage() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.statusMessage
+}
+
+// GetCurrentType returns the document type currently being indexed
+func (b *IndexBuilder) GetCurrentType() string {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+	return b.currentType
+}
+
+// setStatus updates the status message (internal use)
+func (b *IndexBuilder) setStatus(msg string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.statusMessage = msg
+}
+
+// setCurrentType updates the current document type (internal use)
+func (b *IndexBuilder) setCurrentType(docType string) {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	b.currentType = docType
+}
+
 // executeBuild performs the actual index building
 func (b *IndexBuilder) executeBuild(ctx context.Context) error {
 	// We don't count total documents upfront to avoid slow COUNT queries
 	// Progress will show documents processed so far
 	b.progress.TotalDocuments = 0
 
-	// Create FTS5 tables for Tier 3 (samples/runs) accession lookups
-	// This must happen before indexing so searches work immediately
+	// Phase 1: Create FTS5 tables for all entity types
+	b.setCurrentType("fts5")
+	b.setStatus("Building FTS5 tables...")
 	ftsManager := database.NewFTS5Manager(b.db)
+	ftsManager.SetProgressCallback(func(step string) {
+		b.setStatus(step)
+	})
 	if err := ftsManager.CreateFTSTables(); err != nil {
 		return fmt.Errorf("failed to create FTS5 tables: %w", err)
 	}
+	b.setStatus("FTS5 tables ready")
 
-	// Index studies and experiments into Bleve (Tier 1 and Tier 2)
-	// Samples and runs use SQLite FTS5 (Tier 3) and don't need Bleve indexing
-	// This matches the TieredSearchBackend architecture where:
-	// - Tier 1: Studies with full-text + optional embeddings
-	// - Tier 2: Experiments with full-text
-	// - Tier 3: Samples/Runs with SQLite FTS5 for accession lookups
-	docTypes := []string{"studies", "experiments"}
+	// Phase 2: Index studies into Bleve (Tier 1)
+	// Experiments, samples, and runs use SQLite FTS5 and don't need Bleve indexing
+	docTypes := []string{"studies"}
 
 	for _, docType := range docTypes {
 		select {
@@ -301,6 +332,9 @@ func (b *IndexBuilder) executeBuild(ctx context.Context) error {
 		if b.progress.IsTypeCompleted(docType) {
 			continue
 		}
+
+		b.setCurrentType(docType)
+		b.setStatus(fmt.Sprintf("Indexing %s into Bleve...", docType))
 
 		// Index documents of this type
 		if err := b.indexDocumentType(ctx, docType); err != nil {

@@ -87,6 +87,10 @@ type MetadataResponse struct {
 // SearchStats for search service statistics
 type SearchStats struct {
 	TotalDocuments   int64      `json:"total_documents"`
+	TotalStudies     int64      `json:"total_studies"`
+	TotalExperiments int64      `json:"total_experiments"`
+	TotalSamples     int64      `json:"total_samples"`
+	TotalRuns        int64      `json:"total_runs"`
 	IndexedDocuments int64      `json:"indexed_documents"`
 	IndexSize        int64      `json:"index_size"`
 	LastIndexed      time.Time  `json:"last_indexed,omitempty"`

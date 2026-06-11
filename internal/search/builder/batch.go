@@ -125,16 +125,19 @@ func (b *IndexBuilder) processBatch(ctx context.Context, docType string, offset 
 	}
 }
 
-// processStudiesBatch processes a batch of studies
+// processStudiesBatch processes a batch of studies using cursor-based pagination
 func (b *IndexBuilder) processStudiesBatch(ctx context.Context, offset int64, limit int) (int, error) {
+	// Use rowid > offset for fast cursor-based pagination (avoids slow OFFSET scans)
 	query := `
 		SELECT study_accession, study_title, study_abstract, study_type,
 		       organism, submission_date
 		FROM studies
-		LIMIT ? OFFSET ?
+		WHERE rowid > ?
+		ORDER BY rowid
+		LIMIT ?
 	`
 
-	rows, err := b.db.Query(query, limit, offset)
+	rows, err := b.db.Query(query, offset, limit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to query studies: %w", err)
 	}
@@ -220,16 +223,18 @@ func (b *IndexBuilder) processStudiesBatch(ctx context.Context, offset int64, li
 	return count, nil
 }
 
-// processExperimentsBatch processes a batch of experiments
+// processExperimentsBatch processes a batch of experiments using cursor-based pagination
 func (b *IndexBuilder) processExperimentsBatch(ctx context.Context, offset int64, limit int) (int, error) {
 	query := `
 		SELECT experiment_accession, title, library_strategy,
 		       platform, instrument_model
 		FROM experiments
-		LIMIT ? OFFSET ?
+		WHERE rowid > ?
+		ORDER BY rowid
+		LIMIT ?
 	`
 
-	rows, err := b.db.Query(query, limit, offset)
+	rows, err := b.db.Query(query, offset, limit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to query experiments: %w", err)
 	}
@@ -307,15 +312,17 @@ func (b *IndexBuilder) processExperimentsBatch(ctx context.Context, offset int64
 	return count, nil
 }
 
-// processSamplesBatch processes a batch of samples
+// processSamplesBatch processes a batch of samples using cursor-based pagination
 func (b *IndexBuilder) processSamplesBatch(ctx context.Context, offset int64, limit int) (int, error) {
 	query := `
 		SELECT sample_accession, description, organism, scientific_name
 		FROM samples
-		LIMIT ? OFFSET ?
+		WHERE rowid > ?
+		ORDER BY rowid
+		LIMIT ?
 	`
 
-	rows, err := b.db.Query(query, limit, offset)
+	rows, err := b.db.Query(query, offset, limit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to query samples: %w", err)
 	}
@@ -394,15 +401,17 @@ func (b *IndexBuilder) processSamplesBatch(ctx context.Context, offset int64, li
 	return count, nil
 }
 
-// processRunsBatch processes a batch of runs
+// processRunsBatch processes a batch of runs using cursor-based pagination
 func (b *IndexBuilder) processRunsBatch(ctx context.Context, offset int64, limit int) (int, error) {
 	query := `
 		SELECT run_accession, published, total_spots, total_bases
 		FROM runs
-		LIMIT ? OFFSET ?
+		WHERE rowid > ?
+		ORDER BY rowid
+		LIMIT ?
 	`
 
-	rows, err := b.db.Query(query, limit, offset)
+	rows, err := b.db.Query(query, offset, limit)
 	if err != nil {
 		return 0, fmt.Errorf("failed to query runs: %w", err)
 	}
