@@ -726,10 +726,10 @@ func performDatabaseSearch(query string, filters map[string]string) error {
 
 // experimentFilterFields contains fields that live on the experiments table
 var experimentFilterFields = map[string]bool{
-	"platform":          true,
-	"library_strategy":  true,
-	"library_source":    true,
-	"instrument_model":  true,
+	"platform":         true,
+	"library_strategy": true,
+	"library_source":   true,
+	"instrument_model": true,
 }
 
 // buildSQLQuery builds a SQL query for database-only search

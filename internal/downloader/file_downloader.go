@@ -128,7 +128,7 @@ func (fd *FileDownloader) Download(ctx context.Context, url, outputPath string, 
 	// Open part file for writing
 	var out *os.File
 	if offset > 0 {
-		out, err = os.OpenFile(partPath, os.O_WRONLY|os.O_APPEND, 0644)
+		out, err = os.OpenFile(partPath, os.O_WRONLY|os.O_APPEND, 0600)
 	} else {
 		out, err = os.Create(partPath)
 	}

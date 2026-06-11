@@ -519,7 +519,6 @@ func displayProgress(ctx context.Context, idxBuilder *builder.IndexBuilder) {
 	defer ticker.Stop()
 
 	startTime := time.Now()
-	var lastDocs int64
 	var lastStatus string
 
 	for {
@@ -547,10 +546,6 @@ func displayProgress(ctx context.Context, idxBuilder *builder.IndexBuilder) {
 				if elapsed.Seconds() > 0 {
 					avgSpeed = float64(progress.ProcessedDocs) / elapsed.Seconds()
 				}
-				recentSpeed := float64(progress.ProcessedDocs-lastDocs) / 5.0
-				if recentSpeed < 0 {
-					recentSpeed = 0
-				}
 
 				fmt.Fprintf(os.Stderr, "  [%s] %d / ~696K docs | %.0f docs/s | %d failed [%s]\n",
 					currentType,
@@ -558,8 +553,6 @@ func displayProgress(ctx context.Context, idxBuilder *builder.IndexBuilder) {
 					avgSpeed,
 					progress.FailedDocs,
 					elapsed)
-
-				lastDocs = progress.ProcessedDocs
 			}
 		}
 	}
