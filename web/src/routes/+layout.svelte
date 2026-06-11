@@ -1,6 +1,12 @@
 <script lang="ts">
   import '../app.css';
   import { page } from '$app/stores';
+  import { ModeWatcher, toggleMode } from 'mode-watcher';
+  import { Toaster } from '$lib/components/ui/sonner';
+  import { Button } from '$lib/components/ui/button';
+  import { Separator } from '$lib/components/ui/separator';
+  import * as Sheet from '$lib/components/ui/sheet';
+  import * as Tooltip from '$lib/components/ui/tooltip';
   import {
     Search,
     Home,
@@ -9,106 +15,176 @@
     Download,
     BarChart3,
     Settings,
-    Info
+    Info,
+    Sun,
+    Moon,
+    Menu
   } from 'lucide-svelte';
 
   let { children } = $props();
+  let mobileOpen = $state(false);
+
+  const navLinks = [
+    { href: '/', label: 'Dashboard', icon: Home },
+    { href: '/search', label: 'Search', icon: Search },
+    { href: '/browse', label: 'Browse', icon: FileText },
+    { href: '/export', label: 'Export', icon: Download },
+    { href: '/stats', label: 'Statistics', icon: BarChart3 },
+  ];
+
+  function isActive(href: string): boolean {
+    if (href === '/') return $page.url.pathname === '/';
+    return $page.url.pathname.startsWith(href);
+  }
+
+  function closeMobile() {
+    mobileOpen = false;
+  }
 </script>
 
 <svelte:head>
-  <title>SRAKE - SRA Metadata Processor</title>
+  <title>SRAKE - SRA Knowledge Engine</title>
 </svelte:head>
 
-<div class="min-h-screen bg-background">
-  <header class="border-b">
-    <div class="container mx-auto px-4 py-3">
-      <nav class="flex items-center justify-between">
-        <div class="flex items-center space-x-8">
-          <a href="/" class="flex items-center space-x-2">
-            <Database class="h-6 w-6" />
-            <span class="text-xl font-bold">SRAKE</span>
-          </a>
+<ModeWatcher />
+<Toaster />
 
-          <div class="hidden md:flex space-x-6">
-            <a
-              href="/"
-              class="flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary"
-              class:text-primary={$page.url.pathname === '/'}
-            >
-              <Home class="h-4 w-4" />
-              <span>Dashboard</span>
-            </a>
+<Tooltip.Provider>
+  <div class="min-h-screen bg-background flex flex-col">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div class="container mx-auto px-4 flex h-14 items-center">
+        <!-- Mobile menu button -->
+        <Sheet.Root bind:open={mobileOpen}>
+          <Sheet.Trigger class="mr-2 md:hidden">
+            <Button variant="ghost" size="icon" class="md:hidden">
+              <Menu class="h-5 w-5" />
+              <span class="sr-only">Toggle menu</span>
+            </Button>
+          </Sheet.Trigger>
+          <Sheet.Content side="left" class="w-72">
+            <Sheet.Header>
+              <Sheet.Title class="flex items-center gap-2">
+                <Database class="h-5 w-5" />
+                SRAKE
+              </Sheet.Title>
+              <Sheet.Description>SRA Knowledge Engine</Sheet.Description>
+            </Sheet.Header>
+            <nav class="grid gap-1 py-4">
+              {#each navLinks as link}
+                {@const Icon = link.icon}
+                <a
+                  href={link.href}
+                  onclick={closeMobile}
+                  class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                  class:bg-accent={isActive(link.href)}
+                  class:text-accent-foreground={isActive(link.href)}
+                >
+                  <Icon class="h-4 w-4" />
+                  {link.label}
+                </a>
+              {/each}
+              <Separator class="my-2" />
+              <a
+                href="/settings"
+                onclick={closeMobile}
+                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                class:bg-accent={isActive('/settings')}
+              >
+                <Settings class="h-4 w-4" />
+                Settings
+              </a>
+              <a
+                href="/about"
+                onclick={closeMobile}
+                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+                class:bg-accent={isActive('/about')}
+              >
+                <Info class="h-4 w-4" />
+                About
+              </a>
+            </nav>
+          </Sheet.Content>
+        </Sheet.Root>
 
-            <a
-              href="/search"
-              class="flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary"
-              class:text-primary={$page.url.pathname === '/search'}
-            >
-              <Search class="h-4 w-4" />
-              <span>Search</span>
-            </a>
+        <!-- Logo -->
+        <a href="/" class="flex items-center space-x-2 mr-6">
+          <Database class="h-5 w-5" />
+          <span class="text-lg font-bold hidden sm:inline">SRAKE</span>
+        </a>
 
+        <!-- Desktop nav -->
+        <nav class="hidden md:flex items-center space-x-1 flex-1">
+          {#each navLinks as link}
+            {@const Icon = link.icon}
             <a
-              href="/browse"
-              class="flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary"
-              class:text-primary={$page.url.pathname === '/browse'}
+              href={link.href}
+              class="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground"
+              class:bg-accent={isActive(link.href)}
+              class:text-accent-foreground={isActive(link.href)}
+              class:text-muted-foreground={!isActive(link.href)}
             >
-              <FileText class="h-4 w-4" />
-              <span>Browse</span>
+              <Icon class="h-4 w-4" />
+              {link.label}
             </a>
+          {/each}
+        </nav>
 
-            <a
-              href="/export"
-              class="flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary"
-              class:text-primary={$page.url.pathname === '/export'}
-            >
-              <Download class="h-4 w-4" />
-              <span>Export</span>
-            </a>
+        <!-- Right side actions -->
+        <div class="ml-auto flex items-center space-x-1">
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <Button variant="ghost" size="icon" onclick={toggleMode}>
+                <Sun class="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                <Moon class="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                <span class="sr-only">Toggle theme</span>
+              </Button>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Toggle theme</Tooltip.Content>
+          </Tooltip.Root>
 
-            <a
-              href="/stats"
-              class="flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary"
-              class:text-primary={$page.url.pathname === '/stats'}
-            >
-              <BarChart3 class="h-4 w-4" />
-              <span>Statistics</span>
-            </a>
-          </div>
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <a href="/settings">
+                <Button variant="ghost" size="icon">
+                  <Settings class="h-4 w-4" />
+                  <span class="sr-only">Settings</span>
+                </Button>
+              </a>
+            </Tooltip.Trigger>
+            <Tooltip.Content>Settings</Tooltip.Content>
+          </Tooltip.Root>
+
+          <Tooltip.Root>
+            <Tooltip.Trigger>
+              <a href="/about">
+                <Button variant="ghost" size="icon">
+                  <Info class="h-4 w-4" />
+                  <span class="sr-only">About</span>
+                </Button>
+              </a>
+            </Tooltip.Trigger>
+            <Tooltip.Content>About</Tooltip.Content>
+          </Tooltip.Root>
         </div>
+      </div>
+    </header>
 
-        <div class="flex items-center space-x-4">
-          <a
-            href="/settings"
-            class="text-sm font-medium transition-colors hover:text-primary"
-            aria-label="Settings"
-          >
-            <Settings class="h-5 w-5" />
-          </a>
-          <a
-            href="/about"
-            class="text-sm font-medium transition-colors hover:text-primary"
-            aria-label="About"
-          >
-            <Info class="h-5 w-5" />
-          </a>
-        </div>
-      </nav>
-    </div>
-  </header>
+    <!-- Main content -->
+    <main class="container mx-auto px-4 py-6 flex-1">
+      {@render children?.()}
+    </main>
 
-  <main class="container mx-auto px-4 py-8">
-    {@render children?.()}
-  </main>
-
-  <footer class="border-t mt-auto">
-    <div class="container mx-auto px-4 py-4">
-      <p class="text-sm text-muted-foreground text-center">
-        SRAKE v0.0.3-alpha · SRA Metadata Processor
-      </p>
-    </div>
-  </footer>
-</div>
+    <!-- Footer -->
+    <footer class="border-t">
+      <div class="container mx-auto px-4 py-3">
+        <p class="text-xs text-muted-foreground text-center">
+          SRAKE &middot; SRA Knowledge Engine
+        </p>
+      </div>
+    </footer>
+  </div>
+</Tooltip.Provider>
 
 <style>
   :global(html) {
