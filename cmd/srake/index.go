@@ -417,12 +417,16 @@ func buildWithProgress(cfg *config.Config, db *database.DB, backend search.Searc
 	// Show completion message
 	progress := idxBuilder.GetProgress()
 	if !quiet {
-		printSuccess("Index built successfully with progress tracking!")
-		fmt.Printf("Processed: %d documents\n", progress.ProcessedDocs)
-		fmt.Printf("Indexed:   %d documents\n", progress.IndexedDocs)
-		fmt.Printf("Failed:    %d documents\n", progress.FailedDocs)
-		fmt.Printf("Time:      %v\n", elapsed)
-		fmt.Printf("Speed:     %.1f docs/sec\n", float64(progress.ProcessedDocs)/elapsed.Seconds())
+		printSuccess("Index built successfully!")
+		fmt.Fprintf(os.Stderr, "\n📊 Index Statistics:\n")
+		fmt.Fprintf(os.Stderr, "   Studies indexed (Bleve): %d\n", progress.IndexedDocs)
+		fmt.Fprintf(os.Stderr, "   Failed:                  %d\n", progress.FailedDocs)
+		fmt.Fprintf(os.Stderr, "   Duration:                %v\n", elapsed.Truncate(time.Second))
+		if elapsed.Seconds() > 0 {
+			fmt.Fprintf(os.Stderr, "   Speed:                   %.0f docs/sec\n", float64(progress.ProcessedDocs)/elapsed.Seconds())
+		}
+		fmt.Fprintf(os.Stderr, "   Index path:              %s\n", cfg.Search.IndexPath)
+		fmt.Fprintf(os.Stderr, "\n   FTS5 tables created for experiments, samples, and runs\n")
 	}
 
 	return nil
@@ -509,26 +513,54 @@ func resumeIndex(cfg *config.Config, db *database.DB) error {
 	return nil
 }
 
-// displayProgress shows real-time progress updates
-func displayProgress(ctx context.Context, builder *builder.IndexBuilder) {
-	ticker := time.NewTicker(2 * time.Second)
+// displayProgress shows real-time progress updates on stderr
+func displayProgress(ctx context.Context, idxBuilder *builder.IndexBuilder) {
+	ticker := time.NewTicker(5 * time.Second)
 	defer ticker.Stop()
+
+	startTime := time.Now()
+	var lastDocs int64
+	var lastStatus string
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			progress := builder.GetProgress()
-			state := builder.GetState()
+			progress := idxBuilder.GetProgress()
+			status := idxBuilder.GetStatusMessage()
+			currentType := idxBuilder.GetCurrentType()
+			elapsed := time.Since(startTime).Truncate(time.Second)
 
-			// Clear line and show progress
-			fmt.Printf("\r[%s] Processed: %d docs | Indexed: %d | Failed: %d | Batch: %d",
-				state,
-				progress.ProcessedDocs,
-				progress.IndexedDocs,
-				progress.FailedDocs,
-				progress.CurrentBatch)
+			if currentType == "fts5" || progress.ProcessedDocs == 0 {
+				// FTS5 phase — only print when status changes
+				if status == "" {
+					status = "Initializing..."
+				}
+				if status != lastStatus {
+					fmt.Fprintf(os.Stderr, "  %-60s [%s]\n", status, elapsed)
+					lastStatus = status
+				}
+			} else {
+				// Bleve indexing phase — print every tick with speed
+				avgSpeed := float64(0)
+				if elapsed.Seconds() > 0 {
+					avgSpeed = float64(progress.ProcessedDocs) / elapsed.Seconds()
+				}
+				recentSpeed := float64(progress.ProcessedDocs-lastDocs) / 5.0
+				if recentSpeed < 0 {
+					recentSpeed = 0
+				}
+
+				fmt.Fprintf(os.Stderr, "  [%s] %d / ~696K docs | %.0f docs/s | %d failed [%s]\n",
+					currentType,
+					progress.IndexedDocs,
+					avgSpeed,
+					progress.FailedDocs,
+					elapsed)
+
+				lastDocs = progress.ProcessedDocs
+			}
 		}
 	}
 }

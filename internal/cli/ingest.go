@@ -616,6 +616,7 @@ func ingestLocalFile(ctx context.Context, filePath string, dbPath string, force 
 	fmt.Fprintf(os.Stderr, "   Runs:        %d\n", dbStats.TotalRuns)
 
 	fmt.Fprintf(os.Stderr, "\n💡 Next steps:\n")
+	fmt.Fprintf(os.Stderr, "   • Build search index: srake index --build --progress\n")
 	fmt.Fprintf(os.Stderr, "   • Search records: srake search 'your query'\n")
 	fmt.Fprintf(os.Stderr, "   • Start API server: srake server\n")
 	fmt.Fprintf(os.Stderr, "   • View database info: srake db info\n")
