@@ -45,14 +45,21 @@ build-server:
 	$(GOBUILD) $(TAGS) $(LDFLAGS) -o $(SERVER_BINARY) $(SERVER_PATH)
 	@echo "Build complete: ./$(SERVER_BINARY)"
 
-## build-all: Build both CLI and server
-build-all: build build-server
+## build-all: Build web embed, CLI, and server
+build-all: build-web-embed build build-server
 
 ## build-web: Build the web frontend
 build-web:
 	@echo "Building web frontend..."
 	cd $(WEB_DIR) && npm install && npm run build
 	@echo "Web build complete"
+
+## build-web-embed: Build web frontend and copy to Go embed directory
+build-web-embed: build-web
+	@echo "Copying web build to internal/web/build/..."
+	rm -rf internal/web/build/*
+	cp -r $(WEB_DIR)/build/* internal/web/build/
+	@echo "Web embed build complete"
 
 ## clean: Remove build artifacts
 clean:

@@ -12,6 +12,7 @@ import (
 	"github.com/nishad/srake/internal/database"
 	"github.com/nishad/srake/internal/paths"
 	"github.com/nishad/srake/internal/service"
+	"github.com/nishad/srake/internal/web"
 )
 
 // Server represents the HTTP API server
@@ -81,12 +82,12 @@ func NewServer(cfg *Config) (*Server, error) {
 	routeStart := time.Now()
 	s.setupRoutes()
 
-	// Setup middleware
+	// Setup middleware (applied to all routes)
 	if cfg.EnableCORS {
 		s.router.Use(corsMiddleware)
 	}
 	s.router.Use(loggingMiddleware)
-	s.router.Use(jsonMiddleware)
+	// Note: jsonMiddleware is applied only to API subrouter in setupRoutes()
 	log.Printf("[INIT] Routes configured in %v", time.Since(routeStart))
 
 	// Create HTTP server
@@ -106,6 +107,11 @@ func NewServer(cfg *Config) (*Server, error) {
 func (s *Server) setupRoutes() {
 	// API v1 routes
 	api := s.router.PathPrefix("/api/v1").Subrouter()
+	api.Use(jsonMiddleware) // Only API routes get Content-Type: application/json
+
+	// API root endpoint
+	api.HandleFunc("/", s.handleRoot).Methods("GET")
+	api.HandleFunc("", s.handleRoot).Methods("GET")
 
 	// Search endpoints
 	api.HandleFunc("/search", s.handleSearch).Methods("GET", "POST")
@@ -136,8 +142,8 @@ func (s *Server) setupRoutes() {
 	// Health check
 	api.HandleFunc("/health", s.handleHealth).Methods("GET")
 
-	// Root endpoint
-	s.router.HandleFunc("/", s.handleRoot).Methods("GET")
+	// Web UI catch-all (must be last)
+	s.router.PathPrefix("/").Handler(web.Handler())
 }
 
 // Start starts the HTTP server

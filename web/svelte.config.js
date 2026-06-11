@@ -17,6 +17,9 @@ const config = {
 			precompress: false,
 			strict: false
 		}),
+		prerender: {
+			handleUnseenRoutes: 'ignore'
+		},
 		paths: {
 			base: ''
 		},

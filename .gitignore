@@ -6,6 +6,11 @@ bin/
 dist/
 build/
 
+# Embedded web build (keep .gitkeep so //go:embed all:build compiles on a fresh clone)
+!internal/web/build/
+internal/web/build/*
+!internal/web/build/.gitkeep
+
 # Go
 vendor/
 *.exe
@@ -36,6 +41,7 @@ sample_data/
 
 # Hugo
 docs/public/
+docs/.hugo_build.lock
 
 # Dependencies
 web/node_modules/
