@@ -107,8 +107,14 @@ func NewIndexBuilder(cfg *config.Config, db *database.DB, backend search.SearchB
 	}
 	builder.syncer = syncer
 
-	// Initialize embedder if embeddings are enabled
-	if options.WithEmbeddings {
+	// Initialize embedder if embeddings are enabled AND this build can actually
+	// use vectors. Without the "vectors" (FAISS) tag there is no working vector
+	// search, so generating/storing embeddings is pure overhead that bloats the
+	// index and slows the build — skip it and tell the user why.
+	if options.WithEmbeddings && !search.VectorSearchSupported {
+		fmt.Println("Note: --with-embeddings is ignored: this build has no vector-search support.")
+		fmt.Println("      Rebuild with -tags vectors (requires FAISS) to enable semantic search.")
+	} else if options.WithEmbeddings {
 		// Configure embeddings in config if not already set
 		if !cfg.Embeddings.Enabled {
 			cfg.Embeddings.Enabled = true

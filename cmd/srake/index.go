@@ -170,6 +170,21 @@ func buildIndex(cfg *config.Config, db *database.DB, rebuild bool) error {
 		return nil
 	}
 
+	// --rebuild means "from scratch": remove the existing index directory before
+	// building. Otherwise the new documents are merged into the old index, which
+	// both keeps stale data and makes every write progressively slower as the
+	// index grows. The Bleve index path is separate from the database, so this
+	// only deletes search-index data.
+	if rebuild && indexExists {
+		if cfg.Search.IndexPath == "" {
+			return fmt.Errorf("refusing to rebuild: index path is empty")
+		}
+		printInfo("Removing existing index at %s", cfg.Search.IndexPath)
+		if err := os.RemoveAll(cfg.Search.IndexPath); err != nil {
+			return fmt.Errorf("failed to remove existing index: %w", err)
+		}
+	}
+
 	// Create search manager
 	manager, err := search.NewManager(cfg, db)
 	if err != nil {
@@ -199,7 +214,7 @@ func buildIndex(cfg *config.Config, db *database.DB, rebuild bool) error {
 		}
 		fmt.Printf("Index path: %s\n", cfg.Search.IndexPath)
 		fmt.Printf("Batch size: %d\n", cfg.Search.BatchSize)
-		if indexEmbeddings {
+		if indexEmbeddings && search.VectorSearchSupported {
 			fmt.Printf("Embeddings: Enabled (model: %s)\n", embeddingModel)
 		}
 	}
@@ -393,7 +408,7 @@ func buildWithProgress(cfg *config.Config, db *database.DB, backend search.Searc
 		fmt.Printf("Batch size:     %d\n", opts.BatchSize)
 		fmt.Printf("Progress file:  %s\n", opts.ProgressFile)
 		fmt.Printf("Checkpoint dir: %s\n", opts.CheckpointDir)
-		if indexEmbeddings {
+		if indexEmbeddings && search.VectorSearchSupported {
 			fmt.Printf("Embeddings:     Enabled (model: %s)\n", embeddingModel)
 		}
 	}

@@ -10,6 +10,11 @@ import (
 	"github.com/blevesearch/bleve/v2/mapping"
 )
 
+// VectorSearchSupported reports whether this build can perform vector (KNN)
+// search. False here: without the "vectors" tag (FAISS) there is no working
+// vector search, so embeddings are not generated or stored.
+const VectorSearchSupported = false
+
 // Vector field mapping stub for builds without FAISS
 func (b *BleveBackend) createVectorFieldMapping() *mapping.FieldMapping {
 	// When vectors are disabled, store embedding as non-indexed field

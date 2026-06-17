@@ -8,6 +8,11 @@ import (
 	"github.com/blevesearch/bleve/v2/mapping"
 )
 
+// VectorSearchSupported reports whether this build can perform vector (KNN)
+// search. True only with the "vectors" tag (FAISS present); other builds store
+// no embeddings and fall back to text search.
+const VectorSearchSupported = true
+
 // Vector field mapping for builds with FAISS
 func (b *BleveBackend) createVectorFieldMapping() *mapping.FieldMapping {
 	fm := bleve.NewVectorFieldMapping()
