@@ -41,15 +41,12 @@ func NewONNXEmbedder(modelPath string, cacheDir string) (*ONNXEmbedder, error) {
 		modelPath: modelPath,
 	}
 
-	// Initialize ONNX Runtime
-	// Set the library path for macOS
-	if runtime.GOOS == "darwin" {
-		libraryPath := "/opt/homebrew/lib/libonnxruntime.dylib"
-		if _, err := os.Stat(libraryPath); err != nil {
-			// Try alternate path for Intel Macs
-			libraryPath = "/usr/local/lib/libonnxruntime.dylib"
-		}
-		ort.SetSharedLibraryPath(libraryPath)
+	// Initialize ONNX Runtime. The shared library is located per platform so the
+	// embedder works on macOS, Linux, and Windows without hard-coding a single
+	// path. If a concrete library is found, point onnxruntime_go at it; otherwise
+	// fall back to its default name so the OS loader's search path can resolve it.
+	if libPath := resolveONNXRuntimeLibrary(); libPath != "" {
+		ort.SetSharedLibraryPath(libPath)
 	}
 	if err := ort.InitializeEnvironment(); err != nil {
 		return nil, fmt.Errorf("failed to initialize ONNX Runtime: %w", err)
@@ -118,6 +115,53 @@ func NewONNXEmbedder(modelPath string, cacheDir string) (*ONNXEmbedder, error) {
 	embedder.enabled = true
 
 	return embedder, nil
+}
+
+// resolveONNXRuntimeLibrary returns the path to the onnxruntime shared library
+// for the current platform, or "" to let onnxruntime_go use its default name
+// (which the OS loader resolves via its standard search path).
+//
+// Resolution order:
+//  1. SRAKE_ONNXRUNTIME_LIB / ONNXRUNTIME_LIB_PATH env override (any platform).
+//  2. Well-known install locations for the current OS.
+//  3. "" — fall back to the loader default (onnxruntime.so / onnxruntime.dll).
+func resolveONNXRuntimeLibrary() string {
+	// 1. Explicit override wins everywhere.
+	for _, env := range []string{"SRAKE_ONNXRUNTIME_LIB", "ONNXRUNTIME_LIB_PATH"} {
+		if p := os.Getenv(env); p != "" {
+			return p
+		}
+	}
+
+	// 2. Per-OS candidate paths.
+	var candidates []string
+	switch runtime.GOOS {
+	case "darwin":
+		candidates = []string{
+			"/opt/homebrew/lib/libonnxruntime.dylib", // Homebrew on Apple Silicon
+			"/usr/local/lib/libonnxruntime.dylib",    // Homebrew on Intel / manual install
+		}
+	case "linux":
+		candidates = []string{
+			"/usr/local/lib/libonnxruntime.so", // MS release tarball (and our Docker image)
+			"/usr/lib/libonnxruntime.so",
+			"/usr/lib/x86_64-linux-gnu/libonnxruntime.so",
+			"/usr/lib/aarch64-linux-gnu/libonnxruntime.so",
+		}
+	case "windows":
+		candidates = []string{
+			`C:\Program Files\onnxruntime\lib\onnxruntime.dll`,
+			"onnxruntime.dll",
+		}
+	}
+	for _, c := range candidates {
+		if _, err := os.Stat(c); err == nil {
+			return c
+		}
+	}
+
+	// 3. Let onnxruntime_go use its platform default name.
+	return ""
 }
 
 // downloadModel downloads the ONNX model from HuggingFace if not cached
