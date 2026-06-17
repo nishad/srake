@@ -10,11 +10,12 @@ import (
 
 var (
 	// Global flags
-	noColor bool
-	noInput bool
-	verbose bool
-	quiet   bool
-	debug   bool // Debug flag
+	noColor        bool
+	noInput        bool
+	verbose        bool
+	quiet          bool
+	debug          bool   // Debug flag
+	onnxruntimeLib string // Path to the onnxruntime shared library (overrides auto-detection)
 
 	// Version information (injected via ldflags)
 	Version   = "dev"
@@ -42,6 +43,7 @@ ENVIRONMENT VARIABLES:
   SRAKE_DATA_DIR         Data directory (default: ~/.local/share/srake)
   SRAKE_CACHE_DIR        Cache directory (default: ~/.cache/srake)
   SRAKE_MODEL_VARIANT    Model variant for embeddings (full|quantized)
+  SRAKE_ONNXRUNTIME_LIB  Path to the onnxruntime shared library (vector search)
   NO_COLOR               Disable colored output
   FORCE_COLOR            Force colored output even when not a TTY
 
@@ -63,6 +65,12 @@ environment variables like XDG_CONFIG_HOME, XDG_DATA_HOME, and XDG_CACHE_HOME.`,
 			if os.Getenv("TERM") == "dumb" {
 				noColor = true
 			}
+		}
+
+		// --onnxruntime-lib feeds the same override the embedder reads from the
+		// environment, so it applies across every code path that loads ONNX.
+		if onnxruntimeLib != "" {
+			os.Setenv("SRAKE_ONNXRUNTIME_LIB", onnxruntimeLib)
 		}
 	},
 }
@@ -99,6 +107,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&noInput, "no-input", false, "Disable interactive prompts (fail instead of prompt)")
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "Suppress non-error output")
+	rootCmd.PersistentFlags().StringVar(&onnxruntimeLib, "onnxruntime-lib", "", "Path to the onnxruntime shared library for vector search (overrides auto-detection; also SRAKE_ONNXRUNTIME_LIB)")
 
 	// Enable shell completion command (bash, zsh, fish, powershell)
 	rootCmd.CompletionOptions.DisableDefaultCmd = false

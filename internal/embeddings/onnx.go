@@ -45,11 +45,19 @@ func NewONNXEmbedder(modelPath string, cacheDir string) (*ONNXEmbedder, error) {
 	// embedder works on macOS, Linux, and Windows without hard-coding a single
 	// path. If a concrete library is found, point onnxruntime_go at it; otherwise
 	// fall back to its default name so the OS loader's search path can resolve it.
-	if libPath := resolveONNXRuntimeLibrary(); libPath != "" {
+	libPath := resolveONNXRuntimeLibrary()
+	if libPath != "" {
 		ort.SetSharedLibraryPath(libPath)
 	}
 	if err := ort.InitializeEnvironment(); err != nil {
-		return nil, fmt.Errorf("failed to initialize ONNX Runtime: %w", err)
+		// Missing or incompatible onnxruntime is not fatal: degrade to text/FTS5
+		// search rather than aborting. Tell the user how to point at a library.
+		log.Printf("Warning: could not load ONNX Runtime%s: %v", describeLibSource(libPath), err)
+		log.Printf("Semantic (vector) search is disabled. Install onnxruntime, or set the")
+		log.Printf("SRAKE_ONNXRUNTIME_LIB environment variable (or pass --onnxruntime-lib)")
+		log.Printf("to the shared library, e.g. SRAKE_ONNXRUNTIME_LIB=/usr/local/lib/libonnxruntime.so")
+		embedder.enabled = false
+		return embedder, nil
 	}
 
 	// Get model variant from environment
@@ -162,6 +170,20 @@ func resolveONNXRuntimeLibrary() string {
 
 	// 3. Let onnxruntime_go use its platform default name.
 	return ""
+}
+
+// describeLibSource returns a short human-readable description of where the
+// onnxruntime library path came from, for use in warning messages.
+func describeLibSource(libPath string) string {
+	for _, env := range []string{"SRAKE_ONNXRUNTIME_LIB", "ONNXRUNTIME_LIB_PATH"} {
+		if p := os.Getenv(env); p != "" {
+			return fmt.Sprintf(" (from %s=%s)", env, p)
+		}
+	}
+	if libPath != "" {
+		return fmt.Sprintf(" (found at %s)", libPath)
+	}
+	return " (no library found; using the loader's default search path)"
 }
 
 // downloadModel downloads the ONNX model from HuggingFace if not cached
