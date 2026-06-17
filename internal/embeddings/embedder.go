@@ -3,22 +3,22 @@ package embeddings
 import (
 	"fmt"
 	"math"
-	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/nishad/srake/internal/paths"
 )
 
-// Embedder is the main service for generating embeddings
+// Embedder is the main service for generating embeddings. It delegates the
+// actual inference to a real ONNXEmbedder so that every consumer of Embedder
+// (search backend, sync, query engine, models test) produces genuine model
+// embeddings rather than the placeholder vectors the legacy *Model stub returned.
 type Embedder struct {
-	manager   *Manager
-	model     *Model
-	tokenizer *Tokenizer
-	modelID   string
-	config    *EmbedderConfig
-	mu        sync.RWMutex
+	manager *Manager
+	onnx    *ONNXEmbedder
+	modelID string
+	config  *EmbedderConfig
+	mu      sync.RWMutex
 }
 
 // EmbedderConfig contains configuration for the embedder
@@ -61,147 +61,33 @@ func NewEmbedder(config *EmbedderConfig) (*Embedder, error) {
 	}, nil
 }
 
-// LoadModel loads a specific model for embedding
+// LoadModel loads a specific model for embedding. It builds a real ONNXEmbedder,
+// which handles model discovery/download, tokenization, and inference. If the
+// onnxruntime library or model is unavailable, NewONNXEmbedder returns an
+// embedder with enabled=false; LoadModel surfaces that as an error so callers
+// can decide whether to continue without embeddings.
 func (e *Embedder) LoadModel(modelID string) error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	// Close existing model if any
-	if e.model != nil {
-		e.model.Close()
-		e.model = nil
+	// Close existing embedder if any.
+	if e.onnx != nil {
+		e.onnx.Close()
+		e.onnx = nil
 	}
 
-	// Try to get model info from manager first
-	var modelPath string
-	var variantName string
-	var tokenizerPath string
-
-	modelInfo, err := e.manager.GetModel(modelID)
+	onnx, err := NewONNXEmbedder(modelID, e.config.ModelsDir)
 	if err != nil {
-		// If manager doesn't have the model, try direct paths
-		// This supports both managed models and direct file paths
-		modelPath = e.findModelDirectly(modelID)
-		if modelPath == "" {
-			return fmt.Errorf("model %s not found: %w", modelID, err)
-		}
-		variantName = e.getVariantFromEnv()
-		tokenizerPath = e.findTokenizerPath(modelID)
-	} else {
-		// Use manager's model info
-		variantPath, err := e.manager.GetActiveVariantPath(modelID)
-		if err != nil {
-			// Try direct path as fallback
-			modelPath = e.findModelDirectly(modelID)
-			if modelPath == "" {
-				return fmt.Errorf("failed to get active variant: %w", err)
-			}
-			variantName = e.getVariantFromEnv()
-		} else {
-			modelPath = variantPath
-			variantName = modelInfo.ActiveVariant
-		}
-		tokenizerPath = filepath.Join(modelInfo.Path, "tokenizer.json")
+		return fmt.Errorf("failed to load ONNX model %s: %w", modelID, err)
+	}
+	if !onnx.IsEnabled() {
+		return fmt.Errorf("ONNX embedder for %s is not enabled (onnxruntime or model unavailable)", modelID)
 	}
 
-	// Get model config
-	config, err := GetModelConfig(modelID)
-	if err != nil {
-		return fmt.Errorf("failed to get model config: %w", err)
-	}
-
-	// Load ONNX model
-	model, err := LoadModel(modelPath, config, variantName)
-	if err != nil {
-		return fmt.Errorf("failed to load ONNX model from %s: %w", modelPath, err)
-	}
-
-	// Load tokenizer - try different locations
-	var tokenizer *Tokenizer
-	if tokenizerPath != "" && fileExists(tokenizerPath) {
-		tokenizer, err = LoadTokenizer(filepath.Dir(tokenizerPath))
-	}
-	if err != nil || tokenizer == nil {
-		// Use embedded tokenizer as fallback
-		tokenizer, err = LoadEmbeddedTokenizer()
-	}
-	if err != nil || tokenizer == nil {
-		model.Close()
-		return fmt.Errorf("failed to load tokenizer: %w", err)
-	}
-
-	e.model = model
-	e.tokenizer = tokenizer
+	e.onnx = onnx
 	e.modelID = modelID
 
 	return nil
-}
-
-// findModelDirectly searches for model files in standard locations
-func (e *Embedder) findModelDirectly(modelID string) string {
-	// Get variant from environment or use default
-	variant := e.getVariantFromEnv()
-
-	// Define possible model file names based on variant
-	modelFiles := []string{
-		fmt.Sprintf("model_%s.onnx", variant),
-		"model.onnx",
-	}
-	if variant == "quantized" {
-		modelFiles = []string{"model_quantized.onnx", "model.onnx"}
-	}
-
-	// Search paths to check - only use proper HF path structure
-	paths := []string{
-		filepath.Join(os.Getenv("HOME"), ".local/share/srake/models", modelID, "onnx"),
-		filepath.Join(os.Getenv("HOME"), ".srake/models", modelID, "onnx"),
-		filepath.Join(e.config.ModelsDir, modelID, "onnx"),
-	}
-
-	// Check each combination
-	for _, basePath := range paths {
-		for _, modelFile := range modelFiles {
-			fullPath := filepath.Join(basePath, modelFile)
-			if fileExists(fullPath) {
-				return fullPath
-			}
-		}
-	}
-
-	return ""
-}
-
-// findTokenizerPath searches for tokenizer files in standard locations
-func (e *Embedder) findTokenizerPath(modelID string) string {
-	// Search paths to check - only use proper HF path structure
-	paths := []string{
-		filepath.Join(os.Getenv("HOME"), ".local/share/srake/models", modelID, "tokenizer.json"),
-		filepath.Join(os.Getenv("HOME"), ".srake/models", modelID, "tokenizer.json"),
-		filepath.Join(e.config.ModelsDir, modelID, "tokenizer.json"),
-	}
-
-	for _, path := range paths {
-		if fileExists(path) {
-			return path
-		}
-	}
-
-	return ""
-}
-
-// getVariantFromEnv gets the model variant from environment or returns default
-func (e *Embedder) getVariantFromEnv() string {
-	variant := os.Getenv("SRAKE_MODEL_VARIANT")
-	if variant == "" {
-		variant = "quantized" // Default to quantized for better compatibility
-	}
-	return variant
-}
-
-// fileExists checks if a file exists
-func fileExists(path string) bool {
-	_, err := os.Stat(path)
-	return err == nil
 }
 
 // LoadDefaultModel loads the default model
@@ -213,7 +99,7 @@ func (e *Embedder) LoadDefaultModel() error {
 func (e *Embedder) IsModelLoaded() bool {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
-	return e.model != nil && e.tokenizer != nil
+	return e.onnx != nil && e.onnx.IsEnabled()
 }
 
 // GetLoadedModel returns the ID of the currently loaded model
@@ -223,94 +109,26 @@ func (e *Embedder) GetLoadedModel() string {
 	return e.modelID
 }
 
-// EmbedText generates an embedding for a text string
+// EmbedText generates an embedding for a text string.
 func (e *Embedder) EmbedText(text string) ([]float32, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
-	if e.model == nil || e.tokenizer == nil {
+	if e.onnx == nil {
 		return nil, fmt.Errorf("no model loaded")
 	}
-
-	// Tokenize the text
-	encoding, err := e.tokenizer.Encode(text, e.config.MaxLength)
-	if err != nil {
-		return nil, fmt.Errorf("failed to tokenize: %w", err)
-	}
-
-	// Generate embedding
-	embedding, err := e.model.EmbedSingle(encoding.InputIDs, encoding.AttentionMask)
-	if err != nil {
-		return nil, fmt.Errorf("failed to generate embedding: %w", err)
-	}
-
-	return embedding, nil
+	return e.onnx.Embed(text)
 }
 
-// EmbedTexts generates embeddings for multiple texts
+// EmbedTexts generates embeddings for multiple texts.
 func (e *Embedder) EmbedTexts(texts []string) ([][]float32, error) {
 	e.mu.RLock()
 	defer e.mu.RUnlock()
 
-	if e.model == nil || e.tokenizer == nil {
+	if e.onnx == nil {
 		return nil, fmt.Errorf("no model loaded")
 	}
-
-	// Process in batches
-	var allEmbeddings [][]float32
-	batchSize := e.config.BatchSize
-
-	for i := 0; i < len(texts); i += batchSize {
-		end := i + batchSize
-		if end > len(texts) {
-			end = len(texts)
-		}
-
-		batch := texts[i:end]
-		batchEmbeddings, err := e.embedBatch(batch)
-		if err != nil {
-			return nil, fmt.Errorf("failed to embed batch %d-%d: %w", i, end, err)
-		}
-
-		allEmbeddings = append(allEmbeddings, batchEmbeddings...)
-	}
-
-	return allEmbeddings, nil
-}
-
-// embedBatch generates embeddings for a batch of texts
-func (e *Embedder) embedBatch(texts []string) ([][]float32, error) {
-	// Tokenize all texts
-	var inputIDs [][]int64
-	var attentionMasks [][]int64
-
-	for _, text := range texts {
-		encoding, err := e.tokenizer.Encode(text, e.config.MaxLength)
-		if err != nil {
-			return nil, fmt.Errorf("failed to tokenize: %w", err)
-		}
-		inputIDs = append(inputIDs, encoding.InputIDs)
-		attentionMasks = append(attentionMasks, encoding.AttentionMask)
-	}
-
-	// Pad sequences to same length
-	maxLen := 0
-	for _, ids := range inputIDs {
-		if len(ids) > maxLen {
-			maxLen = len(ids)
-		}
-	}
-
-	// Pad all sequences
-	for i := range inputIDs {
-		for len(inputIDs[i]) < maxLen {
-			inputIDs[i] = append(inputIDs[i], 0) // PAD token ID
-			attentionMasks[i] = append(attentionMasks[i], 0)
-		}
-	}
-
-	// Generate embeddings
-	return e.model.Embed(inputIDs, attentionMasks)
+	return e.onnx.EmbedBatch(texts)
 }
 
 // PrepareTextForEmbedding prepares SRA metadata for embedding
@@ -358,9 +176,9 @@ func (e *Embedder) Close() error {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
-	if e.model != nil {
-		e.model.Close()
-		e.model = nil
+	if e.onnx != nil {
+		e.onnx.Close()
+		e.onnx = nil
 	}
 
 	return nil

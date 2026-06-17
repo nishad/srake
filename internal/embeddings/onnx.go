@@ -11,11 +11,38 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/sugarme/tokenizer"
 	"github.com/sugarme/tokenizer/pretrained"
 	ort "github.com/yalue/onnxruntime_go"
 )
+
+// The onnxruntime environment is a process-wide singleton. These guard a
+// single initialization across all ONNXEmbedder instances.
+var (
+	onnxInitOnce       sync.Once
+	onnxInitErr        error
+	onnxRuntimeLibPath string
+)
+
+// initONNXRuntime sets the shared library path and initializes the onnxruntime
+// environment exactly once per process. Subsequent calls return the cached
+// result, so creating multiple embedders is safe.
+func initONNXRuntime() error {
+	onnxInitOnce.Do(func() {
+		onnxRuntimeLibPath = resolveONNXRuntimeLibrary()
+		if onnxRuntimeLibPath != "" {
+			ort.SetSharedLibraryPath(onnxRuntimeLibPath)
+		}
+		// If something already initialized the environment, treat it as success.
+		if ort.IsInitialized() {
+			return
+		}
+		onnxInitErr = ort.InitializeEnvironment()
+	})
+	return onnxInitErr
+}
 
 // Embed the tokenizer.json file
 //
@@ -41,18 +68,14 @@ func NewONNXEmbedder(modelPath string, cacheDir string) (*ONNXEmbedder, error) {
 		modelPath: modelPath,
 	}
 
-	// Initialize ONNX Runtime. The shared library is located per platform so the
-	// embedder works on macOS, Linux, and Windows without hard-coding a single
-	// path. If a concrete library is found, point onnxruntime_go at it; otherwise
-	// fall back to its default name so the OS loader's search path can resolve it.
-	libPath := resolveONNXRuntimeLibrary()
-	if libPath != "" {
-		ort.SetSharedLibraryPath(libPath)
-	}
-	if err := ort.InitializeEnvironment(); err != nil {
+	// The onnxruntime environment is a process-global singleton: it must be
+	// initialized exactly once, even when several embedders are created (e.g. a
+	// search query embedder and an index-build embedder in the same process).
+	// Initializing it more than once errors, so guard it behind a sync.Once.
+	if err := initONNXRuntime(); err != nil {
 		// Missing or incompatible onnxruntime is not fatal: degrade to text/FTS5
-		// search rather than aborting. Tell the user how to point at a library.
-		log.Printf("Warning: could not load ONNX Runtime%s: %v", describeLibSource(libPath), err)
+		// search rather than aborting.
+		log.Printf("Warning: could not load ONNX Runtime%s: %v", describeLibSource(onnxRuntimeLibPath), err)
 		log.Printf("Semantic (vector) search is disabled. Install onnxruntime, or set the")
 		log.Printf("SRAKE_ONNXRUNTIME_LIB environment variable (or pass --onnxruntime-lib)")
 		log.Printf("to the shared library, e.g. SRAKE_ONNXRUNTIME_LIB=/usr/local/lib/libonnxruntime.so")
