@@ -80,7 +80,7 @@ func init() {
 	indexCmd.Flags().StringVar(&indexBackend, "backend", "", "Search backend to use (tiered, bleve) - defaults to tiered")
 	indexCmd.Flags().BoolVar(&indexEmbeddings, "with-embeddings", false, "Generate vector embeddings for documents")
 	indexCmd.Flags().StringVar(&embeddingModel, "embedding-model", "Xenova/SapBERT-from-PubMedBERT-fulltext", "Model to use for embeddings")
-	indexCmd.Flags().BoolVar(&indexProgress, "progress", false, "Show real-time indexing progress")
+	indexCmd.Flags().BoolVar(&indexProgress, "progress", false, "Show real-time indexing progress (on by default; use --quiet to suppress)")
 	indexCmd.Flags().BoolVar(&indexResume, "resume", false, "Resume interrupted index build from checkpoint")
 	indexCmd.Flags().StringVar(&progressFile, "progress-file", "", "Custom progress file path (default: .srake/index-progress.json)")
 	indexCmd.Flags().StringVar(&checkpointDir, "checkpoint-dir", "", "Custom checkpoint directory (default: .srake/checkpoints)")
@@ -164,7 +164,7 @@ func buildIndex(cfg *config.Config, db *database.DB, rebuild bool) error {
 		indexExists = true
 	}
 
-	if indexExists && !rebuild && !indexProgress {
+	if indexExists && !rebuild {
 		printInfo("Index already exists at %s", cfg.Search.IndexPath)
 		fmt.Println("\nUse --rebuild to rebuild from scratch")
 		return nil
@@ -177,12 +177,14 @@ func buildIndex(cfg *config.Config, db *database.DB, rebuild bool) error {
 	}
 	defer manager.Close()
 
-	// If progress tracking is enabled, use the new IndexBuilder
-	if indexProgress || progressFile != "" || checkpointDir != "" {
+	// Show live progress by default (the IndexBuilder path). --quiet suppresses
+	// it; --progress is kept as a no-op for backward compatibility. Falling back
+	// to the plain syncer only happens in --quiet mode.
+	if !quiet || progressFile != "" || checkpointDir != "" {
 		return buildWithProgress(cfg, db, manager.GetBackend(), rebuild)
 	}
 
-	// Otherwise, use the standard syncer
+	// --quiet: use the standard syncer (no live progress display)
 	syncer, err := search.NewSyncer(cfg, db, manager.GetBackend())
 	if err != nil {
 		return fmt.Errorf("failed to create syncer: %v", err)
@@ -400,7 +402,7 @@ func buildWithProgress(cfg *config.Config, db *database.DB, backend search.Searc
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if indexProgress && !quiet {
+	if !quiet {
 		go displayProgress(ctx, idxBuilder)
 	}
 
@@ -487,7 +489,7 @@ func resumeIndex(cfg *config.Config, db *database.DB) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if indexProgress && !quiet {
+	if !quiet {
 		go displayProgress(ctx, idxBuilder)
 	}
 
@@ -513,47 +515,73 @@ func resumeIndex(cfg *config.Config, db *database.DB) error {
 	return nil
 }
 
-// displayProgress shows real-time progress updates on stderr
+// displayProgress shows real-time progress updates on stderr. It refreshes a
+// single line in place (carriage return) every few seconds so long phases show
+// a live heartbeat instead of appearing frozen, and starts a fresh line each
+// time the phase changes so milestone logs from the build remain readable.
 func displayProgress(ctx context.Context, idxBuilder *builder.IndexBuilder) {
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	startTime := time.Now()
-	var lastStatus string
+	var lastPhase string
+	lineOpen := false
+
+	// finalize ends the current in-place line with a newline, if one is open.
+	finalize := func() {
+		if lineOpen {
+			fmt.Fprintln(os.Stderr)
+			lineOpen = false
+		}
+	}
+
+	render := func() {
+		progress := idxBuilder.GetProgress()
+		line, phase := renderProgressLine(
+			idxBuilder.GetCurrentType(),
+			idxBuilder.GetStatusMessage(),
+			progress.ProcessedDocs,
+			progress.IndexedDocs,
+			progress.FailedDocs,
+			time.Since(startTime).Truncate(time.Second),
+		)
+		// Start a fresh line whenever the phase changes so milestone logs stay readable.
+		if phase != lastPhase {
+			finalize()
+			lastPhase = phase
+		}
+		// Pad to overwrite any longer previous line, then return the cursor.
+		fmt.Fprintf(os.Stderr, "\r%-78s", line)
+		lineOpen = true
+	}
 
 	for {
 		select {
 		case <-ctx.Done():
+			finalize()
 			return
 		case <-ticker.C:
-			progress := idxBuilder.GetProgress()
-			status := idxBuilder.GetStatusMessage()
-			currentType := idxBuilder.GetCurrentType()
-			elapsed := time.Since(startTime).Truncate(time.Second)
-
-			if currentType == "fts5" || progress.ProcessedDocs == 0 {
-				// FTS5 phase — only print when status changes
-				if status == "" {
-					status = "Initializing..."
-				}
-				if status != lastStatus {
-					fmt.Fprintf(os.Stderr, "  %-60s [%s]\n", status, elapsed)
-					lastStatus = status
-				}
-			} else {
-				// Bleve indexing phase — print every tick with speed
-				avgSpeed := float64(0)
-				if elapsed.Seconds() > 0 {
-					avgSpeed = float64(progress.ProcessedDocs) / elapsed.Seconds()
-				}
-
-				fmt.Fprintf(os.Stderr, "  [%s] %d / ~696K docs | %.0f docs/s | %d failed [%s]\n",
-					currentType,
-					progress.IndexedDocs,
-					avgSpeed,
-					progress.FailedDocs,
-					elapsed)
-			}
+			render()
 		}
 	}
+}
+
+// renderProgressLine formats a single progress line and returns it along with a
+// phase key (used to detect phase transitions). During the FTS5/startup phase
+// there is no per-record count, so it shows a heartbeat of the current step plus
+// elapsed time; during Bleve indexing it shows the live document count and speed.
+func renderProgressLine(currentType, status string, processedDocs, indexedDocs, failedDocs int64, elapsed time.Duration) (line, phase string) {
+	if currentType == "fts5" || processedDocs == 0 {
+		if status == "" {
+			status = "Initializing..."
+		}
+		return fmt.Sprintf("  %-58s %s elapsed", status, elapsed), "fts5:" + status
+	}
+
+	avgSpeed := float64(0)
+	if elapsed.Seconds() > 0 {
+		avgSpeed = float64(processedDocs) / elapsed.Seconds()
+	}
+	return fmt.Sprintf("  [%s] %d / ~696K docs | %.0f docs/s | %d failed | %s",
+		currentType, indexedDocs, avgSpeed, failedDocs, elapsed), currentType
 }
