@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -29,11 +30,12 @@ const (
 // Tier 2: Experiments (SQLite FTS5) - ~38M records
 // Tier 3: Samples/Runs (SQLite FTS5) - ~80M records
 type TieredSearchBackend struct {
-	db       *database.DB
-	lazyIdx  *LazyIndex // Lazy-loaded Bleve index
-	embedder EmbedderInterface
-	config   *TieredConfig
-	mu       sync.RWMutex
+	db        *database.DB
+	lazyIdx   *LazyIndex // Lazy-loaded Bleve index
+	embedder  EmbedderInterface
+	vectorIdx VectorIndex // optional nearest-neighbor index (nil unless built with -tags zvec)
+	config    *TieredConfig
+	mu        sync.RWMutex
 
 	// Cache for aggregated study data
 	studyCache map[string]*StudySearchDoc
@@ -100,15 +102,32 @@ func NewTieredSearchBackend(db *database.DB, cfg *TieredConfig) (*TieredSearchBa
 	// Create lazy index with optimized mapping
 	lazyIdx := NewLazyIndex(cfg.IndexPath, cfg.IdleTimeout)
 
+	// Open the optional nearest-neighbor index. newVectorIndex returns (nil, nil)
+	// in builds without the "zvec" tag, so vectorIdx stays nil and vector search
+	// transparently falls back to text search.
+	var vectorIdx VectorIndex
+	if cfg.UseEmbeddings {
+		vi, err := newVectorIndex(filepath.Join(cfg.IndexPath, "vectors"), studyEmbeddingDim)
+		if err != nil {
+			log.Printf("[TIERED] Warning: vector index unavailable: %v", err)
+		} else {
+			vectorIdx = vi
+		}
+	}
+
 	return &TieredSearchBackend{
 		db:         db,
 		lazyIdx:    lazyIdx,
+		vectorIdx:  vectorIdx,
 		config:     cfg,
 		studyCache: make(map[string]*StudySearchDoc),
 		cacheTTL:   cfg.CacheTTL,
 		embedder:   nil, // Will be set via SetEmbedder if needed
 	}, nil
 }
+
+// studyEmbeddingDim is the dimensionality of the SapBERT study embeddings.
+const studyEmbeddingDim = 768
 
 // SetEmbedder sets the embedder for vector search
 func (t *TieredSearchBackend) SetEmbedder(embedder EmbedderInterface) {
@@ -431,16 +450,85 @@ func (t *TieredSearchBackend) shouldUseCache() bool {
 	return time.Since(t.cacheTime) < t.cacheTTL
 }
 
-// SearchWithVector performs a search with vector similarity
+// SearchWithVector performs a nearest-neighbor search over study embeddings when
+// a vector index is available (built with -tags zvec). If no vector index is
+// present, or the query vector is empty, it falls back to text search so callers
+// always get sensible results.
 func (t *TieredSearchBackend) SearchWithVector(query string, vector []float32, opts SearchOptions) (*SearchResult, error) {
-	// TODO: Implement vector search
-	return t.Search(query, opts)
+	if t.vectorIdx == nil || len(vector) == 0 {
+		return t.Search(query, opts)
+	}
+
+	limit := opts.Limit
+	if limit <= 0 {
+		limit = 10
+	}
+	hits, err := t.vectorIdx.Search(vector, limit)
+	if err != nil {
+		// Degrade to text search rather than failing the query.
+		log.Printf("[TIERED] vector search failed, falling back to text: %v", err)
+		return t.Search(query, opts)
+	}
+
+	return t.buildVectorResult(query, hits), nil
 }
 
-// FindSimilar finds documents similar to the given ID
+// buildVectorResult turns vector-index hits (study accessions + scores) into a
+// SearchResult, enriching each with the study's title/organism from the DB.
+func (t *TieredSearchBackend) buildVectorResult(query string, hits []VectorHit) *SearchResult {
+	result := &SearchResult{
+		Query:     query,
+		TotalHits: len(hits),
+		Hits:      make([]Hit, 0, len(hits)),
+		Mode:      "vector",
+	}
+	for _, vh := range hits {
+		fields := map[string]interface{}{"study_accession": vh.PK}
+		if study, err := t.db.GetStudy(vh.PK); err == nil && study != nil {
+			fields["title"] = study.StudyTitle
+			fields["organism"] = study.Organism
+			fields["study_type"] = study.StudyType
+		}
+		result.Hits = append(result.Hits, Hit{
+			ID:         vh.PK,
+			Type:       "study",
+			Score:      float64(vh.Score),
+			Similarity: vh.Score,
+			Fields:     fields,
+		})
+	}
+	return result
+}
+
+// FindSimilar finds studies similar to the given study by embedding its text and
+// running a nearest-neighbor search. Requires a vector index and an embedder
+// (built with -tags zvec and vectors enabled).
 func (t *TieredSearchBackend) FindSimilar(id string, opts SearchOptions) (*SearchResult, error) {
-	// TODO: Implement similarity search
-	return nil, fmt.Errorf("similarity search not yet implemented")
+	if t.vectorIdx == nil {
+		return nil, fmt.Errorf("similarity search unavailable: build with -tags zvec")
+	}
+	if t.embedder == nil || !t.embedder.IsEnabled() {
+		return nil, fmt.Errorf("similarity search unavailable: embedder not loaded")
+	}
+
+	study, err := t.db.GetStudy(id)
+	if err != nil || study == nil {
+		return nil, fmt.Errorf("study %s not found: %w", id, err)
+	}
+
+	text := study.StudyTitle
+	if study.StudyAbstract != "" {
+		text += " " + study.StudyAbstract
+	}
+	if study.StudyType != "" {
+		text += " " + study.StudyType
+	}
+
+	vector, err := t.embedder.Embed(text)
+	if err != nil {
+		return nil, fmt.Errorf("failed to embed study %s: %w", id, err)
+	}
+	return t.SearchWithVector("", vector, opts)
 }
 
 // Index adds a document to the search index
@@ -617,11 +705,17 @@ func (t *TieredSearchBackend) indexStudies(ctx context.Context) error {
 			if err != nil {
 				log.Printf("[TIERED] Warning: failed to generate embeddings for batch: %v", err)
 			} else {
-				// Add embeddings to the documents
+				// Add embeddings to the documents, and to the optional vector
+				// index (zvec) for nearest-neighbor search.
 				for i, doc := range batch {
 					if study, ok := doc.(StudySearchDoc); ok && i < len(embeddings) {
 						study.Embedding = embeddings[i]
 						batch[i] = study
+						if t.vectorIdx != nil && len(embeddings[i]) > 0 {
+							if err := t.vectorIdx.Add(study.StudyAccession, embeddings[i]); err != nil {
+								log.Printf("[TIERED] Warning: vector index add failed for %s: %v", study.StudyAccession, err)
+							}
+						}
 					}
 				}
 				log.Printf("[TIERED] Generated embeddings for %d studies", len(embeddings))

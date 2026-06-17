@@ -29,8 +29,9 @@ func CreateSearchBackend(cfg *config.Config) (SearchBackend, error) {
 			IndexStudies:     true,
 			IndexExperiments: false,
 			// Only generate/store embeddings when this build can actually use
-			// them for vector search (requires the "vectors"/FAISS tag).
-			UseEmbeddings:    cfg.IsVectorEnabled() && VectorSearchSupported,
+			// them for vector search — either Bleve KNN ("vectors"/FAISS) or the
+			// zvec nearest-neighbor index ("zvec").
+			UseEmbeddings:    cfg.IsVectorEnabled() && (VectorSearchSupported || VectorIndexSupported),
 			StudyBatchSize:   1000,
 			ExpBatchSize:     5000,
 			IdleTimeout:      5 * time.Minute,
@@ -46,8 +47,9 @@ func CreateSearchBackend(cfg *config.Config) (SearchBackend, error) {
 		}
 
 		// Initialize embedder only if vector search is enabled and supported by
-		// this build (FAISS). Otherwise the embedder is unused dead weight.
-		if cfg.IsVectorEnabled() && VectorSearchSupported {
+		// this build (FAISS Bleve KNN or the zvec index). Otherwise the embedder
+		// is unused dead weight.
+		if cfg.IsVectorEnabled() && (VectorSearchSupported || VectorIndexSupported) {
 			embedderConfig := embeddings.DefaultEmbedderConfig()
 			embedderConfig.ModelsDir = paths.GetModelsPath()
 

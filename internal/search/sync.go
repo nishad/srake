@@ -32,8 +32,9 @@ func NewSyncer(cfg *config.Config, db *database.DB, backend SearchBackend) (*Syn
 	}
 
 	// Initialize embedder only if vectors are enabled and supported by this
-	// build (FAISS); otherwise embeddings are unused and only slow indexing.
-	if cfg.IsVectorEnabled() && VectorSearchSupported {
+	// build (FAISS Bleve KNN or the zvec index); otherwise embeddings are unused
+	// and only slow indexing.
+	if cfg.IsVectorEnabled() && (VectorSearchSupported || VectorIndexSupported) {
 		embConfig := &embeddings.EmbedderConfig{
 			ModelsDir:    cfg.Embeddings.ModelsDirectory,
 			DefaultModel: cfg.Embeddings.DefaultModel,
