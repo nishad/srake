@@ -22,6 +22,11 @@ import (
 //go:embed assets/tokenizer.json
 var embeddedTokenizer []byte
 
+// maxSequenceLength caps tokenized input to the SapBERT/BERT positional-embedding
+// limit (config.json max_position_embeddings = 512). The tokenizer config does not
+// enforce a limit, so inputs must be truncated here before ONNX inference.
+const maxSequenceLength = 512
+
 // ONNXEmbedder generates embeddings using ONNX Runtime
 type ONNXEmbedder struct {
 	session   *ort.DynamicAdvancedSession
@@ -332,6 +337,21 @@ func (e *ONNXEmbedder) Embed(text string) ([]float32, error) {
 	encoding, err := e.tokenizer.EncodeSingle(text)
 	if err != nil {
 		return nil, fmt.Errorf("failed to encode text: %w", err)
+	}
+
+	// BERT models have a fixed positional-embedding table (max_position_embeddings,
+	// 512 for SapBERT). The tokenizer config does not enforce a limit, so long
+	// abstracts produce sequences > 512 tokens, which makes ONNX inference fail
+	// ("broadcast an axis ... 512 by N") and can trip a slice-bounds panic in the
+	// tokenizer. Cap the encoding to the model's limit before inference.
+	if len(encoding.Ids) > maxSequenceLength {
+		if truncated, terr := encoding.Truncate(maxSequenceLength, 0); terr == nil && truncated != nil {
+			encoding = truncated
+		} else {
+			// Fall back to a manual slice if the tokenizer's truncate fails.
+			encoding.Ids = encoding.Ids[:maxSequenceLength]
+			encoding.AttentionMask = encoding.AttentionMask[:maxSequenceLength]
+		}
 	}
 
 	// Get token IDs and attention mask
