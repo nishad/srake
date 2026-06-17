@@ -343,17 +343,37 @@ func (t *TieredSearchBackend) searchAll(query string, opts SearchOptions) (*Sear
 	return result, nil
 }
 
-// searchSQLiteFTS performs a fallback search using SQLite FTS5
+// searchSQLiteFTS performs a fallback search using SQLite FTS5. It is used by
+// searchAll when the Bleve study index is unavailable. The fts_accessions table
+// indexes every record type (studies, experiments, samples, runs) by accession
+// and title, so it is the broadest always-available text index to fall back to.
 func (t *TieredSearchBackend) searchSQLiteFTS(query string, opts SearchOptions) (*SearchResult, error) {
-	// Placeholder for SQLite FTS5 implementation
+	ftsManager := database.NewFTS5Manager(t.db)
+	results, err := ftsManager.SearchAccessions(query, opts.Limit)
+	if err != nil {
+		return nil, fmt.Errorf("FTS5 fallback search failed: %w", err)
+	}
+
 	result := &SearchResult{
 		Query:     query,
-		TotalHits: 0,
-		Hits:      []Hit{},
+		TotalHits: len(results),
+		Hits:      make([]Hit, 0, len(results)),
 		Mode:      "fts5",
 	}
 
-	// TODO: Implement SQLite FTS5 search
+	for _, r := range results {
+		hit := Hit{
+			ID:    r.Accession,
+			Type:  r.Type,
+			Score: -r.Score, // BM25 returns negative scores; negate so higher = more relevant
+			Fields: map[string]interface{}{
+				"type":     r.Type,
+				"title":    r.Title,
+				"metadata": r.Metadata,
+			},
+		}
+		result.Hits = append(result.Hits, hit)
+	}
 
 	return result, nil
 }
