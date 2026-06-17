@@ -1,53 +1,59 @@
-# Build stage
-FROM golang:1.25-alpine AS builder
+# syntax=docker/dockerfile:1
 
-# Install build dependencies
-RUN apk add --no-cache git make gcc musl-dev sqlite-dev
+# ── Stage 1: build the SvelteKit SPA ────────────────────────────────────────
+# The frontend is embedded into the Go binary, so it must be built first and
+# placed into internal/web/build/ before the Go build runs.
+FROM node:20-alpine AS web-builder
+WORKDIR /web
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
 
-# Set working directory
+# ── Stage 2: build the Go binary (with the embedded web UI) ──────────────────
+FROM golang:1.25-alpine AS go-builder
+RUN apk add --no-cache git gcc musl-dev sqlite-dev
 WORKDIR /build
 
-# Copy go mod files
 COPY go.mod go.sum ./
 RUN go mod download
 
-# Copy source code
 COPY . .
 
-# Build arguments
+# Embed the freshly built SPA. The repo ships internal/web/build/ empty
+# (only .gitkeep), so the compiled web assets are copied in from the web stage
+# before the Go build runs //go:embed all:build.
+COPY --from=web-builder /web/build/ /web-build/
+RUN rm -rf internal/web/build/* && cp -r /web-build/. internal/web/build/
+
 ARG VERSION=dev
 ARG COMMIT=unknown
 ARG BUILD_DATE=unknown
 
-# Build the binary
+# CGO is required for go-sqlite3; FTS5 + search features are enabled via tags.
 RUN CGO_ENABLED=1 GOOS=linux go build \
     -tags "sqlite_fts5,search" \
     -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${COMMIT} -X main.BuildDate=${BUILD_DATE}" \
     -o srake ./cmd/srake
 
-# Runtime stage
+# ── Stage 3: minimal runtime ─────────────────────────────────────────────────
 FROM alpine:latest
+RUN apk add --no-cache ca-certificates sqlite wget
 
-# Install runtime dependencies
-RUN apk add --no-cache ca-certificates sqlite
+COPY --from=go-builder /build/srake /usr/local/bin/srake
 
-# Create data directory
+# SRAKE follows the XDG spec; point its data dir at the mounted volume so the
+# database at /data/srake.db is picked up automatically.
+ENV SRAKE_DATA_DIR=/data
 RUN mkdir -p /data
-
-# Copy binary from builder
-COPY --from=builder /build/srake /usr/local/bin/srake
-
-# Set data volume
 VOLUME ["/data"]
-
-# Set working directory
 WORKDIR /data
 
-# Expose API port
 EXPOSE 8080
 
-# Set entrypoint
-ENTRYPOINT ["srake"]
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/health || exit 1
 
-# Default command
-CMD ["--help"]
+ENTRYPOINT ["srake"]
+# Default: serve the API + embedded web UI on 0.0.0.0:8080 using /data/srake.db.
+CMD ["server", "--host", "0.0.0.0", "--port", "8080", "--db", "/data/srake.db"]

@@ -1,0 +1,39 @@
+# Keep the build context small and reproducible.
+
+# Version control / CI
+.git
+.github
+.claude
+.srake
+
+# Local data, indexes, models, archives (never bake these into an image)
+data/
+sample_data/
+*.db
+*.db-wal
+*.db-shm
+*.tar.gz
+*.zip
+
+# Built binaries (the image builds its own)
+/srake
+/srake-server
+bin/
+dist/
+
+# Node / web build artifacts (npm ci + npm run build happen inside the image)
+web/node_modules/
+web/build/
+web/.svelte-kit/
+
+# Pre-populated embed dir contents (the image rebuilds these)
+internal/web/build/*
+!internal/web/build/.gitkeep
+
+# Docs site build output
+docs/public/
+
+# Editor / OS cruft
+.DS_Store
+*.swp
+coverage.out

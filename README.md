@@ -25,10 +25,29 @@ Download from the [releases page](https://github.com/nishad/srake/releases). Ava
 
 ### Docker
 
+Pull the published image:
+
 ```bash
 docker pull ghcr.io/nishad/srake:latest
 docker run -v $(pwd)/data:/data ghcr.io/nishad/srake:latest --help
 ```
+
+Or build it locally from source (the image bundles the API and the embedded web UI):
+
+```bash
+docker build -t srake:local .
+
+# Serve the API + web UI on http://localhost:8080 (expects ./data/srake.db)
+docker run -p 8080:8080 -v $(pwd)/data:/data srake:local
+
+# Or with docker compose
+docker compose up --build
+```
+
+The container reads its database from `/data/srake.db`. Mount a host directory at
+`/data` containing `srake.db` (and the search index), or build one inside the
+container with `srake ingest`. Run any CLI subcommand by overriding the entrypoint
+args, e.g. `docker run -v $(pwd)/data:/data srake:local search "homo sapiens"`.
 
 ## Quick start
 

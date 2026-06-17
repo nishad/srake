@@ -74,12 +74,15 @@ make docker-compose-down
 
 ### Manual Docker Build
 
-```bash
-# Build the SRAKE webapp image
-docker build -f Dockerfile.webapp -t srake-webapp:latest .
+The web UI is embedded into the Go binary, so the single top-level `Dockerfile`
+builds both the SPA and the server.
 
-# Run the SRAKE container
-docker run -p 8080:8080 -v $(pwd)/data:/data srake-webapp:latest
+```bash
+# Build the SRAKE image (API + embedded web UI)
+docker build -t srake:latest .
+
+# Run the SRAKE container (expects a database at ./data/srake.db)
+docker run -p 8080:8080 -v $(pwd)/data:/data srake:latest
 ```
 
 ## SRAKE API Endpoints

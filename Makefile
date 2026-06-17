@@ -159,15 +159,6 @@ docker:
 		--build-arg BUILD_DATE=$(BUILD_DATE) .
 	@echo "Docker image built: $(BINARY_NAME):$(VERSION)"
 
-## docker-webapp: Build Docker webapp image
-docker-webapp:
-	@echo "Building Docker webapp image..."
-	docker build -f Dockerfile.webapp -t $(BINARY_NAME)-webapp:$(VERSION) \
-		--build-arg VERSION=$(VERSION) \
-		--build-arg COMMIT=$(COMMIT) \
-		--build-arg BUILD_DATE=$(BUILD_DATE) .
-	@echo "Docker webapp image built: $(BINARY_NAME)-webapp:$(VERSION)"
-
 ## docker-compose-up: Start webapp with docker-compose
 docker-compose-up:
 	@echo "Starting webapp with docker-compose..."
